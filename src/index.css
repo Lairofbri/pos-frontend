@@ -1,0 +1,73 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-bg-primary: #0C0C10;
+  --color-bg-surface: #16161E;
+  --color-bg-surface-hover: #1E1E2A;
+  --color-accent: #D4A24C;
+  --color-accent-light: #F5C542;
+  --color-accent-glow: rgba(212, 162, 76, 0.25);
+  --color-teal: #2DD4BF;
+  --color-text-primary: #F5F0E8;
+  --color-text-secondary: #8A857A;
+  --color-danger: #E5484D;
+  --color-success: #30A46C;
+  --color-border: #2A2A3A;
+
+  --font-display: "Tektur", sans-serif;
+  --font-body: "Sora", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+}
+
+@layer base {
+  body {
+    @apply bg-bg-primary text-text-primary font-body antialiased;
+    margin: 0;
+  }
+
+  #root {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #0C0C10;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #2A2A3A;
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #D4A24C;
+  }
+}
+
+@utility glow-amber {
+  box-shadow: 0 0 12px var(--color-accent-glow);
+}
+
+@utility glass {
+  background: rgba(22, 22, 30, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+@utility noise-bg {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 256px 256px;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@utility animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
