@@ -25,7 +25,7 @@ export function TicketPanel({
     )
   }
 
-  const tieneItemsPendientes = orden.items.some(
+  const tieneItemsPendientes = (orden.items ?? []).some(
     (i) => i.estado === 'pendiente'
   )
 
@@ -85,7 +85,7 @@ export function TicketPanel({
               </div>
               <div className="flex items-center gap-2 shrink-0">
                 <span className="text-sm font-mono text-text-primary font-semibold">
-                  ${(item.precio_unitario * item.cantidad).toFixed(2)}
+                  ${((item.precio_unitario ?? 0) * item.cantidad).toFixed(2)}
                 </span>
                 <button
                   onClick={() => onEliminarItem(item.id)}
@@ -103,13 +103,13 @@ export function TicketPanel({
         <div className="flex items-center justify-between">
           <span className="text-xs font-body text-text-secondary">Subtotal</span>
           <span className="text-sm font-mono text-text-primary">
-            ${orden.total.toFixed(2)}
+            ${orden.total?.toFixed(2) ?? '0.00'}
           </span>
         </div>
         <div className="flex items-center justify-between border-t border-border pt-2">
           <span className="text-sm font-body text-text-primary font-semibold">Total</span>
           <span className="text-lg font-mono text-accent font-bold">
-            ${orden.total.toFixed(2)}
+            ${orden.total?.toFixed(2) ?? '0.00'}
           </span>
         </div>
 

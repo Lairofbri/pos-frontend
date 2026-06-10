@@ -1,35 +1,45 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
-import { useZoneStore } from '../../store/zoneStore'
+import { useSidebar } from '../../hooks/useSidebar'
 import { Badge } from '../ui/Badge'
+import { ZoneSelector } from '../ui/ZoneSelector'
+import { Icon } from '../shared/Icon'
+import { logout } from '../../routes/login/api'
 
 export function Topbar() {
+  const navigate = useNavigate()
   const usuario = useAuthStore((s) => s.usuario)
-  const { zona, setZona } = useZoneStore()
+  const clearAuth = useAuthStore((s) => s.clearAuth)
+  const token = useAuthStore((s) => s.token)
+  const setMobileOpen = useSidebar((s) => s.setMobileOpen)
+  const [loggingOut, setLoggingOut] = useState(false)
 
-  const zonas = [
-    { value: 'salon', label: 'Salón' },
-    { value: 'bar', label: 'Bar' },
-    { value: 'evento', label: 'Evento' },
-  ]
+  const handleLogout = async () => {
+    setLoggingOut(true)
+    try {
+      const refreshToken = localStorage.getItem('refresh_token')
+      if (refreshToken && token) {
+        await logout(refreshToken)
+      }
+    } catch {
+      // cerrar sesión aunque falle la petición
+    }
+    clearAuth()
+    navigate('/login', { replace: true })
+  }
 
   return (
     <header className="h-12 flex items-center justify-between px-4 border-b border-border bg-bg-surface/50 glass shrink-0">
       <div className="flex items-center gap-3">
-        <div className="flex bg-bg-primary rounded-lg p-0.5 border border-border">
-          {zonas.map((z) => (
-            <button
-              key={z.value}
-              onClick={() => setZona(z.value)}
-              className={`px-3 py-1 rounded-md text-xs font-body font-semibold transition-all duration-200 cursor-pointer ${
-                zona === z.value
-                  ? 'bg-accent text-bg-primary'
-                  : 'text-text-secondary hover:text-text-primary'
-              }`}
-            >
-              {z.label}
-            </button>
-          ))}
-        </div>
+        <button
+          onClick={() => setMobileOpen(true)}
+          className="md:hidden text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+          aria-label="Abrir menú"
+        >
+          <Icon name="menu" className="w-5 h-5" />
+        </button>
+        <ZoneSelector />
       </div>
 
       <div className="flex items-center gap-4">
@@ -40,6 +50,13 @@ export function Topbar() {
         <span className="text-sm text-text-primary font-body font-medium">
           {usuario?.nombre || 'Usuario'}
         </span>
+        <button
+          onClick={handleLogout}
+          disabled={loggingOut}
+          className="text-xs text-text-secondary hover:text-danger transition-colors cursor-pointer disabled:opacity-50"
+        >
+          {loggingOut ? '...' : 'Salir'}
+        </button>
       </div>
     </header>
   )

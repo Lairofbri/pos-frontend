@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
 import { getMesas, getOrdenes } from '../api'
-import { useZoneStore } from '../../../store/zoneStore'
 import type { Mesa } from '../../../types'
 
 interface TableMapProps {
@@ -8,16 +7,16 @@ interface TableMapProps {
 }
 
 export function TableMap({ onSelectMesa }: TableMapProps) {
-  const zona = useZoneStore((s) => s.zona)
-
   const { data: mesas, isLoading } = useQuery({
-    queryKey: ['mesas', zona],
-    queryFn: () => getMesas(zona),
+    queryKey: ['mesas'],
+    queryFn: getMesas,
+    staleTime: 60_000,
   })
 
   const { data: ordenes } = useQuery({
-    queryKey: ['ordenes', zona],
-    queryFn: () => getOrdenes({ zona }),
+    queryKey: ['ordenes'],
+    queryFn: () => getOrdenes(),
+    staleTime: 30_000,
   })
 
   const mesasOcupadas = new Set(

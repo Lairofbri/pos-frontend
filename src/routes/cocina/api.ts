@@ -21,8 +21,8 @@ export const getItemsActivos = () =>
 export const getTicket = (ordenId: string) =>
   api.get(`/cocina/orden/${ordenId}/ticket`, { responseType: 'text' }).then(r => r.data)
 
-export const marcarItemListo = (itemId: string) =>
-  api.patch(`/cocina/items/${itemId}/listo`).then(r => r.data)
+export const marcarItemListo = (ordenId: string, itemId: string) =>
+  api.patch(`/ordenes/${ordenId}/items/${itemId}`, { estado: 'listo' }).then(r => r.data)
 
 export const marcarOrdenCompletada = (ordenId: string) =>
-  api.patch(`/cocina/orden/${ordenId}/completada`).then(r => r.data)
+  api.patch(`/ordenes/${ordenId}/estado`, { estado: 'lista' }).then(r => r.data)

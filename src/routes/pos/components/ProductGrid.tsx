@@ -18,11 +18,13 @@ export function ProductGrid({ onSelectProducto, onLongPressProducto }: ProductGr
   const { data: categorias } = useQuery({
     queryKey: ['categorias'],
     queryFn: getCategorias,
+    staleTime: 300_000,
   })
 
   const { data: productos } = useQuery({
     queryKey: ['productos', categoriaActiva],
     queryFn: () => getProductos(categoriaActiva),
+    staleTime: 60_000,
   })
 
   const filtrados = (productos ?? []).filter((p) =>
