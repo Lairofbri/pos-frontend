@@ -14,18 +14,26 @@ export function SearchInput({
   debounce = 300,
 }: SearchInputProps) {
   const [local, setLocal] = useState(externalValue)
-  const initialMount = useRef(true)
+
+  const prevRef = useRef(externalValue)
+  useEffect(() => {
+    prevRef.current = externalValue
+  })
 
   useEffect(() => {
-    if (initialMount.current) {
-      initialMount.current = false
-      return
+    if (prevRef.current !== externalValue) {
+      setLocal(externalValue)
     }
+  }, [externalValue])
+
+  useEffect(() => {
     const timer = setTimeout(() => {
-      onChange(local)
+      if (local !== externalValue) {
+        onChange(local)
+      }
     }, debounce)
     return () => clearTimeout(timer)
-  }, [local, debounce, onChange])
+  }, [local, debounce, onChange, externalValue])
 
   return (
     <div className="relative">

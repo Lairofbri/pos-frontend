@@ -31,6 +31,7 @@ function parseProducto(raw: ProductoRaw): Producto {
     imagen_url: raw.imagen_url ?? undefined,
     codigo: raw.codigo ?? undefined,
     activo: raw.activo,
+    orden: raw.orden,
     categoria_id: raw.categoria_id ?? undefined,
     categoria_nombre: raw.categoria_nombre ?? undefined,
   }

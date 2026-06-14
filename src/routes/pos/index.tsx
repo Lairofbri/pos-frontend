@@ -4,6 +4,7 @@ import { queryDefaults } from '../../config/queries'
 import { TableMap } from './components/TableMap'
 import { ProductGrid } from './components/ProductGrid'
 import { TicketPanel } from './components/TicketPanel'
+import { RestaurantSummary } from './components/RestaurantSummary'
 import { PaymentPanel } from './components/PaymentPanel'
 import { ModifierPanel } from './components/ModifierPanel'
 import { GerentePinModal } from '../../components/shared/GerentePinModal'
@@ -297,18 +298,22 @@ export default function POSPage() {
       </div>
 
       <div className="lg:w-[360px] xl:w-[400px] shrink-0">
-        <TicketPanel
-          key={ordenActiva?.id ?? 'vacio'}
-          orden={ordenActiva ?? null}
-          onEliminarItem={handleEliminarItem}
-          onEnviarCocina={() => ordenActiva && cocinaMutation.mutate(ordenActiva.id)}
-          onPagar={() => setMostrarPayment(true)}
-          onDescuento={(pct) => ordenActiva && descuentoMutation.mutate(pct)}
-          onGuardarNotas={(n) => notasMutation.mutate(n)}
-          onSolicitarAutorizacion={handleAutorizarEliminacion}
-          onLiberarMesa={handleLiberarMesa}
-          enviando={cocinaMutation.isPending}
-        />
+        {ordenActiva ? (
+          <TicketPanel
+            key={ordenActiva.id}
+            orden={ordenActiva}
+            onEliminarItem={handleEliminarItem}
+            onEnviarCocina={() => ordenActiva && cocinaMutation.mutate(ordenActiva.id)}
+            onPagar={() => setMostrarPayment(true)}
+            onDescuento={(pct) => ordenActiva && descuentoMutation.mutate(pct)}
+            onGuardarNotas={(n) => notasMutation.mutate(n)}
+            onSolicitarAutorizacion={handleAutorizarEliminacion}
+            onLiberarMesa={handleLiberarMesa}
+            enviando={cocinaMutation.isPending}
+          />
+        ) : (
+          <RestaurantSummary />
+        )}
       </div>
 
       <PaymentPanel

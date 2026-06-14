@@ -22,7 +22,7 @@ function flattenMenus(items: MenuItem[]): string[] {
 export function RouteGuard({ children }: RouteGuardProps) {
   const location = useLocation()
 
-  const { data, isLoading } = useQuery({
+  const { data, isLoading, isError } = useQuery({
     queryKey: ['menus-routes'],
     queryFn: () =>
       api.get<{ ok: boolean; data: { menus: MenuItem[] } }>('/menus')
@@ -43,6 +43,10 @@ export function RouteGuard({ children }: RouteGuardProps) {
         <Spinner size="lg" />
       </div>
     )
+  }
+
+  if (isError) {
+    return <>{children}</>
   }
 
   if (

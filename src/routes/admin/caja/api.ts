@@ -57,7 +57,6 @@ export const getCajaActiva = () =>
       const raw = d.caja ?? d
       return parseCaja(raw)
     })
-    .catch(() => null)
 
 export const abrirCaja = (data: { monto_inicial: number; sucursal_id?: string; notas?: string }) =>
   api.post<{ ok: boolean; data: { caja: CajaTurnoRaw } }>('/caja/abrir', data)

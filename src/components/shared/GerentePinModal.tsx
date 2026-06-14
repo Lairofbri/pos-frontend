@@ -25,10 +25,10 @@ export function GerentePinModal({ open, tenantId, onAuthorized, onClose }: Geren
   const [error, setError] = useState('')
   const prevOpen = useRef(false)
 
-  const { data: usuarios } = useQuery({
-    queryKey: ['usuarios'],
+  const { data: usuarios, isError } = useQuery({
+    queryKey: ['usuarios-pin'],
     queryFn: () =>
-      api.get<{ ok: boolean; data: { usuarios: UsuarioItem[] } }>('/usuarios')
+      api.get<{ ok: boolean; data: { usuarios: UsuarioItem[] } }>('/usuarios/pin-list')
         .then(r => r.data.data.usuarios),
     enabled: open,
   })
@@ -77,7 +77,9 @@ export function GerentePinModal({ open, tenantId, onAuthorized, onClose }: Geren
           <div>
             <h3 className="font-display text-lg text-text-primary mb-4">Autorización de Gerente</h3>
             <p className="text-xs text-text-secondary mb-4 font-body">Selecciona tu nombre</p>
-            {!usuarios ? (
+            {isError ? (
+              <p className="text-sm text-danger text-center font-body py-4">Error al cargar usuarios</p>
+            ) : !usuarios ? (
               <div className="flex justify-center py-8"><Spinner size="md" /></div>
             ) : gerentes.length === 0 ? (
               <p className="text-sm text-danger text-center font-body py-4">No hay gerentes disponibles</p>

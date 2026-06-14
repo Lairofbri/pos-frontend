@@ -14,6 +14,7 @@ export function useCocinaSocket(tenantId: string) {
 
     socket.on('cocina:nuevo-item', () => {
       queryClient.invalidateQueries({ queryKey: ['cocina'] })
+      queryClient.invalidateQueries({ queryKey: ['orden'] })
       queryClient.invalidateQueries({ queryKey: ['ordenes'] })
     })
     socket.on('cocina:item-listo', () => {

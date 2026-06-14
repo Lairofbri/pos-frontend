@@ -4,7 +4,7 @@ import type { Producto, Orden, OrdenItem, Categoria, Mesa } from '../../types'
 interface ProductoRaw {
   id: string; nombre: string; descripcion: string | null
   precio: string; imagen_url: string | null; codigo: string | null
-  activo: boolean; categoria_id: string | null
+  activo: boolean; orden: number; categoria_id: string | null
   categoria_nombre: string | null; categoria_color: string | null
 }
 
@@ -20,7 +20,7 @@ function parseProducto(r: ProductoRaw): Producto {
   return {
     id: r.id, nombre: r.nombre, descripcion: r.descripcion ?? undefined,
     precio: parseFloat(r.precio), imagen_url: r.imagen_url ?? undefined,
-    codigo: r.codigo ?? undefined, activo: r.activo,
+    codigo: r.codigo ?? undefined, activo: r.activo, orden: r.orden,
     categoria_id: r.categoria_id ?? undefined,
     categoria_nombre: r.categoria_nombre ?? undefined,
   }

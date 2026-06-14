@@ -23,18 +23,18 @@ function SidebarNav({
 }) {
   return (
     <nav className="flex-1 overflow-y-auto p-2 space-y-1">
-      {menus.map((menu) => (
+      {menus.map((menu, idx) => (
         <div key={menu.id}>
           {menu.children.length > 0 ? (
             <>
               <button
                 onClick={() => onToggleGroup(menu.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 cursor-pointer border border-transparent
-                  ${expanded ? 'justify-start text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover' : 'justify-center'}`}
+                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 cursor-pointer border border-transparent
+                  ${expanded ? 'justify-start text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover hover:border-accent/10' : 'justify-center hover:bg-bg-surface-hover'}`}
                 title={!expanded ? menu.titulo : undefined}
               >
-                <span className="w-5 h-5 flex items-center justify-center text-base shrink-0">
-                  <Icon name={menu.icono} className="w-5 h-5 shrink-0" />
+                <span className="w-6 h-6 flex items-center justify-center shrink-0">
+                  <Icon name={menu.icono} className="w-6 h-6 shrink-0" />
                 </span>
                 {expanded && (
                   <>
@@ -49,7 +49,7 @@ function SidebarNav({
               </button>
 
               {expanded && openGroupId === menu.id && (
-                <div className="ml-2 space-y-0.5 mt-0.5 mb-1">
+                <div className="ml-2 space-y-0.5 mt-0.5 mb-1 pl-3 border-l border-border/50">
                   {menu.children.map((child) => (
                     <NavItem key={child.id} item={child} expanded={expanded} currentPath={currentPath} />
                   ))}
@@ -58,6 +58,9 @@ function SidebarNav({
             </>
           ) : (
             <NavItem item={menu} expanded={expanded} currentPath={currentPath} />
+          )}
+          {expanded && idx < menus.length - 1 && menu.children.length === 0 && menus[idx + 1]?.children.length === 0 && (
+            <hr className="border-border/50 my-1" />
           )}
         </div>
       ))}
@@ -71,17 +74,19 @@ function NavItem({ item, expanded, currentPath }: { item: MenuItem; expanded: bo
   return (
     <NavLink
       to={item.ruta ?? '#'}
-      className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 group ${
         isActive
-          ? 'bg-accent/10 text-accent border border-accent/30'
-          : 'text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover border border-transparent'
-      } ${expanded ? 'justify-start' : 'justify-center'}`}
+          ? 'border-l-2 border-accent bg-accent/[0.06] text-accent'
+          : 'text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover border-l-2 border-transparent'
+      } ${expanded ? 'justify-start' : 'justify-center border-l-0'}`}
       title={!expanded ? item.titulo : undefined}
     >
-      <span className="w-5 h-5 flex items-center justify-center text-base shrink-0">
-        <Icon name={item.icono} className="w-5 h-5 shrink-0" />
+      <span className="w-6 h-6 flex items-center justify-center shrink-0">
+        <Icon name={item.icono} className="w-6 h-6 shrink-0" />
       </span>
-      {expanded && <span>{item.titulo}</span>}
+      {expanded && (
+        <span className="text-[13px] font-body">{item.titulo}</span>
+      )}
     </NavLink>
   )
 }
@@ -131,17 +136,17 @@ export function Sidebar() {
       </aside>
 
       <aside className={`hidden md:flex flex-col bg-bg-surface border-r border-border transition-all duration-300 shrink-0 ${collapsed ? 'w-16' : 'w-56'}`}>
-        <div className="h-14 flex items-center justify-center gap-2 border-b border-border shrink-0">
+        <div className="h-14 flex items-center justify-center border-b border-border shrink-0">
           {collapsed ? (
-            <span className="font-display text-sm text-accent">A</span>
+            <span className="font-display text-sm text-accent tracking-wider glow-amber px-2">A</span>
           ) : (
             <span className="font-display text-lg text-accent tracking-wider">AMBER</span>
           )}
         </div>
         <SidebarNav menus={menus} expanded={!collapsed} onToggleGroup={(id) => setOpenGroupId(openGroupId === id ? null : id)} openGroupId={openGroupId} currentPath={location.pathname} />
         <div className="p-2 border-t border-border shrink-0">
-          <button onClick={toggle} className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover transition-colors cursor-pointer text-sm" title={collapsed ? 'Expandir' : 'Colapsar'}>
-            <span>{collapsed ? '→' : '←'}</span>
+          <button onClick={toggle} className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover transition-colors cursor-pointer text-sm group" title={collapsed ? 'Expandir' : 'Colapsar'}>
+            <span className="transition-transform duration-200 group-hover:scale-110">{collapsed ? '→' : '←'}</span>
             {!collapsed && <span>Colapsar</span>}
           </button>
         </div>

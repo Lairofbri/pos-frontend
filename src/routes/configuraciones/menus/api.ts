@@ -41,8 +41,8 @@ export const listarMenus = () =>
     .then(r => r.data.data.menus)
 
 export const obtenerMenu = (id: string) =>
-  api.get<{ ok: boolean; data: MenuItemRaw }>(`/menus/${id}`)
-    .then(r => r.data.data)
+  api.get<{ ok: boolean; data: { menu: MenuItemRawResponse } }>(`/menus/${id}`)
+    .then(r => parseRaw(r.data.data.menu))
 
 export const crearMenu = (data: { titulo: string; icono?: string; ruta?: string | null; parent_id?: string | null; orden?: number; permiso_codigo?: string }) =>
   api.post<{ ok: boolean; data: { menu: MenuItemRawResponse } }>('/menus', data)

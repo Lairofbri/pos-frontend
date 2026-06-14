@@ -1,5 +1,14 @@
 import type { Orden } from '../../types'
 
+function escapeHtml(s: string): string {
+  return s
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;')
+}
+
 export function printOrden(orden: Orden) {
   const w = window.open('', '_blank')
   if (!w) return
@@ -37,17 +46,17 @@ export function printOrden(orden: Orden) {
   <div class="header">
     <h1>AMBER POS</h1>
     <p>${new Date().toLocaleString('es-MX')}</p>
-    <p>Mesa: ${orden.mesa_numero ?? 'Mostrador'} | ${orden.zona ?? ''}</p>
-    ${orden.usuario_nombre ? `<p>${orden.usuario_nombre}</p>` : ''}
+    <p>Mesa: ${escapeHtml(orden.mesa_numero ?? 'Mostrador')} | ${escapeHtml(orden.zona ?? '')}</p>
+    ${orden.usuario_nombre ? `<p>${escapeHtml(orden.usuario_nombre)}</p>` : ''}
   </div>
   <div class="divider"></div>
   ${(orden.items ?? []).map((item) => `
     <div class="item">
       <span class="item-qty">${item.cantidad}x</span>
-      <span class="item-name">${item.nombre}</span>
+      <span class="item-name">${escapeHtml(item.nombre)}</span>
       <span class="item-price">$${((item.descuento_porcentaje ?? 0) > 0 ? (item.precio_unitario * item.cantidad * (1 - (item.descuento_porcentaje ?? 0) / 100)) : (item.precio_unitario * item.cantidad)).toFixed(2)}</span>
     </div>
-    ${item.notas ? `<div class="item-nota">${item.notas}</div>` : ''}
+    ${item.notas ? `<div class="item-nota">${escapeHtml(item.notas)}</div>` : ''}
   `).join('')}
   <div class="divider"></div>
   <div class="total">
