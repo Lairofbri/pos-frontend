@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { queryDefaults } from '../../../config/queries'
 import { listarProductos, crearProducto, actualizarProducto } from './api'
 import { listarCategorias } from '../categorias/api'
 import { DataTable, type Column } from '../../../components/shared/DataTable'
@@ -59,14 +60,13 @@ export default function ProductosPage() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['productos'],
     queryFn: () => listarProductos(),
-    staleTime: 60_000,
-    retry: 1,
+    ...queryDefaults('productos'),
   })
 
   const { data: categorias } = useQuery({
     queryKey: ['categorias-select'],
     queryFn: () => listarCategorias(true),
-    staleTime: 300_000,
+    ...queryDefaults('categorias-select'),
   })
 
   const categoriasOptions = (categorias ?? [])

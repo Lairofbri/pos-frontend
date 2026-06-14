@@ -37,8 +37,8 @@ export function flattenTree(items: MenuItem[], level = 0): Array<{ item: MenuIte
 }
 
 export const listarMenus = () =>
-  api.get<{ ok: boolean; data: MenuItem[] }>('/menus')
-    .then(r => r.data.data)
+  api.get<{ ok: boolean; data: { menus: MenuItem[] } }>('/menus')
+    .then(r => r.data.data.menus)
 
 export const obtenerMenu = (id: string) =>
   api.get<{ ok: boolean; data: MenuItemRaw }>(`/menus/${id}`)

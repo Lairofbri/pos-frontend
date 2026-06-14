@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { queryDefaults } from '../../config/queries'
 import { NavLink, useLocation } from 'react-router-dom'
 import api from '../../api/client'
 import { useSidebar } from '../../hooks/useSidebar'
@@ -95,15 +96,14 @@ export function Sidebar() {
     setMobileOpen(false)
   }, [location.pathname, setMobileOpen])
 
-  const { data } = useQuery<{ ok: boolean; data: MenuItem[] }>({
+  const { data } = useQuery<{ ok: boolean; data: { menus: MenuItem[] } }>({
     queryKey: ['menus'],
     queryFn: () => api.get('/menus').then(r => r.data),
-    staleTime: 300_000,
-    retry: 1,
+    ...queryDefaults('menus'),
     enabled: !!token,
   })
 
-  const rawMenus = data?.data ?? []
+  const rawMenus = data?.data?.menus ?? []
 
   const standaloneItems = rawMenus.filter((m) => m.children.length === 0 && m.ruta)
   const groupsFromApi = rawMenus.filter((m) => m.children.length > 0 || !m.ruta)

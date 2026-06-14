@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { queryDefaults } from '../../../config/queries'
 import { listarRoles } from '../roles/api'
 import { listarMenus, crearMenu, actualizarMenu, eliminarMenu, flattenTree } from './api'
 import { SidePanel } from '../../../components/shared/SidePanel'
@@ -27,13 +28,13 @@ export default function MenusPage() {
   const { data: arbol, isLoading } = useQuery({
     queryKey: ['configuraciones', 'menus'],
     queryFn: listarMenus,
-    staleTime: 30_000,
+    ...queryDefaults('configuraciones'),
   })
 
   const { data: roles } = useQuery({
     queryKey: ['roles-select'],
     queryFn: listarRoles,
-    staleTime: 300_000,
+    ...queryDefaults('roles-select'),
   })
 
   const itemsPlanos = useMemo(() => arbol ? flattenTree(arbol) : [], [arbol])

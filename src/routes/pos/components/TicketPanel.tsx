@@ -1,11 +1,17 @@
+import { useState } from 'react'
 import type { Orden } from '../../../types'
 import { Button } from '../../../components/ui/Button'
+import { printOrden } from '../../../components/shared/PrintTicket'
 
 interface TicketPanelProps {
   orden: Orden | null
   onEliminarItem: (itemId: string) => void
   onEnviarCocina: () => void
   onPagar: () => void
+  onDescuento?: (pct: number) => void
+  onGuardarNotas?: (notas: string) => void
+  onSolicitarAutorizacion?: (itemId: string) => void
+  onLiberarMesa?: () => void
   enviando?: boolean
 }
 
@@ -14,8 +20,15 @@ export function TicketPanel({
   onEliminarItem,
   onEnviarCocina,
   onPagar,
+  onDescuento,
+  onGuardarNotas,
+  onSolicitarAutorizacion,
+  onLiberarMesa,
   enviando,
 }: TicketPanelProps) {
+  const [descuentoInput, setDescuentoInput] = useState('')
+  const [notasTexto, setNotasTexto] = useState('')
+
   if (!orden) {
     return (
       <div className="h-full flex flex-col items-center justify-center gap-3 text-text-secondary">
@@ -25,9 +38,24 @@ export function TicketPanel({
     )
   }
 
-  const tieneItemsPendientes = (orden.items ?? []).some(
-    (i) => i.estado === 'pendiente'
-  )
+  const tieneItemsPendientes = (orden.items ?? []).some((i) => i.estado === 'pendiente')
+
+  const descuentoPct = orden.porcentaje_descuento ?? 0
+  let subtotal = 0
+  for (const item of orden.items) {
+    const descItem = item.descuento_porcentaje ?? 0
+    const precioConDesc = Math.round(item.precio_unitario * item.cantidad * (1 - descItem / 100) * 100) / 100
+    subtotal += precioConDesc
+  }
+  const descuentoMonto = subtotal * (descuentoPct / 100)
+  const totalConDescuento = subtotal - descuentoMonto
+
+  const handleDescuentoApply = () => {
+    const pct = parseFloat(descuentoInput)
+    if (isNaN(pct) || pct < 0 || pct > 100) return
+    onDescuento?.(pct)
+    setDescuentoInput('')
+  }
 
   return (
     <div className="h-full flex flex-col bg-bg-surface rounded-xl border border-border">
@@ -37,102 +65,125 @@ export function TicketPanel({
             <span className="font-display text-lg text-text-primary">
               Mesa {orden.mesa_numero}
             </span>
-            <span className="ml-2 text-xs text-text-secondary uppercase font-body">
-              {orden.zona}
-            </span>
+            <span className="ml-2 text-xs text-text-secondary uppercase font-body">{orden.zona}</span>
           </div>
-          {orden.cliente_nombre && (
-            <span className="text-xs text-text-secondary font-body">
-              {orden.cliente_nombre}
-            </span>
-          )}
+          <div className="text-right">
+            {orden.usuario_nombre && (
+              <span className="text-xs text-text-secondary font-body block">{orden.usuario_nombre}</span>
+            )}
+            {orden.cliente_nombre && (
+              <span className="text-xs text-text-secondary font-body">{orden.cliente_nombre}</span>
+            )}
+          </div>
         </div>
       </div>
 
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-2">
         {orden.items.length === 0 ? (
-          <p className="text-sm text-text-secondary text-center py-8 font-body">
-            Agrega productos tocándolos
-          </p>
+          <p className="text-sm text-text-secondary text-center py-8 font-body">Agrega productos tocándolos</p>
         ) : (
-          orden.items.map((item) => (
-            <div
-              key={item.id}
-              className="flex items-start gap-2 p-2 rounded-lg bg-bg-primary border border-border/50"
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono text-text-secondary font-semibold">
-                    {item.cantidad}x
-                  </span>
-                  <span className="text-sm font-body text-text-primary truncate">
-                    {item.nombre}
-                  </span>
+          orden.items.map((item) => {
+            const descItem = item.descuento_porcentaje ?? 0
+            const precioLinea = Math.round(item.precio_unitario * item.cantidad * (1 - descItem / 100) * 100) / 100
+            const locked = item.estado !== 'pendiente'
+
+            return (
+              <div key={item.id} className="flex items-start gap-2 p-2 rounded-lg bg-bg-primary border border-border/50">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-mono text-text-secondary font-semibold">{item.cantidad}x</span>
+                    <span className="text-sm font-body text-text-primary truncate">{item.nombre}</span>
+                    {descItem > 0 && <span className="text-[10px] text-danger bg-danger/10 px-1 py-0.5 rounded">-{descItem}%</span>}
+                    {locked && <span className="text-[10px] text-teal bg-teal/10 px-1 py-0.5 rounded">En cocina</span>}
+                  </div>
+                  {item.notas && <p className="text-[11px] text-text-secondary mt-0.5 italic">{item.notas}</p>}
                 </div>
-                {item.notas && (
-                  <p className="text-[11px] text-text-secondary mt-0.5 italic">
-                    {item.notas}
-                  </p>
-                )}
-                {item.modificadores?.map((m) => (
-                  <span
-                    key={m}
-                    className="inline-block mr-1 mt-0.5 text-[10px] text-teal bg-teal/10 px-1.5 py-0.5 rounded"
-                  >
-                    {m}
-                  </span>
-                ))}
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className="text-sm font-mono text-text-primary font-semibold">${precioLinea.toFixed(2)}</span>
+                  {locked ? (
+                    <button
+                      onClick={() => onSolicitarAutorizacion?.(item.id)}
+                      className="text-text-secondary hover:text-accent transition-colors cursor-pointer text-xs px-1"
+                      title="Requiere autorización de gerente"
+                    >
+                      🔓
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => onEliminarItem(item.id)}
+                      className="text-text-secondary hover:text-danger transition-colors cursor-pointer text-xs"
+                      title="Eliminar"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-sm font-mono text-text-primary font-semibold">
-                  ${((item.precio_unitario ?? 0) * item.cantidad).toFixed(2)}
-                </span>
-                <button
-                  onClick={() => onEliminarItem(item.id)}
-                  className="text-text-secondary hover:text-danger transition-colors cursor-pointer text-xs"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-          ))
+            )
+          })
         )}
       </div>
 
       <div className="px-4 py-3 border-t border-border shrink-0 space-y-2">
+        {onGuardarNotas && (
+          <textarea
+            value={notasTexto}
+            onChange={(e) => setNotasTexto(e.target.value)}
+            onBlur={() => notasTexto !== (orden.notas ?? '') && onGuardarNotas(notasTexto)}
+            placeholder="Notas para la orden..."
+            rows={2}
+            className="w-full bg-bg-primary border border-border rounded-lg px-3 py-2 text-xs text-text-primary font-body placeholder:text-text-secondary/50 outline-none focus:border-accent resize-none"
+          />
+        )}
+
         <div className="flex items-center justify-between">
           <span className="text-xs font-body text-text-secondary">Subtotal</span>
-          <span className="text-sm font-mono text-text-primary">
-            ${orden.total?.toFixed(2) ?? '0.00'}
-          </span>
+          <span className="text-sm font-mono text-text-primary">${subtotal.toFixed(2)}</span>
         </div>
+
+        {descuentoPct > 0 && (
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-body text-danger">Descuento Gral ({descuentoPct}%)</span>
+            <span className="text-sm font-mono text-danger">-${descuentoMonto.toFixed(2)}</span>
+          </div>
+        )}
+
+        {onDescuento && (
+          <div className="flex items-center gap-2">
+            <input
+              type="number" min="0" max="100" value={descuentoInput}
+              onChange={(e) => setDescuentoInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleDescuentoApply()}
+              placeholder="% desc"
+              className="w-20 bg-bg-primary border border-border rounded-lg px-2 py-1.5 text-xs font-mono text-text-primary outline-none focus:border-accent text-center"
+            />
+            <button onClick={handleDescuentoApply} disabled={!descuentoInput} className="text-xs px-2 py-1.5 rounded-lg bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20 transition-colors cursor-pointer disabled:opacity-40">Aplicar</button>
+          </div>
+        )}
+
         <div className="flex items-center justify-between border-t border-border pt-2">
           <span className="text-sm font-body text-text-primary font-semibold">Total</span>
-          <span className="text-lg font-mono text-accent font-bold">
-            ${orden.total?.toFixed(2) ?? '0.00'}
-          </span>
+          <span className="text-lg font-mono text-accent font-bold">${(descuentoPct > 0 ? totalConDescuento : subtotal).toFixed(2)}</span>
         </div>
 
         <div className="flex gap-2 pt-1">
-          <Button
-            variant="secondary"
-            size="sm"
-            className="flex-1"
-            onClick={onEnviarCocina}
-            disabled={!tieneItemsPendientes || enviando}
-            loading={enviando}
-          >
+          <Button variant="secondary" size="sm" className="flex-1" onClick={onEnviarCocina} disabled={!tieneItemsPendientes || enviando} loading={enviando}>
             Enviar Cocina
           </Button>
-          <Button
-            size="sm"
-            className="flex-1"
-            onClick={onPagar}
-            disabled={orden.items.length === 0}
-          >
+          <Button variant="ghost" size="sm" onClick={() => printOrden(orden)} disabled={orden.items.length === 0} title="Imprimir ticket">🖨️</Button>
+          <Button size="sm" className="flex-1" onClick={onPagar} disabled={orden.items.length === 0 || tieneItemsPendientes}>
             Pagar
           </Button>
         </div>
+
+        {onLiberarMesa && (
+          <button
+            onClick={onLiberarMesa}
+            className="w-full text-xs py-2 rounded-lg border border-border text-text-secondary hover:text-danger hover:border-danger/50 transition-colors cursor-pointer font-body"
+          >
+            Liberar mesa
+          </button>
+        )}
       </div>
     </div>
   )

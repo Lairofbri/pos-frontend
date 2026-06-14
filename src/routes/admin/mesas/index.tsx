@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { queryDefaults } from '../../../config/queries'
 import { listarMesas, crearMesa, actualizarMesa } from './api'
 import { DataTable, type Column } from '../../../components/shared/DataTable'
 import { SidePanel } from '../../../components/shared/SidePanel'
 import { Input } from '../../../components/ui/Input'
+import { Select } from '../../../components/ui/Select'
 import { Button } from '../../../components/ui/Button'
 import { Badge } from '../../../components/ui/Badge'
 import { useToastStore } from '../../../store/toastStore'
+import { useCatalogo } from '../../../hooks/useCatalogo'
 import type { Mesa } from '../../../types'
 
 const columns: Column<Mesa>[] = [
@@ -41,21 +44,22 @@ export default function MesasPage() {
   const [panelOpen, setPanelOpen] = useState(false)
   const [editando, setEditando] = useState<Mesa | null>(null)
   const [form, setForm] = useState({ numero: '', nombre: '', capacidad: '4', zona: 'salon' })
+  const { data: opcionesZona } = useCatalogo('zonas')
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['mesas-admin'],
     queryFn: () => listarMesas(true),
-    staleTime: 60_000,
+    ...queryDefaults('mesas-admin'),
   })
 
   const crearMutation = useMutation({
-    mutationFn: () => crearMesa({ numero: form.numero, nombre: form.nombre || undefined, capacidad: parseInt(form.capacidad || '4') }),
+    mutationFn: () => crearMesa({ numero: form.numero, nombre: form.nombre || undefined, capacidad: parseInt(form.capacidad || '4'), zona: form.zona }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['mesas-admin'] }); queryClient.invalidateQueries({ queryKey: ['mesas'] }); cerrarPanel(); showToast({ type: 'success', message: 'Mesa creada' }) },
     onError: (err: Error) => showToast({ type: 'error', message: 'Error al crear', description: err.message }),
   })
 
   const editarMutation = useMutation({
-    mutationFn: () => editando ? actualizarMesa(editando.id, { numero: form.numero, nombre: form.nombre || undefined, capacidad: parseInt(form.capacidad || '4') }) : Promise.reject(),
+    mutationFn: () => editando ? actualizarMesa(editando.id, { numero: form.numero, nombre: form.nombre || undefined, capacidad: parseInt(form.capacidad || '4'), zona: form.zona }) : Promise.reject(),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['mesas-admin'] }); queryClient.invalidateQueries({ queryKey: ['mesas'] }); cerrarPanel(); showToast({ type: 'success', message: 'Mesa actualizada' }) },
     onError: (err: Error) => showToast({ type: 'error', message: 'Error al actualizar', description: err.message }),
   })
@@ -94,6 +98,7 @@ export default function MesasPage() {
           <Input label="Número" value={form.numero} onChange={(e) => setForm({ ...form, numero: e.target.value })} placeholder="1, B2, etc." required />
           <Input label="Nombre (opcional)" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} placeholder="Mesa 1, Barra 1" />
           <Input label="Capacidad" type="number" value={form.capacidad} onChange={(e) => setForm({ ...form, capacidad: e.target.value })} min={1} />
+          <Select label="Zona" options={(opcionesZona ?? []).map((z) => ({ value: z.valor, label: z.label }))} value={form.zona} onChange={(e) => setForm({ ...form, zona: e.target.value })} />
           <Button className="w-full" onClick={guardar} loading={crearMutation.isPending || editarMutation.isPending} disabled={!form.numero}>
             {editando ? 'Guardar cambios' : 'Crear mesa'}
           </Button>

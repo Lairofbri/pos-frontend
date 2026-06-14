@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { queryDefaults } from '../../../config/queries'
 import { listarClientes, crearCliente, actualizarCliente, eliminarCliente } from './api'
 import { DataTable, type Column } from '../../../components/shared/DataTable'
 import { SidePanel } from '../../../components/shared/SidePanel'
@@ -9,6 +10,7 @@ import { Button } from '../../../components/ui/Button'
 import { Badge } from '../../../components/ui/Badge'
 import { ConfirmDialog } from '../../../components/shared/ConfirmDialog'
 import { useToastStore } from '../../../store/toastStore'
+import { useCatalogo } from '../../../hooks/useCatalogo'
 import type { Cliente } from '../../../types'
 
 const columns: Column<Cliente>[] = [
@@ -34,15 +36,9 @@ const columns: Column<Cliente>[] = [
   },
 ]
 
-const tiposDocumento = [
-  { value: 'dui', label: 'DUI' },
-  { value: 'nit', label: 'NIT' },
-  { value: 'pasaporte', label: 'Pasaporte' },
-  { value: 'carnet_residente', label: 'Carnet Residente' },
-]
-
 export default function ClientesPage() {
   const queryClient = useQueryClient()
+  const { data: tiposDocumento } = useCatalogo('tipos_documento')
   const showToast = useToastStore((s) => s.show)
   const [panelOpen, setPanelOpen] = useState(false)
   const [editando, setEditando] = useState<Cliente | null>(null)
@@ -56,7 +52,7 @@ export default function ClientesPage() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['clientes'],
     queryFn: () => listarClientes(),
-    staleTime: 60_000,
+    ...queryDefaults('clientes'),
   })
 
   const crearMutation = useMutation({
@@ -148,7 +144,7 @@ export default function ClientesPage() {
           <hr className="border-border" />
           <p className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Documentación fiscal</p>
 
-          <Select label="Tipo documento" options={tiposDocumento} value={form.tipo_documento} onChange={(e) => setForm({ ...form, tipo_documento: e.target.value })} placeholder="Seleccionar..." />
+          <Select label="Tipo documento" options={(tiposDocumento ?? []).map((t) => ({ value: t.valor, label: t.label }))} value={form.tipo_documento} onChange={(e) => setForm({ ...form, tipo_documento: e.target.value })} placeholder="Seleccionar..." />
           <Input label="Número documento" value={form.numero_documento} onChange={(e) => setForm({ ...form, numero_documento: e.target.value })} />
           <div className="grid grid-cols-2 gap-3">
             <Input label="NIT" value={form.nit} onChange={(e) => setForm({ ...form, nit: e.target.value })} />

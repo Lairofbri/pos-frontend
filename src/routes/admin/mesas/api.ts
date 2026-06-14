@@ -29,10 +29,10 @@ export const listarMesas = (todas?: boolean) =>
   api.get<{ ok: boolean; data: { mesas: MesaRaw[] } }>('/mesas', { params: todas ? { todas: true } : {} })
     .then(r => r.data.data.mesas.map(parseMesa))
 
-export const crearMesa = (data: { numero: string; nombre?: string; capacidad: number; sucursal_id?: string }) =>
+export const crearMesa = (data: { numero: string; nombre?: string; capacidad: number; zona: string; sucursal_id?: string }) =>
   api.post<{ ok: boolean; data: { mesa: MesaRaw } }>('/mesas', data)
     .then(r => parseMesa(r.data.data.mesa))
 
-export const actualizarMesa = (id: string, data: Partial<{ numero: string; nombre: string; capacidad: number; activo: boolean }>) =>
+export const actualizarMesa = (id: string, data: Partial<{ numero: string; nombre: string; capacidad: number; zona: string; activo: boolean }>) =>
   api.patch<{ ok: boolean; data: { mesa: MesaRaw } }>(`/mesas/${id}`, data)
     .then(r => parseMesa(r.data.data.mesa))

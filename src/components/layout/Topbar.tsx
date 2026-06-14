@@ -1,10 +1,14 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { queryDefaults } from '../../config/queries'
 import { useAuthStore } from '../../store/authStore'
 import { useSidebar } from '../../hooks/useSidebar'
 import { Badge } from '../ui/Badge'
 import { ZoneSelector } from '../ui/ZoneSelector'
 import { Icon } from '../shared/Icon'
+import { STORAGE_KEYS } from '../../config/constants'
+import { getCajaActiva } from '../../routes/admin/caja/api'
 import { logout } from '../../routes/login/api'
 
 export function Topbar() {
@@ -15,10 +19,16 @@ export function Topbar() {
   const setMobileOpen = useSidebar((s) => s.setMobileOpen)
   const [loggingOut, setLoggingOut] = useState(false)
 
+  const { data: cajaActiva } = useQuery({
+    queryKey: ['caja-activa'],
+    queryFn: getCajaActiva,
+    ...queryDefaults('caja-activa'),
+  })
+
   const handleLogout = async () => {
     setLoggingOut(true)
     try {
-      const refreshToken = localStorage.getItem('refresh_token')
+      const refreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN)
       if (refreshToken && token) {
         await logout(refreshToken)
       }
@@ -43,7 +53,11 @@ export function Topbar() {
       </div>
 
       <div className="flex items-center gap-4">
-        <Badge variant="success">Caja: $0.00</Badge>
+        {cajaActiva?.estado === 'abierta' ? (
+          <Badge variant="success">Caja: ${cajaActiva.total_esperado.toFixed(2)}</Badge>
+        ) : (
+          <Badge variant="danger">Caja Cerrada</Badge>
+        )}
         <span className="text-xs text-text-secondary font-mono">
           {new Date().toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
         </span>

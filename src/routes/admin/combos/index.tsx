@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { queryDefaults } from '../../../config/queries'
 import { listarCombos, crearCombo, actualizarCombo, eliminarCombo } from './api'
 import { listarProductos } from '../productos/api'
 import { DataTable, type Column } from '../../../components/shared/DataTable'
@@ -49,13 +50,13 @@ export default function CombosPage() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['combos'],
     queryFn: () => listarCombos(true),
-    staleTime: 60_000,
+    ...queryDefaults('combos'),
   })
 
   const { data: productosDisponibles } = useQuery({
     queryKey: ['productos'],
     queryFn: () => listarProductos({}),
-    staleTime: 60_000,
+    ...queryDefaults('productos'),
   })
 
   const crearMutation = useMutation({

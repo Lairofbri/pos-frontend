@@ -9,8 +9,10 @@ interface ProductoRaw {
 }
 
 interface OrdenRaw {
-  id: string; mesa_id: string; mesa_numero: number; zona: string
-  cliente_nombre: string | null; estado: string; total: string
+  id: string; mesa_id: string; mesa_numero: string; zona: string
+  cliente_nombre: string | null; usuario_id: string; usuario_nombre: string | null
+  estado: string; total: string
+  notas: string | null; porcentaje_descuento: string | null
   created_at: string; items?: OrdenItem[] | null
 }
 
@@ -28,8 +30,13 @@ function parseOrden(r: OrdenRaw): Orden {
   return {
     id: r.id, mesa_id: r.mesa_id, mesa_numero: r.mesa_numero, zona: r.zona,
     cliente_nombre: r.cliente_nombre ?? undefined,
+    usuario_id: r.usuario_id,
+    usuario_nombre: r.usuario_nombre ?? undefined,
     estado: r.estado as Orden['estado'],
-    total: parseFloat(r.total), created_at: r.created_at, items: r.items ?? [],
+    total: parseFloat(r.total),
+    notas: r.notas ?? undefined,
+    porcentaje_descuento: r.porcentaje_descuento ? parseFloat(r.porcentaje_descuento) : undefined,
+    created_at: r.created_at, items: r.items ?? [],
   }
 }
 
@@ -47,10 +54,15 @@ export const getMesas = () =>
     .then(r => r.data.data.mesas)
 
 export const getOrdenes = (params?: { mesa_id?: string }) =>
-  api.get<{ ok: boolean; data: { ordenes: OrdenRaw[] } }>('/ordenes', { params })
-    .then(r => r.data.data.ordenes.map(parseOrden))
+  api.get<{ ok: boolean; data: { ordenes: OrdenRaw[] } }>('/ordenes', {
+    params: { ...params, activas: true },
+  }).then(r => r.data.data.ordenes.map(parseOrden))
 
-export const crearOrden = (data: { mesa_id: string }) =>
+export const getOrden = (id: string) =>
+  api.get<{ ok: boolean; data: { orden: OrdenRaw } }>(`/ordenes/${id}`)
+    .then(r => parseOrden(r.data.data.orden))
+
+export const crearOrden = (data: { tipo?: string; mesa_id?: string; origen?: string }) =>
   api.post<{ ok: boolean; data: { orden: OrdenRaw } }>('/ordenes', { tipo: 'mesa', origen: 'pos', ...data })
     .then(r => parseOrden(r.data.data.orden))
 
@@ -60,8 +72,20 @@ export const agregarItem = (ordenId: string, data: { producto_id: string; cantid
 export const eliminarItem = (ordenId: string, itemId: string) =>
   api.delete(`/ordenes/${ordenId}/items/${itemId}`).then(r => r.data)
 
+export const actualizarItem = (ordenId: string, itemId: string, data: { cantidad?: number; notas?: string; descuento_porcentaje?: number }) =>
+  api.patch(`/ordenes/${ordenId}/items/${itemId}`, data).then(r => r.data.data)
+
 export const pagarOrden = (ordenId: string, pdata: { metodo: string; monto_efectivo?: number; monto_tarjeta?: number; referencia_tarjeta?: string }) =>
   api.post(`/ordenes/${ordenId}/pagar`, pdata).then(r => r.data.data)
 
 export const enviarCocina = (ordenId: string) =>
   api.patch(`/ordenes/${ordenId}/estado`, { estado: 'en_proceso' }).then(r => r.data.data)
+
+export const actualizarOrden = (ordenId: string, data: { notas?: string; porcentaje_descuento?: number }) =>
+  api.patch(`/ordenes/${ordenId}`, data).then(r => r.data.data)
+
+export const cancelarOrden = (ordenId: string) =>
+  api.patch(`/ordenes/${ordenId}/estado`, { estado: 'cancelada' }).then(r => r.data.data)
+
+export const cancelarItem = (ordenId: string, itemId: string) =>
+  api.patch(`/ordenes/${ordenId}/items/${itemId}`, { estado: 'cancelado' }).then(r => r.data.data)

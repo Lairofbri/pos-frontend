@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { queryDefaults } from '../../../config/queries'
 import { listarCategorias, crearCategoria, actualizarCategoria, eliminarCategoria } from './api'
 import { DataTable, type Column } from '../../../components/shared/DataTable'
 import { SidePanel } from '../../../components/shared/SidePanel'
@@ -46,7 +47,7 @@ export default function CategoriasPage() {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['categorias'],
     queryFn: () => listarCategorias(true),
-    staleTime: 60_000,
+    ...queryDefaults('categorias'),
   })
 
   const crearMutation = useMutation({

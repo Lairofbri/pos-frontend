@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { SidePanel } from '../../../components/shared/SidePanel'
 import { Button } from '../../../components/ui/Button'
+import { useCatalogo } from '../../../hooks/useCatalogo'
 import type { Orden } from '../../../types'
 
 interface PaymentPanelProps {
@@ -11,14 +12,15 @@ interface PaymentPanelProps {
   loading?: boolean
 }
 
-const metodos = [
-  { id: 'efectivo', label: '💵 Efectivo' },
-  { id: 'tarjeta', label: '💳 Tarjeta' },
-  { id: 'mixto', label: '💳💵 Mixto' },
-]
+const iconosMetodo: Record<string, string> = {
+  efectivo: '💵',
+  tarjeta: '💳',
+  mixto: '💳💵',
+}
 
 export function PaymentPanel({ open, onClose, orden, onConfirmar, loading }: PaymentPanelProps) {
   const [metodo, setMetodo] = useState('efectivo')
+  const { data: metodos } = useCatalogo('metodos_pago')
   const [montoEfectivo, setMontoEfectivo] = useState('')
   const [montoTarjeta, setMontoTarjeta] = useState('')
   const [referenciaTarjeta, setReferenciaTarjeta] = useState('')
@@ -58,17 +60,17 @@ export function PaymentPanel({ open, onClose, orden, onConfirmar, loading }: Pay
             Método de pago
           </label>
           <div className="grid grid-cols-2 gap-2">
-            {metodos.map((m) => (
+            {(metodos ?? []).map((m) => (
               <button
-                key={m.id}
-                onClick={() => setMetodo(m.id)}
+                key={m.valor}
+                onClick={() => setMetodo(m.valor)}
                 className={`p-3 rounded-xl border-2 text-sm font-body transition-all duration-200 cursor-pointer ${
-                  metodo === m.id
+                  metodo === m.valor
                     ? 'border-accent bg-accent/10 text-accent'
                     : 'border-border text-text-secondary hover:border-accent/50'
                 }`}
               >
-                {m.label}
+                {iconosMetodo[m.valor] ?? ''} {m.label}
               </button>
             ))}
           </div>
@@ -80,13 +82,12 @@ export function PaymentPanel({ open, onClose, orden, onConfirmar, loading }: Pay
               {metodo === 'mixto' ? 'Monto en efectivo' : 'Monto recibido'}
             </label>
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={montoEfectivo}
-              onChange={(e) => setMontoEfectivo(e.target.value)}
+              onChange={(e) => setMontoEfectivo(e.target.value.replace(/[^0-9.]/g, ''))}
               placeholder="0.00"
               className="w-full bg-bg-primary border-2 border-border rounded-lg px-4 py-3 text-xl font-mono text-text-primary outline-none focus:border-accent text-center"
-              step="0.01"
-              min="0"
             />
           </div>
         )}
@@ -98,13 +99,13 @@ export function PaymentPanel({ open, onClose, orden, onConfirmar, loading }: Pay
                 {metodo === 'mixto' ? 'Monto en tarjeta' : 'Monto a cobrar'}
               </label>
               <input
-                type="number"
-                value={metodo === 'tarjeta' ? orden.total : montoTarjeta}
-                onChange={(e) => setMontoTarjeta(e.target.value)}
+                type="text"
+                inputMode="decimal"
+                value={metodo === 'tarjeta' ? orden.total.toString() : montoTarjeta}
+                onChange={(e) => setMontoTarjeta(e.target.value.replace(/[^0-9.]/g, ''))}
                 placeholder="0.00"
-                className="w-full bg-bg-primary border-2 border-border rounded-lg px-4 py-3 text-xl font-mono text-text-primary outline-none focus:border-accent text-center"
-                step="0.01"
-                min="0"
+                className={`w-full bg-bg-primary border-2 border-border rounded-lg px-4 py-3 text-xl font-mono text-text-primary outline-none focus:border-accent text-center ${metodo === 'tarjeta' ? 'opacity-60' : ''}`}
+                readOnly={metodo === 'tarjeta'}
               />
             </div>
             <div>

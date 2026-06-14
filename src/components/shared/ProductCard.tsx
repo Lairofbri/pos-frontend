@@ -8,6 +8,15 @@ interface ProductCardProps {
   selected?: boolean
 }
 
+function hashColor(id: string): string {
+  let hash = 0
+  for (let i = 0; i < id.length; i++) {
+    hash = id.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  const hues = ['#D4A24C', '#2DD4BF', '#E5484D', '#30A46C', '#8B5CF6', '#F59E0B', '#EC4899', '#6366F1']
+  return hues[Math.abs(hash) % hues.length]
+}
+
 export function ProductCard({
   producto,
   onSelect,
@@ -19,40 +28,32 @@ export function ProductCard({
   const [ripples, setRipples] = useState<
     { x: number; y: number; id: number }[]
   >([])
+  const [imgError, setImgError] = useState(false)
 
-  // 🔹 HAPTIC FEEDBACK
   const triggerHaptic = (type: 'light' | 'medium' = 'light') => {
     if (navigator.vibrate) {
       navigator.vibrate(type === 'light' ? 10 : 30)
     }
   }
 
-  // 🔹 RIPPLE EFFECT
   const createRipple = (e: React.MouseEvent | React.TouchEvent) => {
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect()
-
     const clientX =
       'touches' in e ? e.touches[0].clientX : e.clientX
     const clientY =
       'touches' in e ? e.touches[0].clientY : e.clientY
-
     const x = clientX - rect.left
     const y = clientY - rect.top
-
     const id = Date.now()
-
     setRipples((prev) => [...prev, { x, y, id }])
-
     setTimeout(() => {
       setRipples((prev) => prev.filter((r) => r.id !== id))
     }, 500)
   }
 
-  // 🔹 PRESS HANDLERS
   const handlePressStart = (e: React.MouseEvent | React.TouchEvent) => {
     isLongPress.current = false
     createRipple(e)
-
     timerRef.current = setTimeout(() => {
       isLongPress.current = true
       triggerHaptic('medium')
@@ -74,15 +75,16 @@ export function ProductCard({
     }
   }
 
+  const showImage = producto.imagen_url && !imgError
+  const bgColor = hashColor(producto.categoria_id ?? producto.id)
+
   return (
     <button
       onClick={handleClick}
-      onTouchStart={handlePressStart}
-      onTouchEnd={handlePressEnd}
-      onMouseDown={handlePressStart}
-      onMouseUp={handlePressEnd}
-      onMouseLeave={handlePressEnd}
-      className={`relative overflow-hidden flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border-2 transition-all duration-200 min-h-[88px]
+      onPointerDown={handlePressStart}
+      onPointerUp={handlePressEnd}
+      onPointerCancel={handlePressEnd}
+      className={`relative overflow-hidden flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border-2 transition-all duration-200 min-h-[88px] animate-fadeIn
         ${
           selected
             ? 'bg-accent/10 border-accent scale-[0.98]'
@@ -90,7 +92,6 @@ export function ProductCard({
         }
       `}
     >
-      {/* Ripple */}
       <span className="absolute inset-0 pointer-events-none">
         {ripples.map((r) => (
           <span
@@ -107,8 +108,23 @@ export function ProductCard({
         ))}
       </span>
 
-      {/* Content */}
-      <span className="text-2xl">🍽️</span>
+      {showImage ? (
+        <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0">
+          <img
+            src={producto.imagen_url}
+            alt={producto.nombre}
+            className="w-full h-full object-cover"
+            onError={() => setImgError(true)}
+          />
+        </div>
+      ) : (
+        <div
+          className="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center text-white/80 text-lg font-display"
+          style={{ backgroundColor: bgColor }}
+        >
+          {producto.nombre.charAt(0).toUpperCase()}
+        </div>
+      )}
 
       <span className="text-xs font-body font-medium text-text-primary text-center leading-tight line-clamp-2">
         {producto.nombre}
@@ -118,7 +134,6 @@ export function ProductCard({
         ${producto.precio?.toFixed(2) ?? '0.00'}
       </span>
 
-      {/* Selection Indicator */}
       {selected && (
         <span className="absolute top-1 right-1 text-accent text-xs">✓</span>
       )}

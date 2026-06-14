@@ -107,12 +107,16 @@ export interface Mesa {
 export interface Orden {
   id: string
   mesa_id: string
-  mesa_numero: number
+  mesa_numero: string
   zona: string
   cliente_nombre?: string
+  usuario_id?: string
+  usuario_nombre?: string
   estado: 'abierta' | 'en_proceso' | 'lista' | 'entregada' | 'pagada' | 'cancelada'
   items: OrdenItem[]
   total: number
+  notas?: string
+  porcentaje_descuento?: number
   created_at: string
 }
 
@@ -122,9 +126,9 @@ export interface OrdenItem {
   nombre: string
   cantidad: number
   precio_unitario: number
-  modificadores?: string[]
   notas?: string
-  estado: 'pendiente' | 'en_proceso' | 'listo' | 'servido'
+  estado: 'pendiente' | 'en_proceso' | 'listo' | 'cancelado'
+  descuento_porcentaje?: number
 }
 
 export interface Cliente {
@@ -145,23 +149,36 @@ export interface Cliente {
   activo: boolean
 }
 
+export interface CajaMetodoResumen {
+  metodo: string
+  cantidad_ordenes: number
+  total: number
+}
+
 export interface CajaTurno {
   id: string
-  abierta: boolean
+  estado: 'abierta' | 'cerrada'
   monto_inicial: number
-  monto_actual: number
+  total_esperado: number
+  total_ventas: number
+  total_efectivo: number
+  total_tarjeta: number
+  total_retiros: number
+  total_depositos: number
   monto_final?: number
-  abierta_por: string
-  cerrada_por?: string
-  notas_cierre?: string
+  diferencia?: number
+  usuario_apertura: string
+  usuario_cierre?: string
+  fecha_apertura: string
+  fecha_cierre?: string
   sucursal_id?: string
-  created_at: string
-  closed_at?: string
+  notas_apertura?: string
+  notas_cierre?: string
+  metodos?: CajaMetodoResumen[]
 }
 
 export interface MovimientoCaja {
   id: string
-  caja_id: string
   tipo: string
   monto: number
   motivo: string

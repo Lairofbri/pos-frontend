@@ -1,6 +1,7 @@
 import { useMemo, type ReactNode } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { queryDefaults } from '../config/queries'
 import api from '../api/client'
 import { PageHeader } from '../components/shared/PageHeader'
 import type { MenuItem } from '../types'
@@ -24,14 +25,14 @@ function pathToTitle(path: string): string {
 export default function AdminLayout({ children }: AdminLayoutProps) {
   const location = useLocation()
 
-  const { data } = useQuery<{ ok: boolean; data: MenuItem[] }>({
+  const { data } = useQuery<{ ok: boolean; data: { menus: MenuItem[] } }>({
     queryKey: ['menus'],
     queryFn: () => api.get('/menus').then(r => r.data),
-    staleTime: 300_000,
+    ...queryDefaults('menus'),
   })
 
   const title = useMemo(() => {
-    const tree = data?.data ?? []
+    const tree = data?.data?.menus ?? []
     return findTitle(tree, location.pathname) ?? pathToTitle(location.pathname)
   }, [data, location.pathname])
 

@@ -17,29 +17,27 @@ import RolesPage from './routes/configuraciones/roles/index'
 import ClientesPage from './routes/admin/clientes/index'
 import CajaPage from './routes/admin/caja/index'
 import MenusPage from './routes/configuraciones/menus/index'
+import { AuthGuard } from './components/shared/AuthGuard'
+import { RouteGuard } from './components/shared/RouteGuard'
+import { CajaGuard } from './components/shared/CajaGuard'
 
 const queryClient = new QueryClient()
-
-function AuthGuard({ children }: { children: React.ReactNode }) {
-  const token = localStorage.getItem('access_token')
-  if (!token) return <Navigate to="/login" replace />
-  return <>{children}</>
-}
 
 const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/pos" replace /> },
   { path: '/login', element: <AuthLayout><LoginPage /></AuthLayout> },
-  { path: '/pos', element: <AuthGuard><ProtectedLayout><POSPage /></ProtectedLayout></AuthGuard> },
+  { path: '/pos', element: <AuthGuard><ProtectedLayout><CajaGuard><POSPage /></CajaGuard></ProtectedLayout></AuthGuard> },
   { path: '/cocina', element: <AuthGuard><ProtectedLayout><CocinaPage /></ProtectedLayout></AuthGuard> },
-  { path: '/admin/productos', element: <AuthGuard><ProtectedLayout><AdminLayout><ProductosPage /></AdminLayout></ProtectedLayout></AuthGuard> },
-  { path: '/admin/categorias', element: <AuthGuard><ProtectedLayout><AdminLayout><CategoriasPage /></AdminLayout></ProtectedLayout></AuthGuard> },
-  { path: '/admin/combos', element: <AuthGuard><ProtectedLayout><AdminLayout><CombosPage /></AdminLayout></ProtectedLayout></AuthGuard> },
-  { path: '/admin/mesas', element: <AuthGuard><ProtectedLayout><AdminLayout><MesasPage /></AdminLayout></ProtectedLayout></AuthGuard> },
-  { path: '/admin/usuarios', element: <AuthGuard><ProtectedLayout><AdminLayout><UsuariosPage /></AdminLayout></ProtectedLayout></AuthGuard> },
-  { path: '/configuraciones/roles', element: <AuthGuard><ProtectedLayout><AdminLayout><RolesPage /></AdminLayout></ProtectedLayout></AuthGuard> },
-  { path: '/admin/clientes', element: <AuthGuard><ProtectedLayout><AdminLayout><ClientesPage /></AdminLayout></ProtectedLayout></AuthGuard> },
-  { path: '/admin/caja', element: <AuthGuard><ProtectedLayout><AdminLayout><CajaPage /></AdminLayout></ProtectedLayout></AuthGuard> },
-  { path: '/configuraciones/menus', element: <AuthGuard><ProtectedLayout><AdminLayout><MenusPage /></AdminLayout></ProtectedLayout></AuthGuard> },
+  { path: '/admin/productos', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><ProductosPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+  { path: '/admin/categorias', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><CategoriasPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+  { path: '/admin/combos', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><CombosPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+  { path: '/admin/mesas', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><MesasPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+  { path: '/admin/usuarios', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><UsuariosPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+  { path: '/configuraciones/usuarios', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><UsuariosPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+  { path: '/configuraciones/roles', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><RolesPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+  { path: '/admin/clientes', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><ClientesPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+  { path: '/admin/caja', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><CajaPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+  { path: '/configuraciones/menus', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><MenusPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '*', element: <Navigate to="/pos" replace /> },
 ])
 

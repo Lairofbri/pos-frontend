@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { queryDefaults } from '../../../config/queries'
 import { listarRoles, listarPermisos, obtenerPermisosRol, actualizarPermisosRol, resetPermisosRol } from './api'
 import { Toggle } from '../../../components/ui/Toggle'
 import { Button } from '../../../components/ui/Button'
@@ -7,6 +8,7 @@ import { Badge } from '../../../components/ui/Badge'
 import { ConfirmDialog } from '../../../components/shared/ConfirmDialog'
 import { Spinner } from '../../../components/ui/Spinner'
 import { useToastStore } from '../../../store/toastStore'
+import { useCatalogo } from '../../../hooks/useCatalogo'
 import type { Permiso } from './api'
 
 function PermisosEditor({ rol, onSave }: { rol: string; onSave: () => void }) {
@@ -19,13 +21,13 @@ function PermisosEditor({ rol, onSave }: { rol: string; onSave: () => void }) {
   const { data: catalogo } = useQuery({
     queryKey: ['permisos-catalogo'],
     queryFn: listarPermisos,
-    staleTime: 300_000,
+    ...queryDefaults('permisos-catalogo'),
   })
 
   const { data: permisosRol, isLoading } = useQuery({
     queryKey: ['permisos-rol', rol],
     queryFn: () => obtenerPermisosRol(rol),
-    staleTime: 60_000,
+    ...queryDefaults('permisos-rol'),
   })
 
   if (permisosRol && Object.keys(permisosLocales).length === 0) {
@@ -55,8 +57,8 @@ function PermisosEditor({ rol, onSave }: { rol: string; onSave: () => void }) {
     return Array.from(map.entries())
   }, [catalogo])
 
-  const togglePermiso = (permisoId: string) => {
-    setPermisosLocales((prev) => ({ ...prev, [permisoId]: !prev[permisoId] }))
+  const togglePermiso = (codigo: string) => {
+    setPermisosLocales((prev) => ({ ...prev, [codigo]: !prev[codigo] }))
     setDirty(true)
   }
 
@@ -76,7 +78,7 @@ function PermisosEditor({ rol, onSave }: { rol: string; onSave: () => void }) {
                   <span className="text-sm text-text-primary font-body">{p.nombre}</span>
                   {p.descripcion && <p className="text-xs text-text-secondary mt-0.5">{p.descripcion}</p>}
                 </div>
-                <Toggle checked={permisosLocales[p.id] ?? false} onChange={() => togglePermiso(p.id)} />
+                <Toggle checked={permisosLocales[p.codigo] ?? false} onChange={() => togglePermiso(p.codigo)} />
               </div>
             ))}
           </div>
@@ -106,23 +108,21 @@ function PermisosEditor({ rol, onSave }: { rol: string; onSave: () => void }) {
 
 export default function RolesPage() {
   const [rolActivo, setRolActivo] = useState('cajero')
+  const { data: rolesCatalogo } = useCatalogo('roles')
+
+  const rolLabels: Record<string, string> = useMemo(
+    () => Object.fromEntries((rolesCatalogo ?? []).map((r) => [r.valor, r.label])),
+    [rolesCatalogo]
+  )
 
   const { data: roles } = useQuery({
     queryKey: ['roles'],
     queryFn: listarRoles,
-    staleTime: 300_000,
+    ...queryDefaults('roles'),
   })
 
   if (!roles) {
     return <div className="flex items-center justify-center py-20"><Spinner size="lg" /></div>
-  }
-
-  const rolLabels: Record<string, string> = {
-    administrador: 'Administrador',
-    cajero: 'Cajero',
-    mesero: 'Mesero',
-    gerente: 'Gerente',
-    cocinero: 'Cocinero',
   }
 
   return (

@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { STORAGE_KEYS, DEFAULT_ZONA } from '../config/constants'
 
 interface ZoneState {
   zona: string
@@ -6,9 +7,9 @@ interface ZoneState {
 }
 
 export const useZoneStore = create<ZoneState>((set) => ({
-  zona: localStorage.getItem('zona') || 'salon',
+  zona: localStorage.getItem(STORAGE_KEYS.ZONA) || DEFAULT_ZONA,
   setZona: (zona) => {
-    localStorage.setItem('zona', zona)
+    localStorage.setItem(STORAGE_KEYS.ZONA, zona)
     set({ zona })
   },
 }))

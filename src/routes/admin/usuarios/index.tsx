@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { queryDefaults } from '../../../config/queries'
 import { listarUsuarios, crearUsuario, actualizarUsuario, resetearPin } from './api'
 import { DataTable, type Column } from '../../../components/shared/DataTable'
 import { SidePanel } from '../../../components/shared/SidePanel'
@@ -8,15 +9,8 @@ import { Select } from '../../../components/ui/Select'
 import { Button } from '../../../components/ui/Button'
 import { Badge } from '../../../components/ui/Badge'
 import { useToastStore } from '../../../store/toastStore'
+import { useCatalogo } from '../../../hooks/useCatalogo'
 import type { Usuario } from '../../../types'
-
-const roles = [
-  { value: 'administrador', label: 'Administrador' },
-  { value: 'cajero', label: 'Cajero' },
-  { value: 'mesero', label: 'Mesero' },
-  { value: 'gerente', label: 'Gerente' },
-  { value: 'cocinero', label: 'Cocinero' },
-]
 
 const columns: Column<Usuario>[] = [
   {
@@ -50,11 +44,12 @@ export default function UsuariosPage() {
   const [resetPinOpen, setResetPinOpen] = useState(false)
   const [nuevoPin, setNuevoPin] = useState('')
   const [form, setForm] = useState({ nombre: '', apellido: '', email: '', password: '', pin: '', rol: 'cajero' })
+  const { data: roles } = useCatalogo('roles')
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['usuarios'],
     queryFn: () => listarUsuarios(),
-    staleTime: 60_000,
+    ...queryDefaults('usuarios'),
   })
 
   const crearMutation = useMutation({
@@ -80,6 +75,12 @@ export default function UsuariosPage() {
     mutationFn: () => editando ? resetearPin(editando.id, nuevoPin) : Promise.reject(),
     onSuccess: () => { setResetPinOpen(false); setNuevoPin(''); showToast({ type: 'success', message: 'PIN reestablecido' }) },
     onError: (err: Error) => showToast({ type: 'error', message: 'Error al reestablecer PIN', description: err.message }),
+  })
+
+  const toggleActivoMutation = useMutation({
+    mutationFn: (params: { id: string; activo: boolean }) => actualizarUsuario(params.id, { activo: params.activo }),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['usuarios'] }); cerrarPanel(); showToast({ type: 'success', message: 'Estado actualizado' }) },
+    onError: (err: Error) => showToast({ type: 'error', message: 'Error al cambiar estado', description: err.message }),
   })
 
   const abrirNuevo = () => {
@@ -123,7 +124,7 @@ export default function UsuariosPage() {
           <Input label="Apellido" value={form.apellido} onChange={(e) => setForm({ ...form, apellido: e.target.value })} />
           <Select
             label="Rol"
-            options={roles}
+            options={(roles ?? []).map((r) => ({ value: r.valor, label: r.label }))}
             value={form.rol}
             onChange={(e) => setForm({ ...form, rol: e.target.value })}
           />
@@ -141,9 +142,21 @@ export default function UsuariosPage() {
           )}
 
           {editando && (
-            <Button variant="secondary" onClick={() => { setResetPinOpen(true); setNuevoPin('') }}>
-              Reestablecer PIN
-            </Button>
+            <>
+              <div className="flex gap-2">
+                <Button variant="secondary" className="flex-1" onClick={() => { setResetPinOpen(true); setNuevoPin('') }}>
+                  Reestablecer PIN
+                </Button>
+                <Button
+                  variant={editando.activo ? 'danger' : 'primary'}
+                  className="flex-1"
+                  loading={toggleActivoMutation.isPending}
+                  onClick={() => toggleActivoMutation.mutate({ id: editando.id, activo: !editando.activo })}
+                >
+                  {editando.activo ? 'Desactivar' : 'Activar'}
+                </Button>
+              </div>
+            </>
           )}
 
           <Button className="w-full" onClick={guardar} loading={crearMutation.isPending || editarMutation.isPending} disabled={!form.nombre}>

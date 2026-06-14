@@ -2,6 +2,7 @@ import api from '../../../api/client'
 
 export interface Permiso {
   id: string
+  codigo: string
   nombre: string
   grupo: string
   descripcion?: string
@@ -9,6 +10,7 @@ export interface Permiso {
 
 export interface RolPermiso {
   codigo: string
+  nombre: string
   activo: boolean
 }
 
@@ -19,7 +21,8 @@ export const listarPermisos = () =>
   api.get<{ ok: boolean; data: Permiso[] }>('/permisos').then(r => r.data.data)
 
 export const obtenerPermisosRol = (rol: string) =>
-  api.get<{ ok: boolean; data: RolPermiso[] }>(`/permisos/rol/${rol}`).then(r => r.data.data)
+  api.get<{ ok: boolean; data: { modulo: string; permisos: RolPermiso[] }[] }>(`/permisos/rol/${rol}`)
+    .then(r => r.data.data.flatMap(g => g.permisos))
 
 export const actualizarPermisosRol = (rol: string, data: { permisos: { codigo: string; activo: boolean }[] }) =>
   api.put(`/permisos/rol/${rol}`, data).then(r => r.data)
