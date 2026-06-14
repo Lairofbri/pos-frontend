@@ -3,7 +3,7 @@ import { Badge } from '../../../components/ui/Badge'
 
 interface CocinaCardProps {
   item: CocinaItem
-  onMarcarListo: (itemId: string) => void
+  onMarcarListo: (ordenId: string, itemId: string) => void
   onCompletada: (ordenId: string) => void
   onImprimir: (ordenId: string) => void
 }
@@ -51,7 +51,7 @@ export function CocinaCard({ item, onMarcarListo, onCompletada, onImprimir }: Co
               )}
               {i.estado === 'pendiente' && (
                 <button
-                  onClick={() => onMarcarListo(i.id)}
+                  onClick={() => onMarcarListo(item.orden_id, i.id)}
                   className="text-[10px] px-2 py-1 rounded bg-success/10 text-success border border-success/30 hover:bg-success/20 transition-colors cursor-pointer"
                 >
                   Listo

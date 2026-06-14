@@ -11,8 +11,8 @@ export interface LoginRequest {
 }
 
 export interface LoginPinRequest {
+  usuario_id: string
   pin: string
-  tenant_id: string
 }
 
 export interface LoginResponse {
@@ -24,9 +24,13 @@ export interface LoginResponse {
 export interface Usuario {
   id: string
   tenant_id: string
-  rol: string
   nombre: string
-  email: string
+  apellido?: string
+  email?: string
+  rol: string
+  pin?: string
+  sucursal_id?: string
+  activo?: boolean
 }
 
 export interface MenuItem {
@@ -35,7 +39,21 @@ export interface MenuItem {
   icono: string
   ruta: string | null
   orden: number
+  permiso_codigo?: string
+  parent_id?: string | null
+  activo?: boolean
   children: MenuItem[]
+}
+
+export interface MenuItemRaw {
+  id: string
+  titulo: string
+  icono?: string
+  ruta?: string | null
+  parent_id?: string | null
+  orden: number
+  permiso_codigo?: string
+  activo: boolean
 }
 
 export interface Producto {
@@ -44,37 +62,61 @@ export interface Producto {
   descripcion?: string
   precio: number
   categoria_id?: string
-  activo: boolean
-  tiene_stock: boolean
-  stock_actual: number
+  categoria_nombre?: string
+  codigo?: string
   imagen_url?: string
+  orden?: number
+  activo: boolean
 }
 
 export interface Categoria {
   id: string
   nombre: string
+  descripcion?: string
+  orden?: number
   color?: string
+  activo: boolean
+}
+
+export interface ComboProducto {
+  producto_id: string
+  cantidad: number
+  nombre?: string
+  precio?: number
+}
+
+export interface Combo {
+  id: string
+  nombre: string
+  precio: number
+  productos: ComboProducto[]
   activo: boolean
 }
 
 export interface Mesa {
   id: string
-  numero: number
+  numero: string
+  nombre?: string
   capacidad: number
   zona: string
-  activa: boolean
+  activo: boolean
   ocupada?: boolean
+  sucursal_id?: string
 }
 
 export interface Orden {
   id: string
   mesa_id: string
-  mesa_numero: number
+  mesa_numero: string
   zona: string
   cliente_nombre?: string
-  estado: 'abierta' | 'en_cocina' | 'completada' | 'pagada'
+  usuario_id?: string
+  usuario_nombre?: string
+  estado: 'abierta' | 'en_proceso' | 'lista' | 'entregada' | 'pagada' | 'cancelada'
   items: OrdenItem[]
   total: number
+  notas?: string
+  porcentaje_descuento?: number
   created_at: string
 }
 
@@ -84,32 +126,62 @@ export interface OrdenItem {
   nombre: string
   cantidad: number
   precio_unitario: number
-  modificadores?: string[]
   notas?: string
-  estado: 'pendiente' | 'en_cocina' | 'listo' | 'servido'
+  estado: 'pendiente' | 'en_proceso' | 'listo' | 'cancelado'
+  descuento_porcentaje?: number
 }
 
 export interface Cliente {
   id: string
   nombre: string
+  apellido?: string
   telefono?: string
   email?: string
+  tipo_documento?: 'dui' | 'nit' | 'pasaporte' | 'carnet_residente'
+  numero_documento?: string
+  nit?: string
+  nrc?: string
+  razon_social?: string
+  direccion?: string
+  municipio?: string
+  departamento?: string
   notas?: string
+  activo: boolean
+}
+
+export interface CajaMetodoResumen {
+  metodo: string
+  cantidad_ordenes: number
+  total: number
+}
+
+export interface CajaTurno {
+  id: string
+  estado: 'abierta' | 'cerrada'
+  monto_inicial: number
+  total_esperado: number
+  total_ventas: number
+  total_efectivo: number
+  total_tarjeta: number
+  total_retiros: number
+  total_depositos: number
+  monto_final?: number
+  diferencia?: number
+  usuario_apertura: string
+  usuario_cierre?: string
+  fecha_apertura: string
+  fecha_cierre?: string
+  sucursal_id?: string
+  notas_apertura?: string
+  notas_cierre?: string
+  metodos?: CajaMetodoResumen[]
 }
 
 export interface MovimientoCaja {
   id: string
-  tipo: 'apertura' | 'cierre' | 'ingreso' | 'egreso'
+  tipo: string
   monto: number
-  descripcion: string
+  motivo: string
   created_at: string
-}
-
-export interface CajaActiva {
-  id: string
-  abierta: boolean
-  monto_inicial: number
-  monto_actual: number
-  abierta_por: string
-  created_at: string
+  usuario: string
 }

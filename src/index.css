@@ -14,6 +14,11 @@
   --color-success: #30A46C;
   --color-border: #2A2A3A;
 
+  --color-status-libre: #30A46C;
+  --color-status-ocupada: #D4A24C;
+  --color-status-pendiente: #E5484D;
+  --color-status-reservada: #3B82F6;
+
   --font-display: "Tektur", sans-serif;
   --font-body: "Sora", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
@@ -68,6 +73,32 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes ripple {
+  from { opacity: 0.5; transform: translate(-50%, -50%) scale(0); }
+  to { opacity: 0; transform: translate(-50%, -50%) scale(4); }
+}
+
 @utility animate-fadeIn {
   animation: fadeIn 0.3s ease-out;
+}
+
+@utility animate-ripple {
+  animation: ripple 0.5s ease-out;
+}
+
+@layer utilities {
+  .hover-lift {
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+  }
+
+  .card-glow {
+    box-shadow: 0 0 0 1px rgba(212, 162, 76, 0.1), 0 4px 16px rgba(0, 0, 0, 0.2);
+  }
+  .card-glow:hover {
+    box-shadow: 0 0 0 1px rgba(212, 162, 76, 0.25), 0 8px 32px rgba(0, 0, 0, 0.3);
+  }
 }

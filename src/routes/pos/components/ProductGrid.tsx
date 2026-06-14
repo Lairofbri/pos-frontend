@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { queryDefaults } from '../../../config/queries'
 import { getProductos, getCategorias } from '../api'
 import { ProductCard } from '../../../components/shared/ProductCard'
 import { Chip } from '../../../components/ui/Chip'
@@ -18,11 +19,13 @@ export function ProductGrid({ onSelectProducto, onLongPressProducto }: ProductGr
   const { data: categorias } = useQuery({
     queryKey: ['categorias'],
     queryFn: getCategorias,
+    ...queryDefaults('categorias'),
   })
 
   const { data: productos } = useQuery({
     queryKey: ['productos', categoriaActiva],
     queryFn: () => getProductos(categoriaActiva),
+    ...queryDefaults('productos'),
   })
 
   const filtrados = (productos ?? []).filter((p) =>

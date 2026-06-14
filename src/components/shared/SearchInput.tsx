@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 
 interface SearchInputProps {
   value?: string
@@ -8,23 +8,32 @@ interface SearchInputProps {
 }
 
 export function SearchInput({
-  value = '',
+  value: externalValue = '',
   onChange,
   placeholder = 'Buscar...',
   debounce = 300,
 }: SearchInputProps) {
-  const [local, setLocal] = useState(value)
+  const [local, setLocal] = useState(externalValue)
+
+  const prevRef = useRef(externalValue)
+  useEffect(() => {
+    prevRef.current = externalValue
+  })
+
+  useEffect(() => {
+    if (prevRef.current !== externalValue) {
+      setLocal(externalValue)
+    }
+  }, [externalValue])
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (local !== value) onChange(local)
+      if (local !== externalValue) {
+        onChange(local)
+      }
     }, debounce)
     return () => clearTimeout(timer)
-  }, [local, debounce, onChange, value])
-
-  useEffect(() => {
-    setLocal(value)
-  }, [value])
+  }, [local, debounce, onChange, externalValue])
 
   return (
     <div className="relative">

@@ -1,39 +1,58 @@
 import { useState } from 'react'
 import { SidePanel } from '../../../components/shared/SidePanel'
 import { Button } from '../../../components/ui/Button'
+import { useCatalogo } from '../../../hooks/useCatalogo'
 import type { Orden } from '../../../types'
 
 interface PaymentPanelProps {
   open: boolean
   onClose: () => void
   orden: Orden | null
-  onConfirmar: (data: { metodo: string; monto_recibido?: number; split?: number }) => void
+  onConfirmar: (data: { metodo: string; monto_efectivo?: number; monto_tarjeta?: number; referencia_tarjeta?: string }) => void
   loading?: boolean
 }
 
-const metodos = [
-  { id: 'efectivo', label: '💵 Efectivo' },
-  { id: 'tarjeta', label: '💳 Tarjeta' },
-  { id: 'transferencia', label: '📱 Transferencia' },
-]
+const iconosMetodo: Record<string, string> = {
+  efectivo: '💵',
+  tarjeta: '💳',
+  mixto: '💳💵',
+}
 
 export function PaymentPanel({ open, onClose, orden, onConfirmar, loading }: PaymentPanelProps) {
   const [metodo, setMetodo] = useState('efectivo')
-  const [montoRecibido, setMontoRecibido] = useState('')
-  const [split, setSplit] = useState(1)
+  const { data: metodos } = useCatalogo('metodos_pago')
+  const [montoEfectivo, setMontoEfectivo] = useState('')
+  const [montoTarjeta, setMontoTarjeta] = useState('')
+  const [referenciaTarjeta, setReferenciaTarjeta] = useState('')
 
   if (!orden) return null
 
-  const cambio = metodo === 'efectivo' && montoRecibido
-    ? Math.max(0, parseFloat(montoRecibido || '0') - orden.total)
+  const efectivo = parseFloat(montoEfectivo || '0')
+  const tarjeta = parseFloat(montoTarjeta || '0')
+  const totalPagado = metodo === 'mixto' ? efectivo + tarjeta : efectivo || tarjeta
+  const cambio = metodo === 'efectivo' || metodo === 'mixto'
+    ? Math.max(0, totalPagado - orden.total)
     : 0
+
+  const buildPayload = (): { metodo: string; monto_efectivo?: number; monto_tarjeta?: number; referencia_tarjeta?: string } => {
+    switch (metodo) {
+      case 'efectivo':
+        return { metodo, monto_efectivo: efectivo || undefined }
+      case 'tarjeta':
+        return { metodo, monto_tarjeta: orden.total, referencia_tarjeta: referenciaTarjeta || undefined }
+      case 'mixto':
+        return { metodo, monto_efectivo: efectivo || undefined, monto_tarjeta: tarjeta || undefined, referencia_tarjeta: referenciaTarjeta || undefined }
+      default:
+        return { metodo: 'efectivo' }
+    }
+  }
 
   return (
     <SidePanel open={open} onClose={onClose} title="Pago">
       <div className="flex flex-col gap-6">
         <div className="text-center">
           <p className="text-xs text-text-secondary font-body uppercase tracking-wider">Total a pagar</p>
-          <p className="text-3xl font-mono text-accent font-bold mt-1">${orden.total.toFixed(2)}</p>
+          <p className="text-3xl font-mono text-accent font-bold mt-1">${orden.total?.toFixed(2) ?? '0.00'}</p>
         </div>
 
         <div>
@@ -41,84 +60,82 @@ export function PaymentPanel({ open, onClose, orden, onConfirmar, loading }: Pay
             Método de pago
           </label>
           <div className="grid grid-cols-2 gap-2">
-            {metodos.map((m) => (
+            {(metodos ?? []).map((m) => (
               <button
-                key={m.id}
-                onClick={() => setMetodo(m.id)}
+                key={m.valor}
+                onClick={() => setMetodo(m.valor)}
                 className={`p-3 rounded-xl border-2 text-sm font-body transition-all duration-200 cursor-pointer ${
-                  metodo === m.id
+                  metodo === m.valor
                     ? 'border-accent bg-accent/10 text-accent'
                     : 'border-border text-text-secondary hover:border-accent/50'
                 }`}
               >
-                {m.label}
+                {iconosMetodo[m.valor] ?? ''} {m.label}
               </button>
             ))}
           </div>
         </div>
 
-        {metodo === 'efectivo' && (
+        {(metodo === 'efectivo' || metodo === 'mixto') && (
           <div>
             <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2 block">
-              Monto recibido
+              {metodo === 'mixto' ? 'Monto en efectivo' : 'Monto recibido'}
             </label>
             <input
-              type="number"
-              value={montoRecibido}
-              onChange={(e) => setMontoRecibido(e.target.value)}
+              type="text"
+              inputMode="decimal"
+              value={montoEfectivo}
+              onChange={(e) => setMontoEfectivo(e.target.value.replace(/[^0-9.]/g, ''))}
               placeholder="0.00"
               className="w-full bg-bg-primary border-2 border-border rounded-lg px-4 py-3 text-xl font-mono text-text-primary outline-none focus:border-accent text-center"
-              step="0.01"
-              min="0"
             />
-            {cambio > 0 && (
-              <p className="text-sm text-teal font-mono text-center mt-2">
-                Cambio: ${cambio.toFixed(2)}
-              </p>
-            )}
           </div>
         )}
 
-        <div>
-          <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2 block">
-            Dividir cuenta
-          </label>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setSplit(Math.max(1, split - 1))}
-              className="w-10 h-10 rounded-lg bg-bg-primary border border-border text-text-primary hover:border-accent transition-colors cursor-pointer text-lg"
-              disabled={split <= 1}
-            >
-              −
-            </button>
-            <span className="font-mono text-lg text-text-primary w-8 text-center">{split}</span>
-            <button
-              onClick={() => setSplit(Math.min(10, split + 1))}
-              className="w-10 h-10 rounded-lg bg-bg-primary border border-border text-text-primary hover:border-accent transition-colors cursor-pointer text-lg"
-              disabled={split >= 10}
-            >
-              +
-            </button>
-            <span className="text-xs text-text-secondary font-body">personas</span>
+        {(metodo === 'tarjeta' || metodo === 'mixto') && (
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2 block">
+                {metodo === 'mixto' ? 'Monto en tarjeta' : 'Monto a cobrar'}
+              </label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={metodo === 'tarjeta' ? orden.total.toString() : montoTarjeta}
+                onChange={(e) => setMontoTarjeta(e.target.value.replace(/[^0-9.]/g, ''))}
+                placeholder="0.00"
+                className={`w-full bg-bg-primary border-2 border-border rounded-lg px-4 py-3 text-xl font-mono text-text-primary outline-none focus:border-accent text-center ${metodo === 'tarjeta' ? 'opacity-60' : ''}`}
+                readOnly={metodo === 'tarjeta'}
+              />
+            </div>
+            <div>
+              <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2 block">
+                Referencia (opcional)
+              </label>
+              <input
+                type="text"
+                value={referenciaTarjeta}
+                onChange={(e) => setReferenciaTarjeta(e.target.value)}
+                placeholder="Últimos 4 dígitos"
+                className="w-full bg-bg-primary border-2 border-border rounded-lg px-4 py-2.5 text-sm font-mono text-text-primary outline-none focus:border-accent"
+                maxLength={20}
+              />
+            </div>
           </div>
-          {split > 1 && (
-            <p className="text-xs text-text-secondary font-body text-center mt-2">
-              ${(orden.total / split).toFixed(2)} c/u
-            </p>
-          )}
-        </div>
+        )}
+
+        {cambio > 0 && (
+          <div className="text-center py-2 rounded-xl bg-success/10 border border-success/30">
+            <p className="text-xs text-text-secondary font-body">Cambio</p>
+            <p className="text-xl font-mono text-success font-bold">${cambio.toFixed(2)}</p>
+          </div>
+        )}
 
         <Button
           className="w-full"
           size="lg"
           loading={loading}
-          onClick={() =>
-            onConfirmar({
-              metodo,
-              monto_recibido: metodo === 'efectivo' ? parseFloat(montoRecibido || '0') : undefined,
-              split: split > 1 ? split : undefined,
-            })
-          }
+          onClick={() => onConfirmar(buildPayload())}
         >
           Confirmar Pago
         </Button>

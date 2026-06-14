@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+#agents
+AGENTS.md
+docs/superpowers/specs
+.superpowers
+
+

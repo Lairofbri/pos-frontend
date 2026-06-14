@@ -1,5 +1,15 @@
 import { create } from 'zustand'
 import type { Usuario } from '../types'
+import { STORAGE_KEYS } from '../config/constants'
+
+function getStoredUsuario(): Usuario | null {
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.USUARIO_DATA)
+    return data ? JSON.parse(data) : null
+  } catch {
+    return null
+  }
+}
 
 interface AuthState {
   token: string | null
@@ -11,19 +21,23 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  token: localStorage.getItem('access_token'),
-  usuario: null,
-  tenantId: localStorage.getItem('tenant_id'),
+  token: localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN),
+  usuario: getStoredUsuario(),
+  tenantId: localStorage.getItem(STORAGE_KEYS.TENANT_ID),
   setAuth: (token, usuario) => {
-    localStorage.setItem('access_token', token)
+    localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, token)
+    localStorage.setItem(STORAGE_KEYS.USUARIO_DATA, JSON.stringify(usuario))
     set({ token, usuario })
   },
   setTenantId: (id) => {
-    localStorage.setItem('tenant_id', id)
+    localStorage.setItem(STORAGE_KEYS.TENANT_ID, id)
     set({ tenantId: id })
   },
   clearAuth: () => {
-    localStorage.clear()
+    localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN)
+    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
+    localStorage.removeItem(STORAGE_KEYS.USUARIO_DATA)
+    localStorage.removeItem(STORAGE_KEYS.TENANT_ID)
     set({ token: null, usuario: null, tenantId: null })
   },
 }))
