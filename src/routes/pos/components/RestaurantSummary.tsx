@@ -2,15 +2,14 @@ import { useQuery } from '@tanstack/react-query'
 import { queryDefaults } from '../../../config/queries'
 import { useAuthStore } from '../../../store/authStore'
 import { useNavigate } from 'react-router-dom'
-import { getCajaActiva } from '../../admin/caja/api'
+import { getCajaActiva, getResumenDiario } from '../../admin/caja/api'
 import { getMesas, getOrdenes } from '../api'
-import api from '../../../api/client'
 import { useMemo } from 'react'
 
 interface ResumenDiario {
-  total_ventas: number
-  total_efectivo: number
-  total_tarjeta: number
+  total_ventas?: number
+  total_efectivo?: number
+  total_tarjeta?: number
   cantidad_ordenes?: number
   ticket_promedio?: number
   clientes_atendidos?: number
@@ -72,10 +71,7 @@ export function RestaurantSummary() {
 
   const { data: resumen } = useQuery({
     queryKey: ['caja-resumen-diario'],
-    queryFn: () =>
-      api
-        .get<{ ok: boolean; data: ResumenDiario }>('/caja/resumen-diario')
-        .then((r) => r.data.data),
+    queryFn: () => getResumenDiario() as unknown as ResumenDiario,
     ...queryDefaults('caja-resumen'),
   })
 
@@ -148,8 +144,8 @@ export function RestaurantSummary() {
             </span>
           </div>
           {cajaActiva?.estado === 'abierta' && (
-            <div className="font-mono text-lg font-bold text-accent">
-              ${cajaActiva.total_esperado.toFixed(2)}
+            <div className="font-mono text-lg font-bold text-accent text-center">
+              Caja abierta
             </div>
           )}
         </div>
@@ -161,7 +157,7 @@ export function RestaurantSummary() {
           </span>
           <MetricRow
             label="Total"
-            value={resumen ? `$${resumen.total_ventas.toFixed(2)}` : '...'}
+            value={resumen?.total_ventas != null ? `$${resumen.total_ventas.toFixed(2)}` : '...'}
           />
           <MetricRow
             label="Ticket promedio"

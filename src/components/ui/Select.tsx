@@ -15,7 +15,7 @@ export function Select({ label, options, placeholder, className = '', ...props }
         </label>
       )}
       <select
-        className={`w-full bg-bg-surface border-2 border-border rounded-lg px-4 py-2.5 text-text-primary font-body text-sm outline-none transition-all duration-200 focus:border-accent focus:glow-amber cursor-pointer ${className}`}
+        className={`w-full bg-bg-surface border-2 border-border rounded-lg px-4 py-2.5 text-text-primary font-body text-sm outline-none transition-all duration-200 focus:border-accent focus:glow-terracota cursor-pointer ${className}`}
         {...props}
       >
         {placeholder && (

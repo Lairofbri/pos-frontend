@@ -47,7 +47,7 @@ export function Topbar() {
   }
 
   return (
-    <header className="h-12 flex items-center justify-between px-4 border-b border-border bg-bg-surface/50 glass shrink-0">
+    <header className="h-12 flex items-center justify-between px-4 border-b border-border bg-bg-surface/50 glass-light shrink-0">
       <div className="flex items-center gap-3">
         <button
           onClick={() => setMobileOpen(true)}
@@ -73,7 +73,7 @@ export function Topbar() {
             className="flex items-center gap-1.5 text-xs font-mono px-2.5 py-1 rounded-lg bg-status-libre/10 text-status-libre border border-status-libre/30 hover:bg-status-libre/20 transition-all duration-200 cursor-pointer"
           >
             <span className="w-1.5 h-1.5 rounded-full bg-status-libre animate-pulse" />
-            ${cajaActiva.total_esperado.toFixed(2)}
+            Caja Abierta
           </button>
         ) : (
           <button

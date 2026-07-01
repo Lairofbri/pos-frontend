@@ -10,7 +10,7 @@ const variants = {
   success: 'bg-success/10 text-success border-success/30',
   warning: 'bg-accent/10 text-accent border-accent/30',
   danger: 'bg-danger/10 text-danger border-danger/30',
-  info: 'bg-teal/10 text-teal border-teal/30',
+  info: 'bg-info/10 text-info border-info/30',
 }
 
 export function Badge({ variant = 'default', children }: BadgeProps) {

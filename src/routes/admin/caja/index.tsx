@@ -1,29 +1,27 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryDefaults } from '../../../config/queries'
-import { getCajaActiva, abrirCaja, cerrarCaja, registrarMovimiento, getHistorialCajas, getResumenDiario } from './api'
+import { getCajaActiva, abrirCaja, cerrarCaja, registrarMovimiento, getHistorialCajas, getResumenDiario, obtenerCuadre } from './api'
 import { SidePanel } from '../../../components/shared/SidePanel'
 import { Input } from '../../../components/ui/Input'
 import { Button } from '../../../components/ui/Button'
 import { Badge } from '../../../components/ui/Badge'
 import { Spinner } from '../../../components/ui/Spinner'
 import { useToastStore } from '../../../store/toastStore'
-import { useAuthStore } from '../../../store/authStore'
 import { useCatalogo } from '../../../hooks/useCatalogo'
-import type { CajaTurno } from '../../../types'
+import type { CajaTurno, CajaCuadre } from '../../../types'
 
 type Tab = 'activa' | 'historial'
 
 export default function CajaPage() {
   const queryClient = useQueryClient()
   const showToast = useToastStore((s) => s.show)
-  const usuario = useAuthStore((s) => s.usuario)
   const { data: movTipos } = useCatalogo('movimientos_tipo')
   const [tab, setTab] = useState<Tab>('activa')
   const [abrirPanel, setAbrirPanel] = useState(false)
   const [cerrarPanel, setCerrarPanel] = useState(false)
   const [movimientoPanel, setMovimientoPanel] = useState(false)
-  const [cajaDetalle, setCajaDetalle] = useState<CajaTurno | null>(null)
+  const [cajaDetalleId, setCajaDetalleId] = useState<string | null>(null)
   const [montoInicial, setMontoInicial] = useState('')
   const [montoFinal, setMontoFinal] = useState('')
   const [notasCierre, setNotasCierre] = useState('')
@@ -50,6 +48,13 @@ export default function CajaPage() {
     ...queryDefaults('caja-historial'),
   })
 
+  const { data: cajaDetalle } = useQuery<CajaCuadre>({
+    queryKey: ['caja-cuadre', cajaDetalleId],
+    queryFn: () => obtenerCuadre(cajaDetalleId!),
+    enabled: !!cajaDetalleId,
+    ...queryDefaults('caja-movimientos'),
+  })
+
   const totalIngresos = useMemo(() => {
     if (!resumen) return 0
     return parseFloat(resumen.total_ingresos || '0')
@@ -66,7 +71,7 @@ export default function CajaPage() {
   })
 
   const cerrarMutation = useMutation({
-    mutationFn: () => cerrarCaja({ monto_final: parseFloat(montoFinal || '0'), notas_cierre: notasCierre || undefined, sucursal_id: usuario?.sucursal_id ?? undefined }),
+    mutationFn: () => cerrarCaja({ monto_final: parseFloat(montoFinal || '0'), notas_cierre: notasCierre || undefined }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['caja-activa'] }); queryClient.invalidateQueries({ queryKey: ['caja-historial'] }); setCerrarPanel(false); setMontoFinal(''); setNotasCierre(''); showToast({ type: 'success', message: 'Caja cerrada' }) },
     onError: (err: Error) => showToast({ type: 'error', message: 'Error al cerrar caja', description: err.message }),
   })
@@ -94,14 +99,10 @@ export default function CajaPage() {
                 <h2 className="font-display text-lg text-text-primary">Caja abierta</h2>
                 <Badge variant="success">Abierta</Badge>
               </div>
-              <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="grid grid-cols-2 gap-4 text-center">
                 <div>
                   <p className="text-xs text-text-secondary font-body">Inicial</p>
                   <p className="font-mono text-lg text-text-primary">${cajaActiva.monto_inicial.toFixed(2)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-text-secondary font-body">Esperado</p>
-                  <p className="font-mono text-lg text-accent font-bold">${cajaActiva.total_esperado.toFixed(2)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-text-secondary font-body">Abierta por</p>
@@ -132,14 +133,13 @@ export default function CajaPage() {
             </div>
           ) : (
             historial?.map((caja) => (
-              <button key={caja.id} onClick={() => setCajaDetalle(caja)} className="w-full bg-bg-surface rounded-xl border border-border p-4 text-left hover:border-accent/50 transition-colors cursor-pointer">
+              <button key={caja.id} onClick={() => setCajaDetalleId(caja.id)} className="w-full bg-bg-surface rounded-xl border border-border p-4 text-left hover:border-accent/50 transition-colors cursor-pointer">
                 <div className="flex items-center justify-between mb-2">
                   <Badge variant={caja.estado === 'abierta' ? 'success' : 'default'}>{caja.estado === 'abierta' ? 'Abierta' : 'Cerrada'}</Badge>
                   <span className="text-xs text-text-secondary font-mono">{new Date(caja.fecha_apertura).toLocaleDateString()}</span>
                 </div>
                 <div className="flex items-center gap-4 text-sm">
                   <span className="text-text-primary font-body">{caja.usuario_apertura}</span>
-                  <span className="font-mono text-accent">${caja.total_esperado.toFixed(2)}</span>
                   {caja.fecha_cierre && <span className="text-text-secondary font-mono">{new Date(caja.fecha_cierre).toLocaleDateString()}</span>}
                 </div>
               </button>
@@ -224,7 +224,7 @@ export default function CajaPage() {
         </div>
       </SidePanel>
 
-      <SidePanel open={!!cajaDetalle} onClose={() => setCajaDetalle(null)} title="Detalle de caja">
+      <SidePanel open={!!cajaDetalleId} onClose={() => setCajaDetalleId(null)} title="Detalle de caja">
         {cajaDetalle && (
           <div className="flex flex-col gap-4">
             <div className="flex items-center justify-between">
@@ -303,12 +303,6 @@ export default function CajaPage() {
               </div>
             </div>
 
-            {cajaDetalle.notas_apertura && (
-              <div>
-                <p className="text-xs text-text-secondary font-body mb-1">Notas apertura</p>
-                <p className="text-sm text-text-primary bg-bg-primary rounded-lg p-3 border border-border">{cajaDetalle.notas_apertura}</p>
-              </div>
-            )}
             {cajaDetalle.notas_cierre && (
               <div>
                 <p className="text-xs text-text-secondary font-body mb-1">Notas cierre</p>

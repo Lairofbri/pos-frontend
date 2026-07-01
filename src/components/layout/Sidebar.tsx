@@ -74,10 +74,10 @@ function NavItem({ item, expanded, currentPath }: { item: MenuItem; expanded: bo
   return (
     <NavLink
       to={item.ruta ?? '#'}
-      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 group ${
+      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 group active:scale-[0.97] ${
         isActive
           ? 'border-l-2 border-accent bg-accent/[0.06] text-accent'
-          : 'text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover border-l-2 border-transparent'
+          : 'text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover hover:translate-x-0.5 border-l-2 border-transparent'
       } ${expanded ? 'justify-start' : 'justify-center border-l-0'}`}
       title={!expanded ? item.titulo : undefined}
     >
@@ -138,7 +138,7 @@ export function Sidebar() {
       <aside className={`hidden md:flex flex-col bg-bg-surface border-r border-border transition-all duration-300 shrink-0 ${collapsed ? 'w-16' : 'w-56'}`}>
         <div className="h-14 flex items-center justify-center border-b border-border shrink-0">
           {collapsed ? (
-            <span className="font-display text-sm text-accent tracking-wider glow-amber px-2">A</span>
+            <span className="font-display text-sm text-accent tracking-wider glow-terracota px-2">A</span>
           ) : (
             <span className="font-display text-lg text-accent tracking-wider">AMBER</span>
           )}

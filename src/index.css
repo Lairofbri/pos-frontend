@@ -1,23 +1,24 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-bg-primary: #0C0C10;
-  --color-bg-surface: #16161E;
-  --color-bg-surface-hover: #1E1E2A;
-  --color-accent: #D4A24C;
-  --color-accent-light: #F5C542;
-  --color-accent-glow: rgba(212, 162, 76, 0.25);
-  --color-teal: #2DD4BF;
-  --color-text-primary: #F5F0E8;
-  --color-text-secondary: #8A857A;
-  --color-danger: #E5484D;
-  --color-success: #30A46C;
-  --color-border: #2A2A3A;
+  --color-bg-primary: #FAF7F4;
+  --color-bg-surface: #FFFFFF;
+  --color-bg-surface-hover: #F5F0EB;
+  --color-accent: #D9734E;
+  --color-accent-light: #F0A98C;
+  --color-accent-dark: #B85C3B;
+  --color-text-primary: #2D241C;
+  --color-text-secondary: #7A6B5D;
+  --color-success: #4A9D6E;
+  --color-danger: #CF5C5C;
+  --color-warning: #D9A05B;
+  --color-info: #5B8EBF;
+  --color-border: #E6DDD4;
 
-  --color-status-libre: #30A46C;
-  --color-status-ocupada: #D4A24C;
-  --color-status-pendiente: #E5484D;
-  --color-status-reservada: #3B82F6;
+  --color-status-libre: #4A9D6E;
+  --color-status-ocupada: #D9734E;
+  --color-status-pendiente: #CF5C5C;
+  --color-status-reservada: #5B8EBF;
 
   --font-display: "Tektur", sans-serif;
   --font-body: "Sora", sans-serif;
@@ -41,25 +42,29 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #0C0C10;
+    background: #FAF7F4;
   }
   ::-webkit-scrollbar-thumb {
-    background: #2A2A3A;
+    background: #E6DDD4;
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #D4A24C;
+    background: #D9734E;
   }
 }
 
-@utility glow-amber {
-  box-shadow: 0 0 12px var(--color-accent-glow);
+@utility glow-terracota {
+  box-shadow: 0 0 12px rgba(217, 115, 78, 0.25);
 }
 
-@utility glass {
-  background: rgba(22, 22, 30, 0.8);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+@utility glass-light {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+@utility shadow-warm {
+  box-shadow: 0 4px 16px rgba(217, 115, 78, 0.08), 0 1px 3px rgba(217, 115, 78, 0.05);
 }
 
 @utility noise-bg {
@@ -92,13 +97,6 @@
   }
   .hover-lift:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
-  }
-
-  .card-glow {
-    box-shadow: 0 0 0 1px rgba(212, 162, 76, 0.1), 0 4px 16px rgba(0, 0, 0, 0.2);
-  }
-  .card-glow:hover {
-    box-shadow: 0 0 0 1px rgba(212, 162, 76, 0.25), 0 8px 32px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
   }
 }

@@ -92,6 +92,7 @@ export function TableMap({ onSelectMesa }: TableMapProps) {
     const map = new Map<string, Orden>()
     if (!ordenes) return map
     for (const o of ordenes) {
+      if (!o.mesa_id) continue
       if (o.estado !== 'pagada' && o.estado !== 'cancelada' && !map.has(o.mesa_id)) {
         map.set(o.mesa_id, o)
       }
@@ -162,7 +163,7 @@ export function TableMap({ onSelectMesa }: TableMapProps) {
             const estado = getEstado(orden)
             const cfg = STATUS_CONFIG[estado]
             const elapsed = orden
-              ? Math.floor((now - new Date(orden.created_at).getTime()) / 60000)
+              ? Math.floor((now - new Date(orden.creado_en).getTime()) / 60000)
               : 0
 
             return (

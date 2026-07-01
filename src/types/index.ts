@@ -63,19 +63,25 @@ export interface Producto {
   precio: number
   categoria_id?: string
   categoria_nombre?: string
-  codigo?: string
+  categoria_color?: string
   imagen_url?: string
-  orden?: number
+  codigo?: string
+  tiene_stock: boolean
+  stock_actual: number
+  stock_minimo: number
+  orden: number
   activo: boolean
 }
 
 export interface Categoria {
   id: string
+  parent_id: string | null
   nombre: string
   descripcion?: string
-  orden?: number
   color?: string
+  orden: number
   activo: boolean
+  hijos?: Categoria[]
 }
 
 export interface ComboProducto {
@@ -99,25 +105,49 @@ export interface Mesa {
   nombre?: string
   capacidad: number
   zona: string
+  estado: 'disponible' | 'ocupada' | 'reservada' | 'inactiva'
   activo: boolean
-  ocupada?: boolean
-  sucursal_id?: string
+  orden_activa?: Orden | null
+}
+
+export interface Pago {
+  id: string
+  metodo: 'efectivo' | 'tarjeta' | 'mixto'
+  monto_efectivo: number
+  monto_tarjeta: number
+  total_pagado: number
+  vuelto: number
+  referencia_tarjeta?: string
+  creado_en: string
 }
 
 export interface Orden {
   id: string
-  mesa_id: string
-  mesa_numero: string
-  zona: string
-  cliente_nombre?: string
-  usuario_id?: string
-  usuario_nombre?: string
+  tipo: 'mesa' | 'rapido' | 'delivery'
   estado: 'abierta' | 'en_proceso' | 'lista' | 'entregada' | 'pagada' | 'cancelada'
-  items: OrdenItem[]
+  numero_orden: number
+  origen: string
+  mesa_id?: string
+  mesa_numero?: string
+  zona?: string
+  cliente_id?: string
+  cliente_nombre?: string
+  usuario_id: string
+  usuario_nombre: string
+  subtotal: number
+  porcentaje_descuento: number
+  descuento: number
   total: number
+  gravado: number
+  iva: number
+  propina_porcentaje: number
+  propina_monto: number
   notas?: string
-  porcentaje_descuento?: number
-  created_at: string
+  items: OrdenItem[]
+  pagos: Pago[]
+  creado_en: string
+  actualizado_en?: string
+  cerrado_en?: string
 }
 
 export interface OrdenItem {
@@ -126,26 +156,29 @@ export interface OrdenItem {
   nombre: string
   cantidad: number
   precio_unitario: number
+  subtotal: number
+  descuento_porcentaje: number
   notas?: string
   estado: 'pendiente' | 'en_proceso' | 'listo' | 'cancelado'
-  descuento_porcentaje?: number
+  enviado_en?: string
 }
 
 export interface Cliente {
   id: string
   nombre: string
   apellido?: string
+  nombre_completo?: string
   telefono?: string
   email?: string
-  tipo_documento?: 'dui' | 'nit' | 'pasaporte' | 'carnet_residente'
+  tipo_documento: string
   numero_documento?: string
   nit?: string
   nrc?: string
   razon_social?: string
+  es_empresa?: boolean
   direccion?: string
   municipio?: string
   departamento?: string
-  notas?: string
   activo: boolean
 }
 
@@ -159,29 +192,42 @@ export interface CajaTurno {
   id: string
   estado: 'abierta' | 'cerrada'
   monto_inicial: number
+  usuario_apertura: string
+  usuario_cierre?: string
+  fecha_apertura: string
+  fecha_cierre?: string
+  notas_apertura?: string
+  notas_cierre?: string
+}
+
+export interface CajaCuadre {
+  id: string
+  estado: string
+  monto_inicial: number
   total_esperado: number
+  monto_final: number
+  diferencia: number
   total_ventas: number
   total_efectivo: number
   total_tarjeta: number
   total_retiros: number
   total_depositos: number
-  monto_final?: number
-  diferencia?: number
+  notas_cierre?: string
   usuario_apertura: string
   usuario_cierre?: string
   fecha_apertura: string
   fecha_cierre?: string
-  sucursal_id?: string
-  notas_apertura?: string
-  notas_cierre?: string
-  metodos?: CajaMetodoResumen[]
+  metodos: CajaMetodoResumen[]
+  movimientos: MovimientoCaja[]
 }
 
 export interface MovimientoCaja {
   id: string
-  tipo: string
+  tipo: 'ingreso' | 'retiro' | 'deposito'
   monto: number
   motivo: string
-  created_at: string
-  usuario: string
+  metodo_pago?: string
+  orden_id?: string
+  usuario_nombre: string
+  creado_en: string
 }

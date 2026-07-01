@@ -188,7 +188,9 @@ export default function POSPage() {
   const agregarItemLocal = (p: Producto, notas?: string) => {
     const item: OrdenItem = {
       id: nextId(), producto_id: p.id, nombre: p.nombre,
-      cantidad: 1, precio_unitario: p.precio, estado: 'pendiente', notas,
+      cantidad: 1, precio_unitario: p.precio,
+      subtotal: p.precio, descuento_porcentaje: 0,
+      estado: 'pendiente', notas,
     }
     setItemsPendientes((prev) => {
       const idx = prev.findIndex((i) => i.producto_id === p.id && !i.notas)
@@ -208,7 +210,7 @@ export default function POSPage() {
     if (existentePendiente) {
       setItemsPendientes((prev) => prev.map((i) => i.id === existentePendiente.id ? { ...i, cantidad: i.cantidad + 1 } : i))
     } else if (existenteApi) {
-      setItemsPendientes((prev) => [...prev, { id: nextId(), producto_id: p.id, nombre: p.nombre, cantidad: 1, precio_unitario: p.precio, estado: 'pendiente' }])
+      setItemsPendientes((prev) => [...prev, { id: nextId(), producto_id: p.id, nombre: p.nombre, cantidad: 1, precio_unitario: p.precio, subtotal: p.precio, descuento_porcentaje: 0, estado: 'pendiente' }])
     } else {
       agregarItemLocal(p)
     }
@@ -281,7 +283,7 @@ export default function POSPage() {
                 <span className="text-5xl">⚡</span>
                 <h2 className="font-display text-lg text-text-primary">Venta Rápida</h2>
                 <p className="text-text-secondary text-sm font-body text-center">Agrega productos para crear una comanda sin mesa asignada</p>
-                <button onClick={iniciarRapido} className="px-6 py-3 rounded-xl bg-accent text-bg-primary font-body font-semibold hover:glow-amber transition-all cursor-pointer">Iniciar venta rápida</button>
+                <button onClick={iniciarRapido} className="px-6 py-3 rounded-xl bg-accent text-bg-primary font-body font-semibold hover:glow-terracota transition-all cursor-pointer">Iniciar venta rápida</button>
               </div>
             )}
           </div>

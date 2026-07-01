@@ -13,7 +13,7 @@ function hashColor(id: string): string {
   for (let i = 0; i < id.length; i++) {
     hash = id.charCodeAt(i) + ((hash << 5) - hash)
   }
-  const hues = ['#D4A24C', '#2DD4BF', '#E5484D', '#30A46C', '#8B5CF6', '#F59E0B', '#EC4899', '#6366F1']
+  const hues = ['#D9734E', '#F0A98C', '#4A9D6E', '#5B8EBF', '#CF5C5C', '#D9A05B', '#B85C3B', '#7A6B5D']
   return hues[Math.abs(hash) % hues.length]
 }
 
@@ -88,7 +88,7 @@ export function ProductCard({
         ${
           selected
             ? 'bg-accent/10 border-accent scale-[0.98]'
-            : 'bg-bg-surface border-border hover:border-accent active:scale-[0.97]'
+            : 'bg-bg-surface border-border hover:border-accent hover:glow-terracota active:scale-[0.97]'
         }
       `}
     >

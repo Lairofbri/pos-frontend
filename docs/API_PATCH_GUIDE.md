@@ -34,24 +34,54 @@ Todas las respuestas siguen esta estructura:
 
 ---
 
-## 1. Categorías
+## 1. Categorías (jerarquía)
+
+Las categorías ahora soportan una estructura jerárquica de profundidad variable mediante `parent_id`. Las categorías raíz tienen `parent_id = null`. Los productos solo pueden asignarse a categorías hoja (sin subcategorías).
 
 ### GET /api/categorias
 
-Devuelve `{ categorias: [...] }`.
+| Query param | Tipo | Default | Descripción |
+|-------------|------|---------|-------------|
+| `arbol` | boolean | `false` | `true` = devuelve árbol anidado con `hijos` |
+| `todas` | boolean | `false` | `true` = incluye inactivas (solo admin) |
+
+**Lista plana** (sin `?arbol`): `{ categorias: [...] }`.
 
 | Campo | Tipo |
 |-------|------|
 | `id` | UUID |
+| `parent_id` | UUID nullable |
 | `nombre` | string |
 | `descripcion` | string nullable |
 | `color` | string nullable |
 | `orden` | integer |
 | `activo` | boolean |
 
+**Árbol jerárquico** (con `?arbol=true`): `{ categorias: [...] }`.
+
+Cada nodo incluye:
+
+| Campo | Tipo |
+|-------|------|
+| `id` | UUID |
+| `parent_id` | UUID nullable |
+| `nombre` | string |
+| `hijos` | array de objetos (misma estructura) |
+
 ### GET /api/categorias/:id
 
-Devuelve `{ categoria: {...} }`. Mismos campos.
+Devuelve `{ categoria: {...} }`.
+
+| Campo | Tipo |
+|-------|------|
+| `id` | UUID |
+| `parent_id` | UUID nullable |
+| `nombre` | string |
+| `descripcion` | string nullable |
+| `color` | string nullable |
+| `orden` | integer |
+| `activo` | boolean |
+| `hijos` | array de objetos `{ id, nombre }` |
 
 ### POST /api/categorias
 
@@ -59,6 +89,7 @@ Devuelve `{ categoria: {...} }`. Mismos campos.
 |-------|------|-----------|-------------|-----------|---------|
 | `nombre` | string (2-100) | **sí** | no | no | – |
 | `descripcion` | string (255) | no | sí | sí | – |
+| `parent_id` | UUID | no | sí | no | `null` (raíz) |
 | `orden` | integer (>=0) | no | no | no | `0` |
 | `color` | string `^#[0-9A-Fa-f]{6}$` | no | sí | sí | – |
 
@@ -68,15 +99,16 @@ Devuelve `{ categoria: {...} }`. Mismos campos.
 |-------|------|-----------|-------------|-----------|
 | `nombre` | string (2-100) | no | no | no |
 | `descripcion` | string (255) | no | sí | sí |
+| `parent_id` | UUID | no | sí | no |
 | `orden` | integer (>=0) | no | no | no |
 | `color` | string `^#[0-9A-Fa-f]{6}$` | no | sí | sí |
 | `activo` | boolean | no | no | no |
 
-Mínimo 1 campo. Soft delete con `activo: false`.
+Mínimo 1 campo. No se puede cambiar `parent_id` a sí misma. Si se cambia `parent_id`, se valida que la categoría padre exista en el mismo tenant.
 
 ### DELETE /api/categorias/:id
 
-Soft delete: marca `activo = false`. Requiere JWT + `soloAdmin`.
+Soft delete: marca `activo = false`. **No se puede desactivar** si la categoría tiene subcategorías. Desactive o reasigne las subcategorías primero.
 
 ---
 
@@ -286,6 +318,8 @@ Devuelve `{ ordenes: [...], paginacion: {...} }`.
 | `total` | string (decimal) |
 | `gravado` | string (decimal) |
 | `iva` | string (decimal) |
+| `propina_porcentaje` | number (0-100, default 10) |
+| `propina_monto` | string (decimal) |
 | `notas` | string nullable |
 | `total_items` | integer |
 | `creado_en` | ISO datetime |
@@ -317,6 +351,8 @@ Devuelve `{ orden: {...} }`.
 | `total` | string (decimal) |
 | `gravado` | string (decimal) |
 | `iva` | string (decimal) |
+| `propina_porcentaje` | number (0-100, default 10) |
+| `propina_monto` | string (decimal) |
 | `notas` | string nullable |
 | `creado_en` | ISO datetime |
 | `actualizado_en` | ISO datetime nullable |
@@ -358,6 +394,7 @@ Devuelve `{ orden: {...} }`.
 | `cliente_id` | UUID | **sí si tipo=delivery** | sí (solo si no es delivery) | – |
 | `notas` | string (500) | no | sí | – |
 | `porcentaje_descuento` | number (0-100) | no | no | `0` |
+| `propina_porcentaje` | number (0-100) | no | no | `10` |
 | `origen` | enum (ver abajo) | no | no | `"pos"` |
 | `numero_externo` | string (50) | no | sí | – |
 
@@ -371,11 +408,36 @@ Respuesta incluye `items: []` (siempre) y los campos: `id`, `tipo`, `estado`, `n
 |-------|------|-----------|-------------|-----------|
 | `notas` | string (500) | no | sí | sí |
 | `porcentaje_descuento` | number (0-100) | no | no | no |
+| `propina_porcentaje` | number (0-100) | no | no | no |
+| `propina_monto` | number (>=0) | no | no | no |
 
-Mínimo 1 campo. Devuelve los totales recalculados:
+Mínimo 1 campo. Si se envía `propina_porcentaje > 0`, el backend recalcula `propina_monto` automáticamente sobre el total actual.  
+Si se envía `propina_porcentaje = 0` con `propina_monto > 0`, se guarda como propina fija (no se recalcula).  
+Devuelve los totales recalculados:
 
 ```json
 { "subtotal": "50.00", "descuento": "5.00", "total": "45.00", "gravado": "39.82", "iva": "5.18" }
+```
+
+### PATCH /api/ordenes/:id/propina
+
+Actualiza la propina de una orden de forma independiente (sin afectar otros campos).
+
+| Campo | Tipo | Requerido | Default |
+|-------|------|-----------|---------|
+| `porcentaje` | number (0-100) | **sí** | – |
+| `monto` | number (>=0) | no | `0` |
+
+Si `porcentaje > 0`, el backend recalcula automáticamente el monto basado en el total actual de la orden.  
+Si `porcentaje = 0`, se guarda `monto` tal cual (permite propinas fijas manuales).
+
+**Respuesta:**
+
+```json
+{
+  "propina_porcentaje": 10,
+  "propina_monto": "4.50"
+}
 ```
 
 ### PATCH /api/ordenes/:id/estado
@@ -444,7 +506,8 @@ Respuesta devuelve `{ pago: {...}, orden: {...} }`.
 | `pago` | objeto con campos del pago registrado |
 | `orden` | objeto con datos actualizados de la orden (estado `"pagada"`) |
 
-Los montos totales del pago deben cubrir el total de la orden. Si el pago excede el total, se calcula `vuelto`.
+Los montos totales del pago deben cubrir el total de la orden **más la propina** (`total + propina_monto`). Si el pago excede ese monto, se calcula `vuelto`.  
+**Importante:** el `total` de la orden no se modifica — la propina se agrega al monto a pagar sin afectar los campos fiscales (`total`, `gravado`, `iva`).
 
 ---
 
@@ -699,20 +762,13 @@ Devuelve `{ cajas: [...], paginacion: {...} }`.
 | `id` | UUID |
 | `estado` | string |
 | `monto_inicial` | string (decimal) |
-| `total_esperado` | string (decimal) |
 | `monto_final` | string (decimal) nullable |
-| `diferencia` | string (decimal) |
-| `total_ventas` | string (decimal) |
-| `total_efectivo` | string (decimal) |
-| `total_tarjeta` | string (decimal) |
-| `total_retiros` | string (decimal) |
-| `total_depositos` | string (decimal) |
-| `notas_apertura` | string nullable |
-| `notas_cierre` | string nullable |
 | `fecha_apertura` | ISO datetime |
 | `fecha_cierre` | ISO datetime nullable |
 | `usuario_apertura` | string |
 | `usuario_cierre` | string nullable |
+
+> Los campos financieros detallados (`total_esperado`, `diferencia`, `total_ventas`, etc.) no se incluyen en el historial. Para ver el cuadre completo de una caja específica, use `GET /api/caja/cuadre/:id` (requiere permiso `caja.cuadre`).
 
 ### POST /api/caja/abrir
 
@@ -732,7 +788,87 @@ Persistido como `notas_apertura`. Devuelve `{ caja: {...} }`.
 | `notas_cierre` | string (500) | no | sí |
 | `sucursal_id` | UUID | no | sí |
 
-Devuelve `{ caja: {...} }`.
+Devuelve `{ caja: {...} }` con campos NO sensibles. `total_esperado`, `diferencia` y totales financieros **no se incluyen** en la respuesta.
+
+| Campo (respuesta) | Tipo |
+|-------------------|------|
+| `id` | UUID |
+| `estado` | string: `"cerrada"` |
+| `monto_inicial` | string (decimal) |
+| `monto_final` | string (decimal) |
+| `notas_cierre` | string nullable |
+| `fecha_apertura` | ISO datetime |
+| `fecha_cierre` | ISO datetime |
+
+Si hay sobrante o faltante, se registra automáticamente en `bitacora_caja` para auditoría.
+
+### POST /api/caja/verificar-cuadre
+
+Requiere caja abierta + permiso `caja.cerrar` (cajero).
+
+Verifica si el monto ingresado coincide con el esperado **sin revelar montos**. El cajero puede usarlo antes de cerrar para saber si necesita llamar a un supervisor.
+
+| Campo | Tipo | Requerido | Acepta null |
+|-------|------|-----------|-------------|
+| `monto_final` | number (>=0) | **sí** | no |
+| `sucursal_id` | UUID | no | sí |
+
+Respuesta:
+
+```json
+{
+  "ok": true,
+  "data": {
+    "cuadra": false,
+    "mensaje": "El monto no coincide. Solicite revisión de un superior."
+  }
+}
+```
+
+| Campo | Tipo |
+|-------|------|
+| `cuadra` | boolean: `true` si coincide, `false` si no |
+| `mensaje` | string |
+
+### GET /api/caja/cuadre/:id
+
+Requiere permiso `caja.cuadre` (solo **administrador** o **gerente**).
+
+Devuelve el detalle completo de cuadre de caja: total esperado, diferencia, desglose por método de pago y movimientos.
+
+```json
+{
+  "ok": true,
+  "data": {
+    "cuadre": {
+      "id": "uuid",
+      "estado": "cerrada",
+      "sucursal_id": "uuid",
+      "monto_inicial": "100.00",
+      "total_esperado": "850.00",
+      "monto_final": "840.00",
+      "diferencia": "-10.00",
+      "total_ventas": "800.00",
+      "total_efectivo": "750.00",
+      "total_tarjeta": "50.00",
+      "total_retiros": "0.00",
+      "total_depositos": "0.00",
+      "notas_cierre": "...",
+      "fecha_apertura": "...",
+      "fecha_cierre": "...",
+      "usuario_apertura": "Juan Pérez",
+      "usuario_cierre": "María López",
+      "metodos": [
+        { "metodo": "efectivo", "cantidad_ordenes": 25, "total": "750.00" },
+        { "metodo": "tarjeta", "cantidad_ordenes": 15, "total": "50.00" }
+      ],
+      "movimientos": [
+        { "id": "uuid", "tipo": "ingreso", "monto": "10.00", "motivo": "...", "creado_en": "..." }
+      ]
+    }
+  }
+}
+```
 
 ### GET /api/caja/resumen-diario
 
@@ -950,7 +1086,19 @@ Header requerido: `X-Tenant-Id`
 | `usuario_id` | UUID | **sí** |
 | `pin` | string `^\d{6}$` (exactamente 6 dígitos) | **sí** |
 
-Respuesta: mismo formato que POST /api/auth/login.
+Respuesta exitosa: mismo formato que POST /api/auth/login.
+
+Respuestas de error:
+
+| Código | Mensaje |
+|--------|---------|
+| `401` | `Credenciales incorrectas.` (usuario no existe, inactivo, o PIN incorrecto) |
+| `401` | `PIN incorrecto. N intento(s) restante(s).` |
+| `401` | `PIN incorrecto. Cuenta bloqueada por 15 minutos.` |
+| `429` | `Cuenta bloqueada temporalmente. Intenta en N minuto(s).` |
+| `403` | `La cuenta del restaurante está inactiva.` |
+
+> **Rate limiting:** 5 intentos fallidos bloquean la cuenta por 15 minutos (campo `bloqueado_hasta` en BD). Tras el desbloqueo, el contador se reinicia y el usuario tiene 5 nuevos intentos.
 
 ### POST /api/auth/refresh
 
@@ -1099,9 +1247,9 @@ Valores decimales (`precio`, `total`, `montos`) pueden venir como **string** en 
 | Recurso | Campos |
 |---------|--------|
 | **Producto** | `id, nombre, descripcion, precio, imagen_url, codigo, activo, tiene_stock, stock_actual, stock_minimo, categoria_id, categoria_nombre, categoria_color, orden, creado_en` |
-| **Categoria** | `id, nombre, descripcion, orden, color, activo, creado_en` |
+| **Categoria** | `id, parent_id, nombre, descripcion, orden, color, activo, creado_en, hijos` |
 | **Mesa** | `id, numero, nombre, capacidad, zona, sucursal_id, activo, estado, orden_activa` |
-| **Orden** (listado) | `id, tipo, estado, numero_orden, origen, numero_externo, mesa_id, mesa_numero, zona, cliente_id, cliente_nombre, usuario_id, usuario_nombre, subtotal, porcentaje_descuento, descuento, total, gravado, iva, notas, total_items, creado_en, actualizado_en` |
+| **Orden** (listado) | `id, tipo, estado, numero_orden, origen, numero_externo, mesa_id, mesa_numero, zona, cliente_id, cliente_nombre, usuario_id, usuario_nombre, subtotal, porcentaje_descuento, descuento, total, gravado, iva, propina_porcentaje, propina_monto, notas, total_items, creado_en, actualizado_en` |
 | **Orden** (detalle) | Mismos que listado + `cerrado_en, usuario_rol, items, pagos` |
 | **OrdenItem** | `id, producto_id, nombre, cantidad, precio_unitario, subtotal, descuento_porcentaje, subtotal_con_descuento, estado, notas, enviado_en, creado_en` |
 | **Pago** | `id, metodo, monto_efectivo, monto_tarjeta, total_pagado, vuelto, referencia_tarjeta, creado_en` |
@@ -1109,7 +1257,90 @@ Valores decimales (`precio`, `total`, `montos`) pueden venir como **string** en 
 | **Cliente** | `id, nombre, apellido, telefono, email, tipo_documento, numero_documento, nit, nrc, razon_social, direccion, municipio, departamento, activo, creado_en, nombre_completo, es_empresa` |
 | **Combo** | `id, nombre, precio, activo, creado_en, productos (array con producto_id, cantidad, nombre, precio)` |
 | **Menu** | `id, titulo, icono, ruta, parent_id, orden, permiso_codigo, activo, children` |
-| **CajaTurno** | `id, estado, monto_inicial, total_esperado, total_ventas, total_efectivo, total_tarjeta, total_retiros, total_depositos, monto_final, diferencia, notas_apertura, notas_cierre, usuario_apertura, usuario_cierre, fecha_apertura, fecha_cierre` |
+| **CajaTurno** (historial/cierre) | `id, estado, monto_inicial, monto_final, notas_cierre, usuario_apertura, usuario_cierre, fecha_apertura, fecha_cierre` (sin `total_esperado`, `diferencia` ni totales) |
+| **CajaCuadre** (solo `caja.cuadre`) | `id, estado, monto_inicial, total_esperado, monto_final, diferencia, total_ventas, total_efectivo, total_tarjeta, total_retiros, total_depositos, notas_cierre, usuario_apertura, usuario_cierre, fecha_apertura, fecha_cierre, metodos, movimientos` |
+
+---
+
+## 19. Imágenes de productos (Cloudflare R2)
+
+Las imágenes de productos se almacenan en **Cloudflare R2** (S3-compatible). El servidor convierte automáticamente a **WebP calidad 80** y redimensiona a máximo 800px al subir.
+
+**Formato final:** WebP en CDN de R2, servido con `Cache-Control: public, max-age=31536000, immutable`.
+
+**Path en R2:** `tenants/{tenant_id}/productos/{producto_id}.webp`
+
+### POST /api/productos/:id/imagen
+
+Requiere JWT + permiso `productos.editar`.
+
+Sube o reemplaza la imagen de un producto. Body en **multipart/form-data** con el campo `imagen`.
+
+| Campo | Tipo | Requerido | Descripción |
+|-------|------|-----------|-------------|
+| `imagen` | file | **sí** | Archivo de imagen (JPEG, PNG o WebP, máximo 2MB) |
+
+**Respuesta exitosa:**
+
+```json
+{
+  "ok": true,
+  "mensaje": "Imagen subida exitosamente.",
+  "data": {
+    "producto": {
+      "id": "uuid",
+      "nombre": "Pollo a la plancha",
+      "imagen_url": "https://pub-hash.r2.dev/tenants/{uuid}/productos/{uuid}.webp"
+    }
+  }
+}
+```
+
+**Errores comunes:**
+
+| HTTP | Mensaje |
+|------|---------|
+| 400 | `Formato de imagen no permitido. Solo JPEG, PNG y WebP.` |
+| 400 | `La imagen no puede superar los 2MB.` |
+| 400 | `Debe enviar una imagen en el campo "imagen".` |
+| 404 | `Producto no encontrado.` |
+
+### DELETE /api/productos/:id/imagen
+
+Requiere JWT + permiso `productos.editar`.
+
+Elimina la imagen del producto (tanto de R2 como de la BD).
+
+**Respuesta exitosa:**
+
+```json
+{
+  "ok": true,
+  "mensaje": "Imagen eliminada exitosamente.",
+  "data": {
+    "producto": {
+      "id": "uuid",
+      "nombre": "Pollo a la plancha",
+      "imagen_url": null
+    }
+  }
+}
+```
+
+**Errores comunes:**
+
+| HTTP | Mensaje |
+|------|---------|
+| 404 | `El producto no tiene imagen asignada.` |
+| 404 | `Producto no encontrado.` |
+
+### Recomendaciones para el frontend
+
+1. **Subida:** Usar `FormData` con `multipart/form-data`. El frontend puede enviar JPEG o PNG directamente — el servidor convierte a WebP automáticamente.
+2. **Previsualización:** Al seleccionar una imagen en el formulario, mostrar preview local con `URL.createObjectURL(file)` antes de subir.
+3. **Carga:** Las imágenes se sirven directamente desde el CDN de R2. Usar `<img loading="lazy">` para carga diferida.
+4. **Placeholder:** Mientras no haya imagen, mostrar un placeholder genérico o las iniciales del producto.
+5. **Cache:** Las imágenes tienen cache público por 1 año. Si se reemplaza una imagen, el frontend debe forzar refresco (ej: agregar `?t=timestamp` a la URL).
 
 ---
 
@@ -1147,3 +1378,8 @@ Valores decimales (`precio`, `total`, `montos`) pueden venir como **string** en 
 | 2026-06-14 | Creada `src/utils/constants.js` con `ESTADOS_FINALES`, `TASA_IVA` — eliminadas repeticiones en pos.service.js |
 | 2026-06-14 | `GET /api/ordenes` — agregado query param `?activas=true` para filtrar órdenes no pagadas ni canceladas |
 | 2026-06-14 | Agregado middleware `requiereCajaAbierta` — todas las operaciones de escritura (POS + caja) requieren caja abierta (sin excepción admin) |
+| 2026-06-25 | **Propina:** agregados `propina_porcentaje` y `propina_monto` a órdenes. Nuevo endpoint `PATCH /api/ordenes/:id/propina`. La propina no afecta `total/gravado/iva` (independiente para DTE). Pago ahora valida contra `total + propina_monto` |
+| 2026-06-25 | **Caja — seguridad de cuadre:** `POST /api/caja/cerrar` ya no devuelve `total_esperado`, `diferencia` ni totales financieros. Nuevo `POST /api/caja/verificar-cuadre` (cajero, solo bool). Nuevo `GET /api/caja/cuadre/:id` con permiso `caja.cuadre` (admin/gerente). Nuevo permiso `caja.cuadre` y tabla `bitacora_caja` para registrar sobrantes/faltantes. `GET /api/caja/historial` ya no incluye campos financieros. |
+| 2026-06-25 | **Categorías jerárquicas:** Agregado `parent_id` para árbol de profundidad variable. Nuevo `?arbol=true` en GET /api/categorias. Productos solo se asignan a categorías hoja. `parent_id` agregado a POST/PATCH. DELETE bloqueado si tiene subcategorías. |
+| 2026-06-25 | **Imágenes de productos (R2):** Nuevos endpoints `POST /api/productos/:id/imagen` (multipart) y `DELETE /api/productos/:id/imagen`. El servidor convierte a WebP q80 y redimensiona a 800px con sharp. Almacenamiento en Cloudflare R2. Nuevas env vars `R2_*`. Migración `024` para ampliar `imagen_url` a VARCHAR(1024). |
+| 2026-06-25 | **Auth (login-pin):** Corregido mensaje de error genérico (`Credenciales incorrectas.` sin distinción usuario/activo). Contador de intentos se reinicia al expirar bloqueo. Incremento de intentos ahora atómico en SQL. Seed PIN cambiado de `1234` a `123456` para validar contra regex `^\d{6}$`. |

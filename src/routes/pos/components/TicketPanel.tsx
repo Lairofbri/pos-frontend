@@ -54,16 +54,16 @@ export function TicketPanel({
   const tieneItemsPendientes = (orden.items ?? []).some((i) => i.estado === 'pendiente')
 
   const elapsed = useMemo(
-    () => Math.floor((now - new Date(orden.created_at).getTime()) / 60000),
-    [now, orden.created_at]
+    () => Math.floor((now - new Date(orden.creado_en).getTime()) / 60000),
+    [now, orden.creado_en]
   )
 
   const estadoCfg = ESTADO_ORDEN_CONFIG[orden.estado] ?? { label: orden.estado, color: 'bg-bg-surface text-text-secondary border-border' }
 
-  const descuentoPct = orden.porcentaje_descuento ?? 0
+  const descuentoPct = orden.porcentaje_descuento
   let subtotal = 0
   for (const item of orden.items) {
-    const descItem = item.descuento_porcentaje ?? 0
+    const descItem = item.descuento_porcentaje
     const precioConDesc = Math.round(item.precio_unitario * item.cantidad * (1 - descItem / 100) * 100) / 100
     subtotal += precioConDesc
   }

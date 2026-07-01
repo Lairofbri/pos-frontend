@@ -5,6 +5,7 @@ interface ClienteRaw {
   id: string
   nombre: string
   apellido: string | null
+  nombre_completo: string | null
   telefono: string | null
   email: string | null
   tipo_documento: string | null
@@ -12,10 +13,10 @@ interface ClienteRaw {
   nit: string | null
   nrc: string | null
   razon_social: string | null
+  es_empresa: boolean | null
   direccion: string | null
   municipio: string | null
   departamento: string | null
-  notas: string | null
   activo: boolean
 }
 
@@ -24,17 +25,18 @@ function parseCliente(raw: ClienteRaw): Cliente {
     id: raw.id,
     nombre: raw.nombre,
     apellido: raw.apellido ?? undefined,
+    nombre_completo: raw.nombre_completo ?? undefined,
     telefono: raw.telefono ?? undefined,
     email: raw.email ?? undefined,
-    tipo_documento: (raw.tipo_documento as Cliente['tipo_documento']) ?? undefined,
+    tipo_documento: raw.tipo_documento ?? '',
     numero_documento: raw.numero_documento ?? undefined,
     nit: raw.nit ?? undefined,
     nrc: raw.nrc ?? undefined,
     razon_social: raw.razon_social ?? undefined,
+    es_empresa: raw.es_empresa ?? undefined,
     direccion: raw.direccion ?? undefined,
     municipio: raw.municipio ?? undefined,
     departamento: raw.departamento ?? undefined,
-    notas: raw.notas ?? undefined,
     activo: raw.activo,
   }
 }

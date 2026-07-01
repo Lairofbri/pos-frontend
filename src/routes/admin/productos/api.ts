@@ -20,6 +20,9 @@ interface ProductoRaw {
   categoria_id: string | null
   categoria_nombre: string | null
   categoria_color: string | null
+  tiene_stock: boolean
+  stock_actual: number
+  stock_minimo: number
 }
 
 function parseProducto(raw: ProductoRaw): Producto {
@@ -34,6 +37,10 @@ function parseProducto(raw: ProductoRaw): Producto {
     orden: raw.orden,
     categoria_id: raw.categoria_id ?? undefined,
     categoria_nombre: raw.categoria_nombre ?? undefined,
+    categoria_color: raw.categoria_color ?? undefined,
+    tiene_stock: raw.tiene_stock,
+    stock_actual: raw.stock_actual,
+    stock_minimo: raw.stock_minimo,
   }
 }
 

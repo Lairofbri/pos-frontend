@@ -3,26 +3,30 @@ import type { Categoria } from '../../../types'
 
 interface CategoriaRaw {
   id: string
+  parent_id: string | null
   nombre: string
   descripcion: string | null
-  orden: number | null
+  orden: number
   color: string | null
   activo: boolean
+  hijos?: CategoriaRaw[]
 }
 
 function parseCategoria(raw: CategoriaRaw): Categoria {
   return {
     id: raw.id,
+    parent_id: raw.parent_id,
     nombre: raw.nombre,
     descripcion: raw.descripcion ?? undefined,
-    orden: raw.orden ?? undefined,
+    orden: raw.orden,
     color: raw.color ?? undefined,
     activo: raw.activo,
+    hijos: raw.hijos?.map(parseCategoria),
   }
 }
 
-export const listarCategorias = (todas?: boolean) =>
-  api.get<{ ok: boolean; data: { categorias: CategoriaRaw[] } }>('/categorias', { params: todas ? { todas: true } : {} })
+export const listarCategorias = (arbol?: boolean) =>
+  api.get<{ ok: boolean; data: { categorias: CategoriaRaw[] } }>('/categorias', { params: arbol ? { arbol: true } : {} })
     .then(r => r.data.data.categorias.map(parseCategoria))
 
 export const crearCategoria = (data: Partial<Categoria>) =>

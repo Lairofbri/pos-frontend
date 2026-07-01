@@ -1,5 +1,5 @@
 import api from '../../../api/client'
-import type { Mesa } from '../../../types'
+import type { Mesa, Orden } from '../../../types'
 
 interface MesaRaw {
   id: string
@@ -7,9 +7,9 @@ interface MesaRaw {
   nombre: string | null
   capacidad: number
   zona: string
+  estado: string
   activo: boolean
-  ocupada: boolean | null
-  sucursal_id: string | null
+  orden_activa: Orden | null
 }
 
 function parseMesa(raw: MesaRaw): Mesa {
@@ -19,9 +19,9 @@ function parseMesa(raw: MesaRaw): Mesa {
     nombre: raw.nombre ?? undefined,
     capacidad: raw.capacidad,
     zona: raw.zona,
+    estado: raw.estado as Mesa['estado'],
     activo: raw.activo,
-    ocupada: raw.ocupada ?? undefined,
-    sucursal_id: raw.sucursal_id ?? undefined,
+    orden_activa: raw.orden_activa,
   }
 }
 
@@ -29,7 +29,7 @@ export const listarMesas = (todas?: boolean) =>
   api.get<{ ok: boolean; data: { mesas: MesaRaw[] } }>('/mesas', { params: todas ? { todas: true } : {} })
     .then(r => r.data.data.mesas.map(parseMesa))
 
-export const crearMesa = (data: { numero: string; nombre?: string; capacidad: number; zona: string; sucursal_id?: string }) =>
+export const crearMesa = (data: { numero: string; nombre?: string; capacidad: number; zona: string }) =>
   api.post<{ ok: boolean; data: { mesa: MesaRaw } }>('/mesas', data)
     .then(r => parseMesa(r.data.data.mesa))
 

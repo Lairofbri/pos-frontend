@@ -46,7 +46,7 @@ export default function ClientesPage() {
   const [form, setForm] = useState({
     nombre: '', apellido: '', telefono: '', email: '',
     tipo_documento: '', numero_documento: '', nit: '', nrc: '',
-    razon_social: '', direccion: '', municipio: '', departamento: '', notas: '',
+    razon_social: '', direccion: '', municipio: '', departamento: '',
   })
 
   const { data, isLoading, error, refetch } = useQuery({
@@ -86,7 +86,6 @@ export default function ClientesPage() {
     direccion: form.direccion || undefined,
     municipio: form.municipio || undefined,
     departamento: form.departamento || undefined,
-    notas: form.notas || undefined,
   })
 
   const abrirNuevo = () => { setEditando(null); resetForm(); setPanelOpen(true) }
@@ -98,7 +97,6 @@ export default function ClientesPage() {
       tipo_documento: c.tipo_documento ?? '', numero_documento: c.numero_documento ?? '',
       nit: c.nit ?? '', nrc: c.nrc ?? '', razon_social: c.razon_social ?? '',
       direccion: c.direccion ?? '', municipio: c.municipio ?? '', departamento: c.departamento ?? '',
-      notas: c.notas ?? '',
     })
     setPanelOpen(true)
   }
@@ -108,7 +106,7 @@ export default function ClientesPage() {
   const resetForm = () => setForm({
     nombre: '', apellido: '', telefono: '', email: '',
     tipo_documento: '', numero_documento: '', nit: '', nrc: '',
-    razon_social: '', direccion: '', municipio: '', departamento: '', notas: '',
+    razon_social: '', direccion: '', municipio: '', departamento: '',
   })
 
   const guardar = () => { if (editando) editarMutation.mutate(); else crearMutation.mutate() }
@@ -156,7 +154,6 @@ export default function ClientesPage() {
             <Input label="Municipio" value={form.municipio} onChange={(e) => setForm({ ...form, municipio: e.target.value })} />
             <Input label="Departamento" value={form.departamento} onChange={(e) => setForm({ ...form, departamento: e.target.value })} />
           </div>
-          <Input label="Notas" value={form.notas} onChange={(e) => setForm({ ...form, notas: e.target.value })} />
 
           <div className="flex gap-2 pt-2">
             <Button className="flex-1" onClick={guardar} loading={crearMutation.isPending || editarMutation.isPending} disabled={!form.nombre}>

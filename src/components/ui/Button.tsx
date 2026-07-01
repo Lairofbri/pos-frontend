@@ -10,7 +10,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variants = {
   primary:
-    'bg-accent text-bg-primary border-accent-light hover:glow-amber active:bg-accent-light',
+    'bg-accent text-bg-primary border-accent-light hover:glow-terracota active:bg-accent-dark',
   secondary:
     'bg-transparent text-text-primary border-border hover:border-accent hover:text-accent',
   danger:

@@ -27,9 +27,14 @@ const columns: Column<Mesa>[] = [
   { key: 'capacidad', header: 'Cap.', sortable: true, render: (m) => <span className="font-mono text-text-secondary">{m.capacidad}</span> },
   { key: 'zona', header: 'Zona', sortable: true },
   {
-    key: 'ocupada',
+    key: 'estado',
     header: 'Estado',
-    render: (m) => m.ocupada ? <Badge variant="warning">Ocupada</Badge> : <Badge variant="success">Disponible</Badge>,
+    render: (m) => {
+      if (m.estado === 'ocupada') return <Badge variant="warning">Ocupada</Badge>
+      if (m.estado === 'reservada') return <Badge variant="info">Reservada</Badge>
+      if (m.estado === 'inactiva') return <Badge variant="danger">Inactiva</Badge>
+      return <Badge variant="success">Disponible</Badge>
+    },
   },
   {
     key: 'activo',

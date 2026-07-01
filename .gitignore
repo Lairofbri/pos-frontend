@@ -27,5 +27,6 @@ dist-ssr
 AGENTS.md
 docs/superpowers/specs
 .superpowers
+API_PATCH_GUIDE.md
 
 
