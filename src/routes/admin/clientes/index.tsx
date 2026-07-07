@@ -58,19 +58,16 @@ export default function ClientesPage() {
   const crearMutation = useMutation({
     mutationFn: () => crearCliente(cleanForm()),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['clientes'] }); cerrarPanel(); showToast({ type: 'success', message: 'Cliente creado' }) },
-    onError: (err: Error) => showToast({ type: 'error', message: 'Error al crear', description: err.message }),
   })
 
   const editarMutation = useMutation({
     mutationFn: () => editando ? actualizarCliente(editando.id, cleanForm()) : Promise.reject(),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['clientes'] }); cerrarPanel(); showToast({ type: 'success', message: 'Cliente actualizado' }) },
-    onError: (err: Error) => showToast({ type: 'error', message: 'Error al actualizar', description: err.message }),
   })
 
   const eliminarMutation = useMutation({
     mutationFn: () => confirmDelete ? eliminarCliente(confirmDelete.id) : Promise.reject(),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['clientes'] }); setConfirmDelete(null); showToast({ type: 'success', message: 'Cliente eliminado' }) },
-    onError: (err: Error) => showToast({ type: 'error', message: 'Error al eliminar', description: err.message }),
   })
 
   const cleanForm = () => ({

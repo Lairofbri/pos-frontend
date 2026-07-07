@@ -26,11 +26,11 @@ export function GerentePinModal({ open, tenantId, onAuthorized, onClose }: Geren
   const prevOpen = useRef(false)
 
   const { data: usuarios, isError } = useQuery({
-    queryKey: ['usuarios-pin'],
+    queryKey: ['usuarios-pin', tenantId],
     queryFn: () =>
-      api.get<{ ok: boolean; data: { usuarios: UsuarioItem[] } }>('/usuarios/pin-list')
+      api.get<{ ok: boolean; data: { usuarios: UsuarioItem[] } }>('/usuarios/pin-list', { headers: { 'X-Tenant-Id': tenantId } })
         .then(r => r.data.data.usuarios),
-    enabled: open,
+    enabled: open && !!tenantId,
   })
 
   useEffect(() => {

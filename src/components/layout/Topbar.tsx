@@ -6,9 +6,8 @@ import { useAuthStore } from '../../store/authStore'
 import { useSidebar } from '../../hooks/useSidebar'
 import { ZoneSelector } from '../ui/ZoneSelector'
 import { Icon } from '../shared/Icon'
-import { STORAGE_KEYS } from '../../config/constants'
+import api from '../../api/client'
 import { getCajaActiva } from '../../routes/admin/caja/api'
-import { logout } from '../../routes/login/api'
 
 export function Topbar() {
   const navigate = useNavigate()
@@ -35,9 +34,8 @@ export function Topbar() {
   const handleLogout = async () => {
     setLoggingOut(true)
     try {
-      const refreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN)
-      if (refreshToken && token) {
-        await logout(refreshToken)
+      if (token) {
+        await api.post('/auth/logout', {}, { withCredentials: true })
       }
     } catch {
       // cerrar sesión aunque falle la petición

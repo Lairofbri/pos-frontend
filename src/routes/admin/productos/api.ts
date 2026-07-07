@@ -66,3 +66,18 @@ export const actualizarProducto = (id: string, data: Partial<Producto>) =>
 
 export const desactivarProducto = (id: string) =>
   api.delete(`/productos/${id}`).then((r) => r.data)
+
+export const subirImagen = (id: string, file: File) => {
+  const formData = new FormData()
+  formData.append('imagen', file)
+  return api
+    .post<{ ok: boolean; data: { producto: ProductoRaw } }>(`/productos/${id}/imagen`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    .then((r) => parseProducto(r.data.data.producto))
+}
+
+export const eliminarImagenProducto = (id: string) =>
+  api
+    .delete<{ ok: boolean; data: { producto: ProductoRaw } }>(`/productos/${id}/imagen`)
+    .then((r) => parseProducto(r.data.data.producto))

@@ -60,7 +60,7 @@ export default function LoginPage() {
   }
 
   const handlePinSubmit = async () => {
-    if (!effectiveEmpresaId || !selectedUser) { setError('Selecciona un usuario'); return }
+    if (!effectiveEmpresaId || !selectedUser?.id) { setError('Selecciona un usuario'); return }
     if (pin.length < 4) { setError('PIN inválido'); return }
     setError('')
     setLoading(true)

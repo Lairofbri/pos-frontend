@@ -53,19 +53,16 @@ export default function CategoriasPage() {
   const crearMutation = useMutation({
     mutationFn: () => crearCategoria({ ...form, color: form.color || undefined }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['categorias'] }); cerrarPanel(); showToast({ type: 'success', message: 'Categoría creada' }) },
-    onError: (err: Error) => showToast({ type: 'error', message: 'Error al crear', description: err.message }),
   })
 
   const editarMutation = useMutation({
     mutationFn: () => editando ? actualizarCategoria(editando.id, { ...form, color: form.color || undefined }) : Promise.reject(),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['categorias'] }); cerrarPanel(); showToast({ type: 'success', message: 'Categoría actualizada' }) },
-    onError: (err: Error) => showToast({ type: 'error', message: 'Error al actualizar', description: err.message }),
   })
 
   const eliminarMutation = useMutation({
     mutationFn: () => confirmDelete ? eliminarCategoria(confirmDelete.id) : Promise.reject(),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['categorias'] }); setConfirmDelete(null); showToast({ type: 'success', message: 'Categoría eliminada' }) },
-    onError: (err: Error) => showToast({ type: 'error', message: 'Error al eliminar', description: err.message }),
   })
 
   const abrirNuevo = () => { setEditando(null); setForm({ nombre: '', descripcion: '', color: '' }); setPanelOpen(true) }

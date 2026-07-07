@@ -60,13 +60,11 @@ export default function MesasPage() {
   const crearMutation = useMutation({
     mutationFn: () => crearMesa({ numero: form.numero, nombre: form.nombre || undefined, capacidad: parseInt(form.capacidad || '4'), zona: form.zona }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['mesas-admin'] }); queryClient.invalidateQueries({ queryKey: ['mesas'] }); cerrarPanel(); showToast({ type: 'success', message: 'Mesa creada' }) },
-    onError: (err: Error) => showToast({ type: 'error', message: 'Error al crear', description: err.message }),
   })
 
   const editarMutation = useMutation({
     mutationFn: () => editando ? actualizarMesa(editando.id, { numero: form.numero, nombre: form.nombre || undefined, capacidad: parseInt(form.capacidad || '4'), zona: form.zona }) : Promise.reject(),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['mesas-admin'] }); queryClient.invalidateQueries({ queryKey: ['mesas'] }); cerrarPanel(); showToast({ type: 'success', message: 'Mesa actualizada' }) },
-    onError: (err: Error) => showToast({ type: 'error', message: 'Error al actualizar', description: err.message }),
   })
 
   const abrirNuevo = () => { setEditando(null); setForm({ numero: '', nombre: '', capacidad: '4', zona: 'salon' }); setPanelOpen(true) }

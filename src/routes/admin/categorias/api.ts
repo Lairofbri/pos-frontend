@@ -7,6 +7,7 @@ interface CategoriaRaw {
   nombre: string
   descripcion: string | null
   orden: number
+  icono: string | null
   color: string | null
   activo: boolean
   hijos?: CategoriaRaw[]
@@ -19,6 +20,7 @@ function parseCategoria(raw: CategoriaRaw): Categoria {
     nombre: raw.nombre,
     descripcion: raw.descripcion ?? undefined,
     orden: raw.orden,
+    icono: raw.icono ?? undefined,
     color: raw.color ?? undefined,
     activo: raw.activo,
     hijos: raw.hijos?.map(parseCategoria),

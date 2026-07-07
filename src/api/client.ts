@@ -1,16 +1,45 @@
 import axios from 'axios'
-import { STORAGE_KEYS } from '../config/constants'
+import { useAuthStore } from '../store/authStore'
+import { useToastStore } from '../store/toastStore'
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000/api',
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
 })
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN)
+  const token = useAuthStore.getState().token
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
+
+const MENSAJES_POR_CODIGO: Record<number, string> = {
+  400: 'Solicitud inválida. Revisa los datos ingresados.',
+  403: 'No tienes permiso para realizar esta acción.',
+  404: 'El recurso solicitado no fue encontrado.',
+  409: 'Ya existe un registro con esos datos.',
+  429: 'Demasiadas solicitudes. Intenta más tarde.',
+  500: 'Error interno del servidor. Intenta más tarde.',
+}
+
+let toastTimer: ReturnType<typeof setTimeout> | null = null
+
+function mostrarToast(error: any) {
+  const status = error.response?.status
+  const mensajeBackend = error.response?.data?.mensaje
+  const titulo = MENSAJES_POR_CODIGO[status] || (mensajeBackend ? 'Error' : 'Error')
+
+  if (toastTimer) clearTimeout(toastTimer)
+  toastTimer = setTimeout(() => {
+    useToastStore.getState().show({
+      type: 'error',
+      message: titulo,
+      description: mensajeBackend || undefined,
+    })
+    toastTimer = null
+  }, 0)
+}
 
 api.interceptors.response.use(
   (res) => res,
@@ -22,22 +51,22 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !original._retry) {
       original._retry = true
       try {
-        const refreshToken = localStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN)
         const { data } = await axios.post(
           `${api.defaults.baseURL}/auth/refresh`,
-          { refresh_token: refreshToken }
+          {},
+          { withCredentials: true }
         )
-        localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, data.data.access_token)
-        if (data.data.refresh_token) {
-          localStorage.setItem(STORAGE_KEYS.REFRESH_TOKEN, data.data.refresh_token)
-        }
+        useAuthStore.getState().setToken(data.data.access_token)
         original.headers.Authorization = `Bearer ${data.data.access_token}`
         return api(original)
       } catch {
-        localStorage.clear()
+        useAuthStore.getState().clearAuth()
+        mostrarToast({ response: { status: 401, data: { mensaje: 'Sesión expirada. Inicia sesión nuevamente.' } } })
         window.location.href = '/login'
       }
     }
+
+    mostrarToast(error)
     return Promise.reject(error)
   }
 )

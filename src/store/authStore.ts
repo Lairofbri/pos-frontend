@@ -16,26 +16,25 @@ interface AuthState {
   usuario: Usuario | null
   tenantId: string | null
   setAuth: (token: string, usuario: Usuario) => void
+  setToken: (token: string) => void
   setTenantId: (id: string) => void
   clearAuth: () => void
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  token: localStorage.getItem(STORAGE_KEYS.ACCESS_TOKEN),
+  token: null, // solo en memoria — nunca en localStorage
   usuario: getStoredUsuario(),
   tenantId: localStorage.getItem(STORAGE_KEYS.TENANT_ID),
   setAuth: (token, usuario) => {
-    localStorage.setItem(STORAGE_KEYS.ACCESS_TOKEN, token)
     localStorage.setItem(STORAGE_KEYS.USUARIO_DATA, JSON.stringify(usuario))
     set({ token, usuario })
   },
+  setToken: (token) => set({ token }),
   setTenantId: (id) => {
     localStorage.setItem(STORAGE_KEYS.TENANT_ID, id)
     set({ tenantId: id })
   },
   clearAuth: () => {
-    localStorage.removeItem(STORAGE_KEYS.ACCESS_TOKEN)
-    localStorage.removeItem(STORAGE_KEYS.REFRESH_TOKEN)
     localStorage.removeItem(STORAGE_KEYS.USUARIO_DATA)
     localStorage.removeItem(STORAGE_KEYS.TENANT_ID)
     set({ token: null, usuario: null, tenantId: null })

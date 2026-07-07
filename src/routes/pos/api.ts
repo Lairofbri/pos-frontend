@@ -86,9 +86,10 @@ export const getProductos = (categoriaId?: string) =>
   api.get<{ ok: boolean; data: { productos: ProductoRaw[] } }>('/productos', { params: categoriaId ? { categoria_id: categoriaId } : {} })
     .then(r => r.data.data.productos.map(parseProducto))
 
-export const getCategorias = () =>
-  api.get<{ ok: boolean; data: { categorias: Categoria[] } }>('/categorias')
-    .then(r => r.data.data.categorias)
+export const getCategorias = (arbol?: boolean) =>
+  api.get<{ ok: boolean; data: { categorias: Categoria[] } }>('/categorias', {
+    params: arbol ? { arbol: true } : {},
+  }).then(r => r.data.data.categorias)
     .catch(() => [])
 
 export const getMesas = () =>

@@ -67,19 +67,16 @@ export default function CajaPage() {
   const abrirMutation = useMutation({
     mutationFn: () => abrirCaja({ monto_inicial: parseFloat(montoInicial || '0') }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['caja-activa'] }); queryClient.invalidateQueries({ queryKey: ['caja-historial'] }); setAbrirPanel(false); setMontoInicial(''); showToast({ type: 'success', message: 'Caja abierta' }) },
-    onError: (err: Error) => showToast({ type: 'error', message: 'Error al abrir caja', description: err.message }),
   })
 
   const cerrarMutation = useMutation({
     mutationFn: () => cerrarCaja({ monto_final: parseFloat(montoFinal || '0'), notas_cierre: notasCierre || undefined }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['caja-activa'] }); queryClient.invalidateQueries({ queryKey: ['caja-historial'] }); setCerrarPanel(false); setMontoFinal(''); setNotasCierre(''); showToast({ type: 'success', message: 'Caja cerrada' }) },
-    onError: (err: Error) => showToast({ type: 'error', message: 'Error al cerrar caja', description: err.message }),
   })
 
   const movimientoMutation = useMutation({
     mutationFn: () => registrarMovimiento({ tipo: movTipo, monto: parseFloat(movMonto || '0'), motivo: movMotivo }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['caja-activa'] }); setMovimientoPanel(false); setMovMonto(''); setMovMotivo(''); showToast({ type: 'success', message: 'Movimiento registrado' }) },
-    onError: (err: Error) => showToast({ type: 'error', message: 'Error al registrar movimiento', description: err.message }),
   })
 
   return (

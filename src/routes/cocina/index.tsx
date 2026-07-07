@@ -39,7 +39,6 @@ export default function CocinaPage() {
       queryClient.invalidateQueries({ queryKey: ['orden'] })
       queryClient.invalidateQueries({ queryKey: ['ordenes'] })
     },
-    onError: () => showToast({ type: 'error', message: 'Error al marcar item listo' }),
   })
 
   const completarMutation = useMutation({
@@ -50,7 +49,6 @@ export default function CocinaPage() {
       queryClient.invalidateQueries({ queryKey: ['ordenes'] })
       showToast({ type: 'success', message: 'Orden completada' })
     },
-    onError: () => showToast({ type: 'error', message: 'Error al completar orden' }),
   })
 
   const imprimirTicket = useCallback(async (ordenId: string) => {

@@ -65,7 +65,6 @@ export default function CombosPage() {
       return crearCombo({ nombre: form.nombre, precio: parseFloat(form.precio || '0'), productos: productosPayload })
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['combos'] }); cerrarPanel(); showToast({ type: 'success', message: 'Combo creado' }) },
-    onError: (err: Error) => showToast({ type: 'error', message: 'Error al crear', description: err.message }),
   })
 
   const editarMutation = useMutation({
@@ -75,13 +74,11 @@ export default function CombosPage() {
       return actualizarCombo(editando.id, { nombre: form.nombre, precio: parseFloat(form.precio || '0'), productos: productosPayload })
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['combos'] }); cerrarPanel(); showToast({ type: 'success', message: 'Combo actualizado' }) },
-    onError: (err: Error) => showToast({ type: 'error', message: 'Error al actualizar', description: err.message }),
   })
 
   const eliminarMutation = useMutation({
     mutationFn: () => confirmDelete ? eliminarCombo(confirmDelete.id) : Promise.reject(),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['combos'] }); setConfirmDelete(null); showToast({ type: 'success', message: 'Combo eliminado' }) },
-    onError: (err: Error) => showToast({ type: 'error', message: 'Error al eliminar', description: err.message }),
   })
 
   const abrirNuevo = () => { setEditando(null); setForm({ nombre: '', precio: '' }); setProductos([]); setPanelOpen(true) }

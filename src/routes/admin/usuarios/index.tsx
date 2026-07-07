@@ -62,25 +62,21 @@ export default function UsuariosPage() {
       rol: form.rol,
     }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['usuarios'] }); cerrarPanel(); showToast({ type: 'success', message: 'Usuario creado' }) },
-    onError: (err: Error) => showToast({ type: 'error', message: 'Error al crear', description: err.message }),
   })
 
   const editarMutation = useMutation({
     mutationFn: () => editando ? actualizarUsuario(editando.id, { nombre: form.nombre, apellido: form.apellido || undefined, email: form.email || undefined, rol: form.rol }) : Promise.reject(),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['usuarios'] }); cerrarPanel(); showToast({ type: 'success', message: 'Usuario actualizado' }) },
-    onError: (err: Error) => showToast({ type: 'error', message: 'Error al actualizar', description: err.message }),
   })
 
   const resetPinMutation = useMutation({
     mutationFn: () => editando ? resetearPin(editando.id, nuevoPin) : Promise.reject(),
     onSuccess: () => { setResetPinOpen(false); setNuevoPin(''); showToast({ type: 'success', message: 'PIN reestablecido' }) },
-    onError: (err: Error) => showToast({ type: 'error', message: 'Error al reestablecer PIN', description: err.message }),
   })
 
   const toggleActivoMutation = useMutation({
     mutationFn: (params: { id: string; activo: boolean }) => actualizarUsuario(params.id, { activo: params.activo }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['usuarios'] }); cerrarPanel(); showToast({ type: 'success', message: 'Estado actualizado' }) },
-    onError: (err: Error) => showToast({ type: 'error', message: 'Error al cambiar estado', description: err.message }),
   })
 
   const abrirNuevo = () => {

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryDefaults } from '../../../config/queries'
 import { listarRoles, listarPermisos, obtenerPermisosRol, actualizarPermisosRol, resetPermisosRol } from './api'
@@ -30,20 +30,20 @@ function PermisosEditor({ rol, onSave }: { rol: string; onSave: () => void }) {
     ...queryDefaults('permisos-rol'),
   })
 
-  if (permisosRol && Object.keys(permisosLocales).length === 0) {
-    setPermisosLocales(Object.fromEntries(permisosRol.map((p) => [p.codigo, p.activo])))
-  }
+  useEffect(() => {
+    if (permisosRol && Object.keys(permisosLocales).length === 0) {
+      setPermisosLocales(Object.fromEntries(permisosRol.map((p) => [p.codigo, p.activo])))
+    }
+  }, [permisosRol])
 
   const guardarMutation = useMutation({
     mutationFn: () => actualizarPermisosRol(rol, { permisos: Object.entries(permisosLocales).map(([codigo, activo]) => ({ codigo, activo })) }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['permisos-rol', rol] }); setDirty(false); onSave(); showToast({ type: 'success', message: 'Permisos actualizados' }) },
-    onError: (err: Error) => showToast({ type: 'error', message: 'Error al guardar', description: err.message }),
   })
 
   const resetMutation = useMutation({
     mutationFn: () => resetPermisosRol(rol),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['permisos-rol', rol] }); setConfirmReset(false); setDirty(false); showToast({ type: 'success', message: 'Permisos restablecidos' }) },
-    onError: (err: Error) => showToast({ type: 'error', message: 'Error al restablecer', description: err.message }),
   })
 
   const grupos = useMemo(() => {

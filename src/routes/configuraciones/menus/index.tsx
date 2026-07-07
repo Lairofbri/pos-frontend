@@ -64,7 +64,6 @@ export default function MenusPage() {
       permiso_codigo: form.permiso_codigo || undefined,
     }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['configuraciones', 'menus'] }); cerrarPanel(); showToast({ type: 'success', message: 'Menú creado' }) },
-    onError: (err: Error) => showToast({ type: 'error', message: 'Error al crear', description: err.message }),
   })
 
   const editarMutation = useMutation({
@@ -81,13 +80,11 @@ export default function MenusPage() {
       })
     },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['configuraciones', 'menus'] }); cerrarPanel(); showToast({ type: 'success', message: 'Menú actualizado' }) },
-    onError: (err: Error) => showToast({ type: 'error', message: 'Error al actualizar', description: err.message }),
   })
 
   const eliminarMutation = useMutation({
     mutationFn: () => confirmDelete ? eliminarMenu(confirmDelete.id) : Promise.reject(),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['configuraciones', 'menus'] }); setConfirmDelete(null); showToast({ type: 'success', message: 'Menú eliminado' }) },
-    onError: (err: Error) => showToast({ type: 'error', message: 'Error al eliminar', description: err.message }),
   })
 
   const toggleExpand = (id: string) => {

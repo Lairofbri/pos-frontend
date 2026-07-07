@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { queryDefaults } from '../../config/queries'
 import { TableMap } from './components/TableMap'
@@ -9,14 +9,14 @@ import { PaymentPanel } from './components/PaymentPanel'
 import { ModifierPanel } from './components/ModifierPanel'
 import { GerentePinModal } from '../../components/shared/GerentePinModal'
 import { ConfirmDialog } from '../../components/shared/ConfirmDialog'
-import { crearOrden, agregarItem, eliminarItem, cancelarItem, pagarOrden, enviarCocina, actualizarOrden, cancelarOrden, getOrdenes, getOrden } from './api'
+import { Icon } from '../../components/shared/Icon'
+import { crearOrden, agregarItem, actualizarItem, eliminarItem, cancelarItem, pagarOrden, enviarCocina, actualizarOrden, cancelarOrden, getOrdenes, getOrden } from './api'
 import { useToastStore } from '../../store/toastStore'
 import { useAuthStore } from '../../store/authStore'
 import { useCocinaSocket } from '../../hooks/useSocket'
-import type { Mesa, Producto, OrdenItem } from '../../types'
-
-let itemIdCounter = 0
-function nextId() { return `_local_${++itemIdCounter}` }
+import { useZoneStore } from '../../store/zoneStore'
+import { useCatalogo } from '../../hooks/useCatalogo'
+import type { Mesa, Producto, Orden, OrdenItem } from '../../types'
 
 export default function POSPage() {
   const queryClient = useQueryClient()
@@ -26,10 +26,13 @@ export default function POSPage() {
   const [ordenSeleccionadaId, setOrdenSeleccionadaId] = useState<string | null>(null)
   const [mostrarPayment, setMostrarPayment] = useState(false)
   const [modifierProducto, setModifierProducto] = useState<Producto | null>(null)
-  const [itemsPendientes, setItemsPendientes] = useState<OrdenItem[]>([])
   const [autorizandoItemId, setAutorizandoItemId] = useState<string | null>(null)
   const [confirmarLiberar, setConfirmarLiberar] = useState(false)
-  const [itemsAlLiberar, setItemsAlLiberar] = useState<string[]>([])
+  const [mobileTab, setMobileTab] = useState<'productos' | 'ticket'>('productos')
+
+  const zonaActiva = useZoneStore((s) => s.zona)
+  const setZona = useZoneStore((s) => s.setZona)
+  const { data: zonas } = useCatalogo('zonas')
 
   useCocinaSocket(tenantId ?? '')
 
@@ -39,33 +42,32 @@ export default function POSPage() {
     ...queryDefaults('ordenes'),
   })
 
-  const { data: ordenApi } = useQuery({
+  const { data: ordenActiva } = useQuery({
     queryKey: ['orden', ordenSeleccionadaId],
     queryFn: () => getOrden(ordenSeleccionadaId!),
     enabled: !!ordenSeleccionadaId,
     ...queryDefaults('orden'),
   })
 
-  const itemsEnviados = ordenApi?.items ?? []
+  const setOrdenConReset = (id: string | null) => {
+    setOrdenSeleccionadaId(id)
+    if (id) setMobileTab('productos')
+  }
 
-  const ordenActiva = (() => {
-    if (!ordenApi) return null
-    const enviados = ordenApi.items ?? []
-    return { ...ordenApi, items: [...enviados, ...itemsPendientes] }
-  })()
+  const invalidarOrden = () => {
+    if (ordenSeleccionadaId) {
+      queryClient.invalidateQueries({ queryKey: ['orden', ordenSeleccionadaId] })
+      queryClient.invalidateQueries({ queryKey: ['ordenes'] })
+      queryClient.invalidateQueries({ queryKey: ['mesas'] })
+    }
+  }
 
-  const enviarPendientesApi = async (ordenId: string) => {
-    if (itemsPendientes.length === 0) return
-    await Promise.all(
-      itemsPendientes.map((item) =>
-        agregarItem(ordenId, {
-          producto_id: item.producto_id,
-          cantidad: item.cantidad,
-          notas: item.notas || undefined,
-        })
-      )
-    )
-    setItemsPendientes([])
+  const limpiarOrden = (id: string | null) => {
+    setOrdenConReset(null)
+    setMostrarPayment(false)
+    queryClient.invalidateQueries({ queryKey: ['ordenes'] })
+    queryClient.invalidateQueries({ queryKey: ['mesas'] })
+    if (id) queryClient.removeQueries({ queryKey: ['orden', id] })
   }
 
   const crearMutation = useMutation({
@@ -75,108 +77,138 @@ export default function POSPage() {
         const prev = (old as Array<unknown>) ?? []
         return [...prev, orden]
       })
-      setOrdenSeleccionadaId(orden.id)
-      setItemsPendientes([])
+      queryClient.invalidateQueries({ queryKey: ['mesas'] })
+      setOrdenConReset(orden.id)
     },
-    onError: () => showToast({ type: 'error', message: 'Error al crear orden' }),
+  })
+
+  type AgregarParams = { ordenId: string; productoId: string; cantidad: number; notas?: string; _nombre: string; _precio: number }
+  const agregarItemMutation = useMutation({
+    mutationFn: (params: AgregarParams) =>
+      agregarItem(params.ordenId, { producto_id: params.productoId, cantidad: params.cantidad, notas: params.notas }),
+    onMutate: async (params: AgregarParams) => {
+      await queryClient.cancelQueries({ queryKey: ['orden', params.ordenId] })
+      const previous = queryClient.getQueryData(['orden', params.ordenId])
+      queryClient.setQueryData(['orden', params.ordenId], (old: Orden | undefined) => {
+        if (!old) return old
+        const idx = old.items.findIndex(
+          (i) => i.producto_id === params.productoId && i.estado === 'pendiente' && !i.notas && !params.notas
+        )
+        if (idx >= 0) {
+          const newItems = [...old.items]
+          newItems[idx] = { ...newItems[idx], cantidad: newItems[idx].cantidad + 1 }
+          return { ...old, items: newItems }
+        }
+        const optItem: OrdenItem = {
+          id: `_opt_${Date.now()}`, producto_id: params.productoId,
+          nombre: params._nombre, cantidad: params.cantidad,
+          precio_unitario: params._precio,
+          subtotal: params._precio * params.cantidad,
+          descuento_porcentaje: 0, estado: 'pendiente', notas: params.notas,
+        }
+        return { ...old, items: [...old.items, optItem] }
+      })
+      return { previous }
+    },
+    onError: (_, params, context) => {
+      if (context?.previous) queryClient.setQueryData(['orden', params.ordenId], context.previous)
+      showToast({ type: 'error', message: 'Error al agregar producto' })
+    },
+    onSettled: (_, __, params) => {
+      queryClient.invalidateQueries({ queryKey: ['orden', params.ordenId] })
+    },
+  })
+
+  const incrementarItemMutation = useMutation({
+    mutationFn: ({ ordenId, itemId, cantidad }: { ordenId: string; itemId: string; cantidad: number }) =>
+      actualizarItem(ordenId, itemId, { cantidad }),
+    onMutate: async (params) => {
+      await queryClient.cancelQueries({ queryKey: ['orden', params.ordenId] })
+      const previous = queryClient.getQueryData(['orden', params.ordenId])
+      queryClient.setQueryData(['orden', params.ordenId], (old: Orden | undefined) => {
+        if (!old) return old
+        return { ...old, items: old.items.map((item) => item.id === params.itemId ? { ...item, cantidad: params.cantidad } : item) }
+      })
+      return { previous }
+    },
+    onError: (_, params, context) => {
+      if (context?.previous) queryClient.setQueryData(['orden', params.ordenId], context.previous)
+      showToast({ type: 'error', message: 'Error al actualizar cantidad' })
+    },
+    onSettled: (_, __, params) => {
+      queryClient.invalidateQueries({ queryKey: ['orden', params.ordenId] })
+    },
   })
 
   const cocinaMutation = useMutation({
-    mutationFn: async (ordenId: string) => {
-      await enviarPendientesApi(ordenId)
-      return enviarCocina(ordenId)
-    },
+    mutationFn: (ordenId: string) => enviarCocina(ordenId),
     onSuccess: () => {
-      if (ordenSeleccionadaId) {
-        queryClient.invalidateQueries({ queryKey: ['orden', ordenSeleccionadaId] })
-        queryClient.invalidateQueries({ queryKey: ['ordenes'] })
-        queryClient.invalidateQueries({ queryKey: ['mesas'] })
-      }
+      invalidarOrden()
       showToast({ type: 'success', message: 'Orden enviada a cocina' })
     },
-    onError: () => showToast({ type: 'error', message: 'Error al enviar a cocina' }),
   })
 
   const pagarMutation = useMutation({
-    mutationFn: async (pdata: { metodo: string; monto_efectivo?: number; monto_tarjeta?: number; referencia_tarjeta?: string }) => {
-      await enviarPendientesApi(ordenSeleccionadaId!)
-      return pagarOrden(ordenSeleccionadaId!, pdata)
-    },
+    mutationFn: (pdata: { metodo: string; monto_efectivo?: number; monto_tarjeta?: number; referencia_tarjeta?: string }) =>
+      pagarOrden(ordenSeleccionadaId!, pdata),
     onSuccess: () => {
       const id = ordenSeleccionadaId
-      setOrdenSeleccionadaId(null)
-      setMostrarPayment(false)
-      setItemsPendientes([])
-      queryClient.invalidateQueries({ queryKey: ['ordenes'] })
-      queryClient.invalidateQueries({ queryKey: ['mesas'] })
-      if (id) queryClient.removeQueries({ queryKey: ['orden', id] })
+      limpiarOrden(id)
       showToast({ type: 'success', message: 'Pago completado' })
     },
-    onError: () => showToast({ type: 'error', message: 'Error al procesar pago' }),
   })
 
   const descuentoMutation = useMutation({
     mutationFn: (pct: number) => actualizarOrden(ordenActiva!.id, { porcentaje_descuento: pct || undefined }),
-    onSuccess: () => {
-      if (ordenSeleccionadaId) queryClient.invalidateQueries({ queryKey: ['orden', ordenSeleccionadaId] })
-      showToast({ type: 'success', message: 'Descuento actualizado' })
-    },
-    onError: () => showToast({ type: 'error', message: 'Error al aplicar descuento' }),
+    onSuccess: () => { invalidarOrden() },
   })
 
   const notasMutation = useMutation({
     mutationFn: (notas: string) => actualizarOrden(ordenActiva!.id, { notas: notas || undefined }),
-    onSuccess: () => {
-      if (ordenSeleccionadaId) queryClient.invalidateQueries({ queryKey: ['orden', ordenSeleccionadaId] })
-    },
-    onError: () => showToast({ type: 'error', message: 'Error al guardar notas' }),
+    onSuccess: () => { invalidarOrden() },
   })
 
   const eliminarMutation = useMutation({
     mutationFn: ({ ordenId, itemId }: { ordenId: string; itemId: string }) => eliminarItem(ordenId, itemId),
-    onSuccess: () => {
-      if (ordenSeleccionadaId) queryClient.invalidateQueries({ queryKey: ['orden', ordenSeleccionadaId] })
-    },
-    onError: () => showToast({ type: 'error', message: 'Error al eliminar item' }),
+    onSuccess: () => { invalidarOrden() },
   })
 
   const cancelarItemMutation = useMutation({
     mutationFn: ({ ordenId, itemId }: { ordenId: string; itemId: string }) => cancelarItem(ordenId, itemId),
     onSuccess: () => {
-      if (ordenSeleccionadaId) queryClient.invalidateQueries({ queryKey: ['orden', ordenSeleccionadaId] })
+      invalidarOrden()
       showToast({ type: 'success', message: 'Item cancelado por gerente' })
     },
-    onError: () => showToast({ type: 'error', message: 'Error al cancelar item' }),
   })
 
   const liberarMutation = useMutation({
     mutationFn: async () => {
       const ordenId = ordenSeleccionadaId!
-      await enviarPendientesApi(ordenId)
-      const itemsActuales = ordenApi?.items ?? []
-      const pendientesApi = itemsActuales.filter((i) => i.estado === 'pendiente')
-      await Promise.all(pendientesApi.map((i) => cancelarItem(ordenId, i.id)))
+      const items = ordenActiva?.items ?? []
+      const pendientes = items.filter((i) => i.estado === 'pendiente')
+      await Promise.all(pendientes.map((i) => cancelarItem(ordenId, i.id)))
       await cancelarOrden(ordenId)
     },
     onSuccess: () => {
       const id = ordenSeleccionadaId
-      setOrdenSeleccionadaId(null)
-      setItemsPendientes([])
+      setOrdenConReset(null)
       queryClient.invalidateQueries({ queryKey: ['ordenes'] })
       queryClient.invalidateQueries({ queryKey: ['mesas'] })
       if (id) queryClient.removeQueries({ queryKey: ['orden', id] })
       showToast({ type: 'success', message: 'Mesa liberada' })
     },
-    onError: () => showToast({ type: 'error', message: 'Error al liberar mesa' }),
   })
 
   const handleSelectMesa = (mesa: Mesa) => {
-    const existente = ordenes?.find((o) => o.mesa_id === mesa.id && o.estado !== 'pagada' && o.estado !== 'cancelada')
-    if (existente) {
-      setOrdenSeleccionadaId(existente.id)
-      setItemsPendientes([])
+    if (mesa.orden_activa) {
+      setOrdenConReset(mesa.orden_activa.id)
     } else {
-      crearMutation.mutate({ tipo: 'mesa', mesa_id: mesa.id })
+      const existente = ordenes?.find((o) => o.mesa_id === mesa.id && o.estado !== 'pagada' && o.estado !== 'cancelada')
+      if (existente) {
+        setOrdenConReset(existente.id)
+      } else {
+        crearMutation.mutate({ tipo: 'mesa', mesa_id: mesa.id })
+      }
     }
   }
 
@@ -185,34 +217,25 @@ export default function POSPage() {
     crearMutation.mutate({ tipo: 'rapido' })
   }
 
-  const agregarItemLocal = (p: Producto, notas?: string) => {
-    const item: OrdenItem = {
-      id: nextId(), producto_id: p.id, nombre: p.nombre,
-      cantidad: 1, precio_unitario: p.precio,
-      subtotal: p.precio, descuento_porcentaje: 0,
-      estado: 'pendiente', notas,
-    }
-    setItemsPendientes((prev) => {
-      const idx = prev.findIndex((i) => i.producto_id === p.id && !i.notas)
-      if (idx >= 0) {
-        const copy = [...prev]
-        copy[idx] = { ...copy[idx], cantidad: copy[idx].cantidad + 1 }
-        return copy
-      }
-      return [...prev, item]
-    })
-  }
-
   const handleSelectProducto = (p: Producto) => {
     if (!ordenActiva) return
-    const existentePendiente = itemsPendientes.find((i) => i.producto_id === p.id && !i.notas)
-    const existenteApi = itemsEnviados.find((i) => i.producto_id === p.id && i.estado === 'pendiente' && !i.notas)
-    if (existentePendiente) {
-      setItemsPendientes((prev) => prev.map((i) => i.id === existentePendiente.id ? { ...i, cantidad: i.cantidad + 1 } : i))
-    } else if (existenteApi) {
-      setItemsPendientes((prev) => [...prev, { id: nextId(), producto_id: p.id, nombre: p.nombre, cantidad: 1, precio_unitario: p.precio, subtotal: p.precio, descuento_porcentaje: 0, estado: 'pendiente' }])
+    const existingPending = ordenActiva.items.find(
+      (i) => i.producto_id === p.id && i.estado === 'pendiente' && !i.notas
+    )
+    if (existingPending) {
+      incrementarItemMutation.mutate({
+        ordenId: ordenActiva.id,
+        itemId: existingPending.id,
+        cantidad: existingPending.cantidad + 1,
+      })
     } else {
-      agregarItemLocal(p)
+      agregarItemMutation.mutate({
+        ordenId: ordenActiva.id,
+        productoId: p.id,
+        cantidad: 1,
+        _nombre: p.nombre,
+        _precio: p.precio,
+      })
     }
   }
 
@@ -221,18 +244,21 @@ export default function POSPage() {
     setModifierProducto(p)
   }
 
-  const handleModifierConfirm = async (notas: string) => {
+  const handleModifierConfirm = (notas: string) => {
     if (!ordenActiva || !modifierProducto) return
-    agregarItemLocal(modifierProducto, notas || undefined)
+    agregarItemMutation.mutate({
+      ordenId: ordenActiva.id,
+      productoId: modifierProducto.id,
+      cantidad: 1,
+      notas: notas || undefined,
+      _nombre: modifierProducto.nombre,
+      _precio: modifierProducto.precio,
+    })
     setModifierProducto(null)
   }
 
   const handleEliminarItem = (itemId: string) => {
-    if (itemId.startsWith('_local_')) {
-      setItemsPendientes((prev) => prev.filter((i) => i.id !== itemId))
-    } else {
-      eliminarMutation.mutate({ ordenId: ordenSeleccionadaId!, itemId })
-    }
+    eliminarMutation.mutate({ ordenId: ordenSeleccionadaId!, itemId })
   }
 
   const handleAutorizarEliminacion = (itemId: string) => {
@@ -247,13 +273,6 @@ export default function POSPage() {
   }
 
   const handleLiberarMesa = () => {
-    const items = ordenApi?.items ?? []
-    const pendientes = items.filter((i) => i.estado === 'pendiente')
-    const locales = itemsPendientes.length
-    const msgs: string[] = []
-    if (pendientes.length > 0) msgs.push(`${pendientes.length} item(s) pendientes en API`)
-    if (locales > 0) msgs.push(`${locales} item(s) locales no enviados`)
-    setItemsAlLiberar(msgs)
     setConfirmarLiberar(true)
   }
 
@@ -263,60 +282,213 @@ export default function POSPage() {
   }
 
   const handleCambiarMesa = () => {
-    setOrdenSeleccionadaId(null)
-    setItemsPendientes([])
+    setOrdenConReset(null)
   }
 
+  const opcionesZona = useMemo(
+    () => (zonas ?? []).map((z) => ({ value: z.valor, label: z.label })),
+    [zonas]
+  )
+
   return (
-    <div className="flex flex-col lg:flex-row gap-4 h-full">
-      <div className="flex-1 flex flex-col min-w-0">
-        {!ordenActiva ? (
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <button onClick={() => setModo('mesa')} className={`px-4 py-2 rounded-lg border-2 text-sm font-body font-semibold transition-all cursor-pointer ${modo === 'mesa' ? 'border-accent bg-accent/10 text-accent' : 'border-border text-text-secondary hover:border-accent/50'}`}>🪑 Mesas</button>
-              <button onClick={() => setModo('rapido')} className={`px-4 py-2 rounded-lg border-2 text-sm font-body font-semibold transition-all cursor-pointer ${modo === 'rapido' ? 'border-accent bg-accent/10 text-accent' : 'border-border text-text-secondary hover:border-accent/50'}`}>⚡ Rápido</button>
-            </div>
-            {modo === 'mesa' ? (
-              <TableMap onSelectMesa={handleSelectMesa} />
-            ) : (
-              <div className="flex flex-col items-center justify-center py-16 gap-4">
-                <span className="text-5xl">⚡</span>
-                <h2 className="font-display text-lg text-text-primary">Venta Rápida</h2>
-                <p className="text-text-secondary text-sm font-body text-center">Agrega productos para crear una comanda sin mesa asignada</p>
-                <button onClick={iniciarRapido} className="px-6 py-3 rounded-xl bg-accent text-bg-primary font-body font-semibold hover:glow-terracota transition-all cursor-pointer">Iniciar venta rápida</button>
+    <>
+      <div
+        className="flex flex-col lg:grid lg:grid-cols-[1fr_max-w-md] xl:grid-cols-[1fr_420px] gap-6 h-full overflow-hidden pb-16 lg:pb-0"
+        style={{ fontFamily: "'Inter', sans-serif" }}
+      >
+        {/* LEFT COLUMN */}
+        <div className={`flex flex-col overflow-hidden min-h-0 px-4 lg:pl-6 lg:pr-0 lg:py-6 ${ordenActiva && mobileTab === 'ticket' ? 'hidden lg:flex' : ''}`}>
+          {!ordenActiva ? (
+            <>
+              {/* Zone tabs + modo toggle */}
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-4 lg:mb-6 shrink-0">
+                <div className="flex items-center gap-1.5 lg:gap-2 flex-wrap">
+                  {opcionesZona.map((z) => (
+                    <button
+                      key={z.value}
+                      onClick={() => setZona(z.value)}
+                      style={{
+                        height: 34,
+                        padding: '0 14px',
+                        borderRadius: 10,
+                        border: zonaActiva === z.value ? 'none' : '1px solid #D6C6B6',
+                        background: zonaActiva === z.value ? '#C7672F' : '#FFFFFF',
+                        color: zonaActiva === z.value ? '#FFFFFF' : '#3E2A1F',
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: 13,
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                        boxShadow: zonaActiva === z.value ? '0 8px 18px rgba(199,102,46,0.22)' : 'none',
+                      }}
+                    >
+                      {z.label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-1.5 lg:gap-2">
+                  <button
+                    onClick={() => setModo('mesa')}
+                    style={{
+                      height: 34,
+                      padding: '0 14px',
+                      borderRadius: 10,
+                      border: modo === 'mesa' ? 'none' : '1px solid #D6C6B6',
+                      background: modo === 'mesa' ? '#C7672F' : '#FFFFFF',
+                      color: modo === 'mesa' ? '#FFFFFF' : '#3E2A1F',
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: 13,
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <Icon name="table" className="w-3.5 h-3.5 inline mr-1" />
+                    Mesas
+                  </button>
+                  <button
+                    onClick={iniciarRapido}
+                    style={{
+                      height: 34,
+                      padding: '0 14px',
+                      borderRadius: 10,
+                      border: modo === 'rapido' ? 'none' : '1px solid #D6C6B6',
+                      background: modo === 'rapido' ? '#C7672F' : '#FFFFFF',
+                      color: modo === 'rapido' ? '#FFFFFF' : '#3E2A1F',
+                      fontFamily: "'Inter', sans-serif",
+                      fontSize: 13,
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                    }}
+                  >
+                    <Icon name="shopping-cart" className="w-3.5 h-3.5 inline mr-1" />
+                    Rápido
+                  </button>
+                </div>
               </div>
-            )}
-          </div>
-        ) : (
-          <div className="flex flex-col h-full">
-            <div className="flex items-center justify-between mb-3 shrink-0">
-              <button onClick={handleCambiarMesa} className="text-sm font-body text-text-secondary hover:text-accent transition-colors cursor-pointer">← {modo === 'rapido' ? 'Nueva venta' : 'Cambiar mesa'}</button>
+
+              {/* TableMap */}
+              <div className="flex-1 overflow-y-auto min-h-0">
+                {modo === 'mesa' ? (
+                  <TableMap onSelectMesa={handleSelectMesa} />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full gap-4">
+                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 16, color: '#6D5B4E' }}>
+                      Inicia una venta rápida sin mesa asignada
+                    </p>
+                    <button
+                      onClick={iniciarRapido}
+                      style={{
+                        height: 44,
+                        padding: '0 24px',
+                        borderRadius: 12,
+                        background: '#C7662E',
+                        color: '#FFFFFF',
+                        fontFamily: "'Inter', sans-serif",
+                        fontSize: 16,
+                        fontWeight: 600,
+                        border: 'none',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Iniciar venta rápida
+                    </button>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Back button + ProductGrid */}
+              <div className="flex items-center justify-between mb-3 lg:mb-4 shrink-0">
+                <button
+                  onClick={handleCambiarMesa}
+                  style={{
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: 13,
+                    fontWeight: 500,
+                    color: '#6D5B4E',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <Icon name="arrow-left" className="w-4 h-4" />
+                  {modo === 'rapido' ? 'Nueva venta' : 'Cambiar mesa'}
+                </button>
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <ProductGrid
+                  onSelectProducto={handleSelectProducto}
+                  onLongPressProducto={handleLongPressProducto}
+                />
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* RIGHT COLUMN */}
+        <div className={`flex flex-col overflow-hidden min-h-0 px-4 lg:pl-0 lg:pr-6 lg:py-6 ${!ordenActiva ? 'hidden md:flex' : ordenActiva && mobileTab === 'productos' ? 'hidden lg:flex' : ''}`}>
+          {ordenActiva ? (
+            <div className="flex-1 overflow-y-auto">
+              <TicketPanel
+                key={ordenActiva.id}
+                orden={ordenActiva}
+                onEliminarItem={handleEliminarItem}
+                onEnviarCocina={() => ordenActiva && cocinaMutation.mutate(ordenActiva.id)}
+                onPagar={() => setMostrarPayment(true)}
+                onDescuento={(pct) => ordenActiva && descuentoMutation.mutate(pct)}
+                onGuardarNotas={(n) => notasMutation.mutate(n)}
+                onSolicitarAutorizacion={handleAutorizarEliminacion}
+                onLiberarMesa={handleLiberarMesa}
+                enviando={cocinaMutation.isPending}
+              />
             </div>
-            <div className="flex-1 overflow-hidden">
-              <ProductGrid onSelectProducto={handleSelectProducto} onLongPressProducto={handleLongPressProducto} />
+          ) : (
+            <div className="overflow-y-auto">
+              <RestaurantSummary />
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      <div className="lg:w-[360px] xl:w-[400px] shrink-0">
-        {ordenActiva ? (
-          <TicketPanel
-            key={ordenActiva.id}
-            orden={ordenActiva}
-            onEliminarItem={handleEliminarItem}
-            onEnviarCocina={() => ordenActiva && cocinaMutation.mutate(ordenActiva.id)}
-            onPagar={() => setMostrarPayment(true)}
-            onDescuento={(pct) => ordenActiva && descuentoMutation.mutate(pct)}
-            onGuardarNotas={(n) => notasMutation.mutate(n)}
-            onSolicitarAutorizacion={handleAutorizarEliminacion}
-            onLiberarMesa={handleLiberarMesa}
-            enviando={cocinaMutation.isPending}
-          />
-        ) : (
-          <RestaurantSummary />
-        )}
-      </div>
+      {/* Mobile bottom tabs — only when order active */}
+      {ordenActiva && (
+        <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white border-t border-border flex items-center justify-around h-14 px-2 pb-1">
+          <button
+            onClick={() => setMobileTab('productos')}
+            className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full rounded-lg transition-colors ${
+              mobileTab === 'productos' ? 'text-pos-accent bg-pos-accent/5' : 'text-text-secondary'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+            </svg>
+            <span className="text-[10px] font-semibold">Productos</span>
+          </button>
+          <button
+            onClick={() => setMobileTab('ticket')}
+            className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full rounded-lg transition-colors relative ${
+              mobileTab === 'ticket' ? 'text-pos-accent bg-pos-accent/5' : 'text-text-secondary'
+            }`}
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+            </svg>
+            <span className="text-[10px] font-semibold">Ticket</span>
+            {ordenActiva.items.length > 0 && (
+              <span className="absolute -top-0.5 right-1/4 min-w-[18px] h-[18px] rounded-full bg-accent text-white text-[10px] font-bold flex items-center justify-center px-1">
+                {ordenActiva.items.reduce((s, i) => s + i.cantidad, 0)}
+              </span>
+            )}
+          </button>
+        </div>
+      )}
 
       <PaymentPanel
         open={mostrarPayment}
@@ -343,16 +515,12 @@ export default function POSPage() {
       <ConfirmDialog
         open={confirmarLiberar}
         title="Liberar mesa"
-        message={
-          itemsAlLiberar.length > 0
-            ? `¿Estás seguro? ${itemsAlLiberar.join('. ')} se perderán.`
-            : '¿Estás seguro de liberar esta mesa?'
-        }
+        message="¿Estás seguro de liberar esta mesa? Se cancelarán los items pendientes."
         confirmLabel="Liberar"
         onConfirm={confirmarLiberarMesa}
         onCancel={() => setConfirmarLiberar(false)}
         loading={liberarMutation.isPending}
       />
-    </div>
+    </>
   )
 }

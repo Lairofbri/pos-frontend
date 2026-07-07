@@ -78,6 +78,7 @@ export interface Categoria {
   parent_id: string | null
   nombre: string
   descripcion?: string
+  icono?: string
   color?: string
   orden: number
   activo: boolean

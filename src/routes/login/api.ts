@@ -28,5 +28,5 @@ export const loginPin = (data: LoginPinRequest, tenantId: string) =>
   api.post<{ data: LoginResponse }>('/auth/login-pin', data, { headers: { 'X-Tenant-Id': tenantId } })
     .then(r => r.data.data)
 
-export const logout = (refreshToken: string) =>
-  api.post('/auth/logout', { refresh_token: refreshToken })
+export const logout = () =>
+  api.post('/auth/logout', {}, { withCredentials: true })

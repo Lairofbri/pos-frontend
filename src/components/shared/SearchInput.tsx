@@ -14,16 +14,14 @@ export function SearchInput({
   debounce = 300,
 }: SearchInputProps) {
   const [local, setLocal] = useState(externalValue)
-
-  const prevRef = useRef(externalValue)
-  useEffect(() => {
-    prevRef.current = externalValue
-  })
+  const isFirstRender = useRef(true)
 
   useEffect(() => {
-    if (prevRef.current !== externalValue) {
-      setLocal(externalValue)
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      return
     }
+    setLocal(externalValue)
   }, [externalValue])
 
   useEffect(() => {

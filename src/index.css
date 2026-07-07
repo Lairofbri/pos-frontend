@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme inline {
@@ -23,6 +24,53 @@
   --font-display: "Tektur", sans-serif;
   --font-body: "Sora", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
+
+  /* POS-specific palette (spec exact) */
+  --color-pos-accent: #C7662E;
+  --color-pos-accent-hover: #B85A27;
+  --color-pos-accent-light: #D97A43;
+  --color-pos-text: #3E2A1F;
+  --color-pos-text-secondary: #6D5B4E;
+  --color-pos-text-muted: #8C8177;
+  --color-pos-border: #D8C7B5;
+  --color-pos-border-soft: #E6DDD3;
+
+  --color-pos-libre-bg: #EAF7EC;
+  --color-pos-libre-border: #67BA78;
+  --color-pos-libre-text: #3A9150;
+  --color-pos-ocupada-bg: #FBE8E7;
+  --color-pos-ocupada-border: #C5544B;
+  --color-pos-ocupada-text: #A83C36;
+  --color-pos-reservada-bg: #E6F2FB;
+  --color-pos-reservada-border: #4E9AD4;
+  --color-pos-reservada-text: #2E73B2;
+
+  --color-pos-wood-base: #F3E8D8;
+  --color-pos-wood-bottom: #E8D6C0;
+
+  --color-pos-sidebar-bg: #FBF6EF;
+  --color-pos-sidebar-end: #F6E8D4;
+
+  --font-pos: "Inter", sans-serif;
+
+  /* Gestión de menú (spec nuevo) */
+  --color-menu-bg: #E2C3A0;
+  --color-menu-accent: #C66A1E;
+  --color-menu-accent-hover: #B65C15;
+  --color-menu-accent-light: #DE922B;
+  --color-menu-sidebar: rgba(255, 245, 238, 0.55);
+  --color-menu-sidebar-blur: 22px;
+  --color-menu-tree-line: #C78C5B;
+  --color-menu-active-bg: #FFF7EF;
+  --color-menu-active-border: #D49A54;
+  --color-menu-card-border: #C9893C;
+  --color-menu-text: #1F1F1F;
+  --color-menu-text-secondary: #666666;
+  --color-menu-text-muted: #8A8A8A;
+  --color-menu-breadcrumb: #B36A24;
+  --color-menu-switch-active: #B76A18;
+  --color-menu-switch-inactive: #D5D5D5;
+  --color-menu-input-border: #D5D5D5;
 }
 
 @layer base {
@@ -73,10 +121,93 @@
   background-size: 256px 256px;
 }
 
+/* === POS-specific utilities === */
+
+@utility pos-wood-texture {
+  position: relative;
+  background:
+    linear-gradient(180deg, var(--color-pos-wood-base) 0%, var(--color-pos-wood-bottom) 100%),
+    repeating-linear-gradient(
+      45deg,
+      transparent,
+      transparent 15px,
+      rgba(165, 120, 80, 0.04) 15px,
+      rgba(165, 120, 80, 0.04) 16px
+    );
+}
+
+@utility pos-wood-shadow {
+  box-shadow:
+    0 2px 4px rgba(82, 58, 34, 0.12),
+    0 8px 18px rgba(110, 82, 53, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    inset 0 -2px 5px rgba(120, 84, 52, 0.10),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.45);
+}
+
+@utility menu-glass {
+  background: var(--color-menu-sidebar);
+  backdrop-filter: blur(var(--color-menu-sidebar-blur));
+  -webkit-backdrop-filter: blur(var(--color-menu-sidebar-blur));
+}
+
+@utility menu-gradient {
+  background: linear-gradient(90deg, #B86119 0%, #D88625 100%);
+}
+
+@utility menu-card-img {
+  background: linear-gradient(180deg, #FDF3E8, #F8E6CF);
+}
+
+@utility menu-shadow {
+  box-shadow: 0 5px 15px rgba(120, 80, 35, 0.20);
+}
+
+@utility menu-shadow-sidebar {
+  box-shadow: 0 12px 30px rgba(90, 60, 20, 0.18);
+}
+
+@utility menu-shadow-modal {
+  box-shadow: 0 16px 35px rgba(0, 0, 0, 0.22);
+}
+
+@utility menu-shadow-btn {
+  box-shadow: 0 4px 10px rgba(190, 110, 30, 0.20);
+}
+
+@utility pos-summary-shadow {
+  box-shadow: 0 3px 10px rgba(70, 55, 40, 0.08);
+}
+
+@utility pos-badge-shadow-libre {
+  box-shadow: 0 2px 6px rgba(92, 180, 120, 0.15);
+}
+
+@utility pos-badge-shadow-ocupada {
+  box-shadow: 0 2px 6px rgba(197, 84, 75, 0.18);
+}
+
+@utility pos-badge-shadow-reservada {
+  box-shadow: 0 2px 6px rgba(78, 154, 212, 0.18);
+}
+
+@utility pos-tab-active {
+  box-shadow: 0 8px 18px rgba(199, 102, 46, 0.22);
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@utility animate-fadeInUp {
+  animation: fadeInUp 0.3s ease-out both;
+} 
 
 @keyframes ripple {
   from { opacity: 0.5; transform: translate(-50%, -50%) scale(0); }
