@@ -11,6 +11,7 @@ interface TicketPanelProps {
   onGuardarNotas?: (notas: string) => void
   onSolicitarAutorizacion?: (itemId: string) => void
   onLiberarMesa?: () => void
+  onImprimirPreCuenta?: () => void
   enviando?: boolean
 }
 
@@ -39,11 +40,13 @@ export function TicketPanel({
   onGuardarNotas,
   onSolicitarAutorizacion,
   onLiberarMesa,
+  onImprimirPreCuenta,
   enviando,
 }: TicketPanelProps) {
   const [descuentoInput, setDescuentoInput] = useState('')
   const [notasTexto, setNotasTexto] = useState('')
   const [mostrarOpciones, setMostrarOpciones] = useState(false)
+  const [imprimiendo, setImprimiendo] = useState(false)
   const [now, setNow] = useState(() => Date.now())
 
   const itemsRef = useRef<HTMLDivElement>(null)
@@ -69,7 +72,7 @@ export function TicketPanel({
   for (const item of orden.items) {
     const descItem = item.descuento_porcentaje
     const precioConDesc = Math.round(item.precio_unitario * item.cantidad * (1 - descItem / 100) * 100) / 100
-    subtotal += precioConDesc
+    subtotal = Math.round((subtotal + precioConDesc) * 100) / 100
   }
   const descuentoMonto = subtotal * (descuentoPct / 100)
   const totalConDescuento = subtotal - descuentoMonto
@@ -236,10 +239,18 @@ export function TicketPanel({
           </button>
           <div className="flex-1" />
           <button
+            onClick={() => { setImprimiendo(true); onImprimirPreCuenta?.(); setTimeout(() => setImprimiendo(false), 1000) }}
+            disabled={orden.items.length === 0 || imprimiendo}
+            className="h-8 px-2 rounded-lg border border-border/50 text-text-secondary hover:text-text-primary hover:border-border transition-colors cursor-pointer text-[10px] disabled:opacity-30 shrink-0"
+            title="Imprimir pre-cuenta"
+          >
+            {imprimiendo ? '...' : '📋'}
+          </button>
+          <button
             onClick={() => printOrden(orden)}
             disabled={orden.items.length === 0}
             className="h-8 w-8 rounded-lg border border-border/50 text-text-secondary hover:text-text-primary hover:border-border transition-colors cursor-pointer text-xs disabled:opacity-30 shrink-0 flex items-center justify-center"
-            title="Imprimir ticket"
+            title="Imprimir ticket (navegador)"
           >
             🖨
           </button>

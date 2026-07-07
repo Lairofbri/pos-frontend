@@ -16,6 +16,7 @@ import { useAuthStore } from '../../store/authStore'
 import { useCocinaSocket } from '../../hooks/useSocket'
 import { useZoneStore } from '../../store/zoneStore'
 import { useCatalogo } from '../../hooks/useCatalogo'
+import { imprimirTicket } from '../admin/impresoras/api'
 import type { Mesa, Producto, Orden, OrdenItem } from '../../types'
 
 export default function POSPage() {
@@ -148,11 +149,18 @@ export default function POSPage() {
     },
   })
 
+  const printMutation = useMutation({
+    mutationFn: ({ ordenId, tipo }: { ordenId: string; tipo: 'pre-cuenta' | 'ticket-consumo' }) =>
+      imprimirTicket(ordenId, tipo),
+    onError: () => { /* silent — fallback to browser print */ },
+  })
+
   const pagarMutation = useMutation({
     mutationFn: (pdata: { metodo: string; monto_efectivo?: number; monto_tarjeta?: number; referencia_tarjeta?: string }) =>
       pagarOrden(ordenSeleccionadaId!, pdata),
     onSuccess: () => {
       const id = ordenSeleccionadaId
+      if (id) printMutation.mutate({ ordenId: id, tipo: 'ticket-consumo' })
       limpiarOrden(id)
       showToast({ type: 'success', message: 'Pago completado' })
     },
@@ -270,6 +278,12 @@ export default function POSPage() {
       cancelarItemMutation.mutate({ ordenId: ordenSeleccionadaId!, itemId: autorizandoItemId })
     }
     setAutorizandoItemId(null)
+  }
+
+  const handleImprimirPreCuenta = () => {
+    if (ordenSeleccionadaId) {
+      printMutation.mutate({ ordenId: ordenSeleccionadaId, tipo: 'pre-cuenta' })
+    }
   }
 
   const handleLiberarMesa = () => {
@@ -446,6 +460,7 @@ export default function POSPage() {
                 onGuardarNotas={(n) => notasMutation.mutate(n)}
                 onSolicitarAutorizacion={handleAutorizarEliminacion}
                 onLiberarMesa={handleLiberarMesa}
+                onImprimirPreCuenta={handleImprimirPreCuenta}
                 enviando={cocinaMutation.isPending}
               />
             </div>
