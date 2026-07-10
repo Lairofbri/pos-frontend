@@ -29,7 +29,7 @@ export function CajaGuard({ children }: CajaGuardProps) {
         <span className="text-6xl">💰</span>
         <h2 className="font-display text-xl text-text-primary">Caja Cerrada</h2>
         <p className="text-text-secondary text-sm font-body text-center max-w-sm">
-          No hay una caja abierta. Ve a <strong className="text-accent">Administración &gt; Caja</strong> para abrir un turno antes de operar.
+          No hay una caja abierta. Ve a <strong className="text-pos-accent">Administración &gt; Caja</strong> para abrir un turno antes de operar.
         </p>
       </div>
     )

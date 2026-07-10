@@ -3,12 +3,13 @@ import { Button } from '../ui/Button'
 
 interface PageHeaderProps {
   title: string
+  subtitle?: string
   onNew?: () => void
   newLabel?: string
   backTo?: string
 }
 
-export function PageHeader({ title, onNew, newLabel, backTo }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, onNew, newLabel, backTo }: PageHeaderProps) {
   const navigate = useNavigate()
 
   return (
@@ -17,12 +18,17 @@ export function PageHeader({ title, onNew, newLabel, backTo }: PageHeaderProps) 
         {backTo && (
           <button
             onClick={() => navigate(backTo)}
-            className="text-text-secondary hover:text-text-primary transition-colors cursor-pointer text-lg"
+            className="w-8 h-8 rounded-xl border border-border bg-bg-surface flex items-center justify-center text-text-secondary hover:text-pos-accent hover:border-pos-accent transition-all cursor-pointer text-sm"
           >
             ←
           </button>
         )}
-        <h1 className="font-display text-xl text-text-primary tracking-tight">{title}</h1>
+        <div>
+          <h1 className="font-display text-xl text-text-primary tracking-tight">{title}</h1>
+          {subtitle && (
+            <p className="text-xs text-text-secondary font-body mt-0.5">{subtitle}</p>
+          )}
+        </div>
       </div>
       {onNew && (
         <Button onClick={onNew} size="sm" icon="+">

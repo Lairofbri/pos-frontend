@@ -20,22 +20,22 @@ export function SidePanel({ open, onClose, title, children }: SidePanelProps) {
   return (
     <>
       <div
-        className={`fixed inset-0 bg-black/40 backdrop-blur-sm z-40 transition-opacity duration-300 ${
+        className={`fixed inset-0 bg-black/30 backdrop-blur-sm z-40 transition-opacity duration-300 ${
           open ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         onClick={onClose}
       />
 
       <div
-        className={`fixed top-0 right-0 h-full z-50 bg-bg-surface border-l border-border shadow-2xl transition-transform duration-300 ease-out w-full max-w-md ${
+        className={`fixed top-0 right-0 h-full z-50 bg-bg-surface border-l border-border shadow-elevated transition-transform duration-300 ease-out w-full sm:max-w-md ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
       >
-        <div className="h-14 flex items-center justify-between px-5 border-b border-border">
+        <div className="admin-sidepanel-header h-14 flex items-center justify-between px-5">
           <h2 className="font-display text-lg text-text-primary">{title}</h2>
           <button
             onClick={onClose}
-            className="text-text-secondary hover:text-text-primary transition-colors cursor-pointer text-xl leading-none"
+            className="w-8 h-8 rounded-full bg-white/80 border border-border flex items-center justify-center text-text-secondary hover:text-text-primary hover:border-pos-accent transition-all cursor-pointer text-sm"
           >
             ✕
           </button>

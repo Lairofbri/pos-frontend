@@ -86,6 +86,70 @@ export function TicketPanel({
 
   const totalItems = orden.items.reduce((s, i) => s + i.cantidad, 0)
 
+  const itemsAgrupados = useMemo(() => {
+    const normales: typeof orden.items = []
+    const combos: Record<string, typeof orden.items> = {}
+    for (const item of orden.items) {
+      if (item.combo_id) {
+        if (!combos[item.combo_id]) combos[item.combo_id] = []
+        combos[item.combo_id].push(item)
+      } else {
+        normales.push(item)
+      }
+    }
+    return { normales, combos }
+  }, [orden.items])
+
+  const renderItem = (item: typeof orden.items[0], esCombo = false) => {
+    const descItem = item.descuento_porcentaje ?? 0
+    const precioLinea = Math.round(item.precio_unitario * item.cantidad * (1 - descItem / 100) * 100) / 100
+    const locked = item.estado !== 'pendiente'
+
+    return (
+      <div key={item.id} className={`flex items-center gap-2 py-1.5 lg:py-2 min-h-0 ${esCombo ? 'pl-4' : ''}`}>
+        <span className="text-xs font-mono text-text-secondary font-semibold w-5 shrink-0 text-right tabular-nums">
+          {item.cantidad}
+        </span>
+        <div className="flex-1 min-w-0 flex items-center gap-1.5">
+          <span className="text-sm font-body text-text-primary truncate">{item.nombre}</span>
+          {descItem > 0 && (
+            <span className="text-[9px] text-danger bg-danger/10 px-1 py-[1px] rounded font-mono shrink-0">-{descItem}%</span>
+          )}
+          {locked && (
+            <span className="text-[9px] text-blue-400 bg-blue-500/10 px-1 py-[1px] rounded font-mono shrink-0">
+              {item.estado === 'en_proceso' ? 'Cocina' : item.estado === 'listo' ? 'Listo' : item.estado}
+            </span>
+          )}
+        </div>
+        <span className="text-xs font-mono text-text-primary font-semibold shrink-0 tabular-nums w-[62px] text-right">
+          ${precioLinea.toFixed(2)}
+        </span>
+        <div className="w-5 shrink-0 flex justify-center">
+          {locked ? (
+            <button
+              onClick={() => onSolicitarAutorizacion?.(item.id)}
+              className="text-text-secondary/50 hover:text-accent transition-colors cursor-pointer text-[11px]"
+              title="Autorización de gerente"
+            >
+              🔓
+            </button>
+          ) : (
+            <button
+              onClick={() => onEliminarItem(item.id)}
+              className="text-text-secondary/30 hover:text-danger transition-colors cursor-pointer text-sm leading-none"
+              title="Eliminar"
+            >
+              ×
+            </button>
+          )}
+        </div>
+        {item.notas && (
+          <p className="text-[10px] text-text-secondary italic truncate col-span-full -mt-1 ml-7">{item.notas}</p>
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="h-full flex flex-col bg-bg-surface rounded-xl border border-border">
       {/* Header */}
@@ -116,55 +180,23 @@ export function TicketPanel({
         {orden.items.length === 0 ? (
           <p className="text-sm text-text-secondary text-center py-8 font-body">Agrega productos tocándolos</p>
         ) : (
-          orden.items.map((item) => {
-            const descItem = item.descuento_porcentaje ?? 0
-            const precioLinea = Math.round(item.precio_unitario * item.cantidad * (1 - descItem / 100) * 100) / 100
-            const locked = item.estado !== 'pendiente'
-
-            return (
-              <div key={item.id} className="flex items-center gap-2 py-1.5 lg:py-2 min-h-0">
-                <span className="text-xs font-mono text-text-secondary font-semibold w-5 shrink-0 text-right tabular-nums">
-                  {item.cantidad}
-                </span>
-                <div className="flex-1 min-w-0 flex items-center gap-1.5">
-                  <span className="text-sm font-body text-text-primary truncate">{item.nombre}</span>
-                  {descItem > 0 && (
-                    <span className="text-[9px] text-danger bg-danger/10 px-1 py-[1px] rounded font-mono shrink-0">-{descItem}%</span>
-                  )}
-                  {locked && (
-                    <span className="text-[9px] text-blue-400 bg-blue-500/10 px-1 py-[1px] rounded font-mono shrink-0">
-                      {item.estado === 'en_proceso' ? 'Cocina' : item.estado === 'listo' ? 'Listo' : item.estado}
-                    </span>
-                  )}
+          <>
+            {/* Combos agrupados */}
+            {Object.entries(itemsAgrupados.combos).map(([comboId, comboItems]) => (
+              <div key={comboId} className="py-1">
+                <div className="flex items-center gap-2 px-2 py-1 mb-1 rounded-lg bg-wood-light/50 border border-wood-mid/30">
+                  <span className="text-sm">🎁</span>
+                  <span className="text-xs font-semibold text-pos-text truncate">{comboItems[0]?.combo_nombre || 'Combo'}</span>
+                  <span className="text-xs font-mono text-pos-accent font-semibold ml-auto">
+                    ${comboItems.reduce((s, i) => s + i.subtotal, 0).toFixed(2)}
+                  </span>
                 </div>
-                <span className="text-xs font-mono text-text-primary font-semibold shrink-0 tabular-nums w-[62px] text-right">
-                  ${precioLinea.toFixed(2)}
-                </span>
-                <div className="w-5 shrink-0 flex justify-center">
-                  {locked ? (
-                    <button
-                      onClick={() => onSolicitarAutorizacion?.(item.id)}
-                      className="text-text-secondary/50 hover:text-accent transition-colors cursor-pointer text-[11px]"
-                      title="Autorización de gerente"
-                    >
-                      🔓
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => onEliminarItem(item.id)}
-                      className="text-text-secondary/30 hover:text-danger transition-colors cursor-pointer text-sm leading-none"
-                      title="Eliminar"
-                    >
-                      ×
-                    </button>
-                  )}
-                </div>
-                {item.notas && (
-                  <p className="text-[10px] text-text-secondary italic truncate col-span-full -mt-1 ml-7">{item.notas}</p>
-                )}
+                {comboItems.map(item => renderItem(item, true))}
               </div>
-            )
-          })
+            ))}
+            {/* Items normales */}
+            {itemsAgrupados.normales.map(item => renderItem(item))}
+          </>
         )}
       </div>
 

@@ -1,12 +1,13 @@
 import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { queryDefaults } from '../../../config/queries'
-import { getProductos, getCategorias } from '../api'
+import { getProductos, getCategorias, getCombos, type ComboPos } from '../api'
 import { ProductCard } from '../../../components/shared/ProductCard'
 import type { Producto, Categoria } from '../../../types'
 
 interface ProductGridProps {
   onSelectProducto: (p: Producto) => void
+  onSelectCombo?: (c: ComboPos) => void
   onLongPressProducto?: (p: Producto) => void
 }
 
@@ -44,7 +45,9 @@ const iconoPorDefecto = (nombre: string): string => {
   return DEFAULT_ICONS[Math.abs(hash) % DEFAULT_ICONS.length]
 }
 
-export function ProductGrid({ onSelectProducto, onLongPressProducto }: ProductGridProps) {
+const COMBOS_ID = '__combos__'
+
+export function ProductGrid({ onSelectProducto, onSelectCombo, onLongPressProducto }: ProductGridProps) {
   const [busqueda, setBusqueda] = useState('')
   const [navStack, setNavStack] = useState<(string | null)[]>([null])
   const currentNavId = navStack[navStack.length - 1]
@@ -55,16 +58,25 @@ export function ProductGrid({ onSelectProducto, onLongPressProducto }: ProductGr
     ...queryDefaults('categorias'),
   })
 
+  const { data: combosData } = useQuery({
+    queryKey: ['combos-pos'],
+    queryFn: () => getCombos(),
+    ...queryDefaults('combos'),
+  })
+
+  const isCombosView = currentNavId === COMBOS_ID
+
   const currentCategories = useMemo(() => {
+    if (isCombosView) return []
     if (!categoriasData) return []
     if (currentNavId === null) return categoriasData.filter(c => c.activo !== false)
     const found = findCategoria(categoriasData, currentNavId)
     return found?.hijos?.filter(c => c.activo !== false) ?? []
-  }, [categoriasData, currentNavId])
+  }, [categoriasData, currentNavId, isCombosView])
 
   const isRoot = currentNavId === null
   const isLeaf = currentCategories.length === 0
-  const showProductLevel = isLeaf && currentNavId !== null
+  const showProductLevel = !isCombosView && isLeaf && currentNavId !== null
 
   const { data: productos } = useQuery({
     queryKey: ['productos', currentNavId],
@@ -78,16 +90,22 @@ export function ProductGrid({ onSelectProducto, onLongPressProducto }: ProductGr
   )
 
   const currentNavName = useMemo(() => {
+    if (isCombosView) return 'Combos'
     if (currentNavId === null) return 'Categorías'
     const found = findCategoria(categoriasData ?? [], currentNavId)
     return found?.nombre ?? ''
-  }, [categoriasData, currentNavId])
+  }, [categoriasData, currentNavId, isCombosView])
 
   const navigateTo = (cat: Categoria) => setNavStack(prev => [...prev, cat.id])
+  const navigateToCombos = () => setNavStack(prev => [...prev, COMBOS_ID])
 
   const goBack = () => {
     if (navStack.length > 1) setNavStack(prev => prev.slice(0, -1))
   }
+
+  const combosFiltrados = (combosData ?? []).filter((c) =>
+    c.nombre.toLowerCase().includes(busqueda.toLowerCase())
+  )
 
   return (
     <div className="flex flex-col gap-3 h-full">
@@ -102,7 +120,7 @@ export function ProductGrid({ onSelectProducto, onLongPressProducto }: ProductGr
         <div className="flex items-center gap-2 min-w-0">
           <span className="font-semibold text-[#2d241c] truncate">{currentNavName}</span>
           <span className="text-xs font-medium text-[#a0806e] bg-[#f5ede7] px-2 py-0.5 rounded-full shrink-0">
-            {showProductLevel && productos ? productos.length : currentCategories.length}
+            {isCombosView ? combosFiltrados.length : showProductLevel && productos ? productos.length : currentCategories.length}
           </span>
         </div>
       </div>
@@ -123,15 +141,15 @@ export function ProductGrid({ onSelectProducto, onLongPressProducto }: ProductGr
         </div>
       )}
 
-      {/* Search (product level only) */}
-      {showProductLevel && (
+      {/* Search */}
+      {(showProductLevel || isCombosView) && (
         <div className="flex items-center gap-2 bg-[#f5efe9] rounded-[14px] px-3 py-2 border border-transparent focus-within:border-[#c66a1e] focus-within:bg-white transition-all shrink-0">
           <svg className="w-4 h-4 text-[#b8a292] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <input
             type="text"
-            placeholder="Buscar productos..."
+            placeholder={isCombosView ? 'Buscar combos...' : 'Buscar productos...'}
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             className="w-full bg-transparent outline-none text-sm text-[#2d241c] placeholder:text-[#b8a292]"
@@ -141,15 +159,42 @@ export function ProductGrid({ onSelectProducto, onLongPressProducto }: ProductGr
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto pb-2 scrollbar-thin">
-        {/* Category cards */}
-        {!showProductLevel && (
+        {/* Root with categories + combos */}
+        {isRoot && (
           <>
-            {isRoot && currentCategories.length > 0 && (
+            {combosData && combosData.length > 0 && (
+              <>
+                <div className="text-[0.7rem] font-semibold uppercase tracking-wider text-[#a0806e] mb-2.5">
+                  Combos Especiales
+                </div>
+                <button
+                  onClick={navigateToCombos}
+                  className="w-full mb-4 bg-white border border-[#ede3db] rounded-[18px] p-4 cursor-pointer flex items-center gap-3 transition-all hover:border-[#c66a1e] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(198,106,30,0.12)] active:scale-[0.97]"
+                >
+                  <div className="w-11 h-11 rounded-[16px] bg-gradient-to-br from-[#fff8f0] to-[#ffedd5] flex items-center justify-center text-2xl">
+                    💥
+                  </div>
+                  <div className="text-left">
+                    <span className="font-semibold text-sm text-[#2d241c]">Combos</span>
+                    <span className="text-[0.65rem] font-medium text-[#a0806e] bg-[#faf3ed] px-2 py-0.5 rounded-full ml-2">
+                      {combosData.length} disponibles
+                    </span>
+                  </div>
+                </button>
+              </>
+            )}
+
+            {currentCategories.length > 0 && (
               <div className="text-[0.7rem] font-semibold uppercase tracking-wider text-[#a0806e] mb-2.5">
                 Categorías
               </div>
             )}
+          </>
+        )}
 
+        {/* Category cards */}
+        {!showProductLevel && !isCombosView && (
+          <>
             {currentCategories.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-1 text-[#b8a292]">
                 <span className="text-3xl mb-1">📂</span>
@@ -196,6 +241,43 @@ export function ProductGrid({ onSelectProducto, onLongPressProducto }: ProductGr
                     onSelect={onSelectProducto}
                     onLongPress={onLongPressProducto}
                   />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+
+        {/* Combos level */}
+        {isCombosView && (
+          <>
+            {combosFiltrados.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-1 text-[#b8a292]">
+                <span className="text-3xl mb-1">🎁</span>
+                <span className="font-semibold text-sm text-[#7a5e4a]">Sin combos disponibles</span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {combosFiltrados.map((combo, i) => (
+                  <button
+                    key={combo.id}
+                    onClick={() => onSelectCombo?.(combo)}
+                    className="group bg-white border-2 border-[#ede3db] rounded-[18px] p-4 cursor-pointer text-left transition-all hover:border-[#c66a1e] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(198,106,30,0.12)] active:scale-[0.97]"
+                    style={{ animation: `fadeInUp 0.3s ease-out ${i * 0.05}s both` }}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-bold text-[#2d241c]">{combo.nombre}</span>
+                      <span className="text-lg font-bold text-[#c66a1e]">${Number(combo.precio).toFixed(2)}</span>
+                    </div>
+                    <div className="space-y-1">
+                      {combo.productos.map((cp) => (
+                        <div key={cp.producto_id} className="flex items-center gap-2 text-xs text-[#7a5e4a]">
+                          <span className="text-sm">{iconoPorDefecto(cp.nombre)}</span>
+                          <span className="font-semibold">{cp.cantidad}x</span>
+                          <span>{cp.nombre}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </button>
                 ))}
               </div>
             )}

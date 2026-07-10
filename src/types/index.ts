@@ -162,6 +162,8 @@ export interface OrdenItem {
   notas?: string
   estado: 'pendiente' | 'en_proceso' | 'listo' | 'cancelado'
   enviado_en?: string
+  combo_id?: string
+  combo_nombre?: string
 }
 
 export interface Cliente {

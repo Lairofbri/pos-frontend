@@ -5,9 +5,9 @@
   --color-bg-primary: #FAF7F4;
   --color-bg-surface: #FFFFFF;
   --color-bg-surface-hover: #F5F0EB;
-  --color-accent: #D9734E;
-  --color-accent-light: #F0A98C;
-  --color-accent-dark: #B85C3B;
+  --color-accent: #C7662E;
+  --color-accent-light: #D97A43;
+  --color-accent-dark: #B85A27;
   --color-text-primary: #2D241C;
   --color-text-secondary: #7A6B5D;
   --color-success: #4A9D6E;
@@ -71,6 +71,24 @@
   --color-menu-switch-active: #B76A18;
   --color-menu-switch-inactive: #D5D5D5;
   --color-menu-input-border: #D5D5D5;
+
+  /* Dashboard tokens */
+  --color-dashboard-success-bg: #EAF7EC;
+  --color-dashboard-success-text: #3A9150;
+  --color-dashboard-danger-bg: #FBE8E7;
+  --color-dashboard-danger-text: #A83C36;
+  --color-dashboard-warning-bg: #FFF1E0;
+  --color-dashboard-warning-text: #C7662E;
+  --color-dashboard-info-bg: #E6F2FB;
+  --color-dashboard-info-text: #2E73B2;
+  --color-dashboard-cream: #F8F4EF;
+
+  /* Admin redesigned tokens */
+  --color-admin-header-bg: #F3E8D8;
+  --color-admin-header-text: #3B281E;
+  --color-admin-row-alt: #FAF6F1;
+  --color-admin-row-hover: #F3E8D8;
+  --color-admin-panel-gradient: linear-gradient(180deg, #F3E8D8 0%, #FAF6F1 100%);
 }
 
 @layer base {
@@ -102,7 +120,11 @@
 }
 
 @utility glow-terracota {
-  box-shadow: 0 0 12px rgba(217, 115, 78, 0.25);
+  box-shadow: 0 0 12px rgba(199, 102, 46, 0.25);
+}
+
+@utility glow-pos {
+  box-shadow: 0 0 12px rgba(199, 102, 46, 0.25);
 }
 
 @utility glass-light {
@@ -220,6 +242,183 @@
 
 @utility animate-ripple {
   animation: ripple 0.5s ease-out;
+}
+
+/* === Dashboard utilities === */
+
+@utility dashboard-card {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  box-shadow: 0 3px 10px rgba(70, 55, 40, 0.08);
+  padding: 20px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@utility dashboard-card-hover {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  box-shadow: 0 3px 10px rgba(70, 55, 40, 0.08);
+  padding: 20px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dashboard-card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(70, 55, 40, 0.12);
+}
+
+@utility dashboard-metric-value {
+  font-family: var(--font-mono);
+  font-size: 2.25rem;
+  line-height: 1;
+  font-weight: 500;
+  color: var(--color-text-primary);
+}
+
+@utility dashboard-trend-up {
+  color: var(--color-dashboard-success-text);
+}
+
+@utility dashboard-trend-down {
+  color: var(--color-dashboard-danger-text);
+}
+
+@utility dashboard-alert-critical {
+  border-left: 4px solid var(--color-dashboard-danger-text);
+  background: var(--color-dashboard-danger-bg);
+}
+
+@utility dashboard-alert-warning {
+  border-left: 4px solid var(--color-dashboard-warning-text);
+  background: var(--color-dashboard-warning-bg);
+}
+
+@utility dashboard-alert-info {
+  border-left: 4px solid var(--color-dashboard-info-text);
+  background: var(--color-dashboard-info-bg);
+}
+
+@utility dashboard-bg-cream {
+  background: var(--color-dashboard-cream);
+}
+
+/* === Admin utilities === */
+
+@utility admin-table-header {
+  background: var(--color-admin-header-bg);
+  color: var(--color-admin-header-text);
+}
+
+@utility admin-row-hover {
+  transition: background 0.15s ease;
+}
+
+.admin-row-hover:hover {
+  background: var(--color-admin-row-hover);
+}
+
+@utility admin-sidepanel-header {
+  background: linear-gradient(180deg, #F3E8D8 0%, #FFFAF5 100%);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* === Login utilities === */
+
+@utility login-glass-card {
+  background: rgba(250, 246, 241, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--color-pos-border);
+}
+
+@utility login-input {
+  background: #FFFFFF;
+  border: 1px solid var(--color-pos-border-soft);
+  border-radius: 12px;
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  color: var(--color-pos-text);
+  outline: none;
+  transition: all 0.2s;
+}
+
+.login-input:focus {
+  border-color: var(--color-pos-accent);
+  box-shadow: 0 0 0 3px rgba(199, 102, 46, 0.12);
+}
+
+@utility login-btn-primary {
+  background: var(--color-pos-accent);
+  border-radius: 12px;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: white;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+
+.login-btn-primary:hover {
+  background: var(--color-pos-accent-hover);
+  transform: scale(1.02);
+}
+
+.login-btn-primary:active {
+  transform: scale(0.98);
+}
+
+/* === Cocina utilities === */
+
+@utility cocina-column-header {
+  font-family: var(--font-display);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--color-border);
+}
+
+@utility cocina-count-badge {
+  font-family: var(--font-mono);
+  font-size: 0.6875rem;
+  color: var(--color-text-secondary);
+  background: var(--color-bg-surface);
+  padding: 0.125rem 0.5rem;
+  border-radius: 999px;
+}
+
+@utility cocina-card {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 14px;
+  padding: 1rem;
+  box-shadow: 0 2px 6px rgba(70, 55, 40, 0.06);
+  transition: all 0.15s ease;
+}
+
+.cocina-card:hover {
+  box-shadow: 0 4px 12px rgba(70, 55, 40, 0.1);
+}
+
+@utility cocina-timer {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+@utility cocina-timer-warning {
+  color: var(--color-dashboard-danger-text);
+}
+
+@utility cocina-pulse {
+  animation: cocinaPulse 1s ease-in-out infinite;
+}
+
+@keyframes cocinaPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 
 @layer utilities {

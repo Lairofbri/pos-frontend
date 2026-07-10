@@ -42,7 +42,7 @@ export function IconSelect({ value, onChange, label }: IconSelectProps) {
       <button
         type="button"
         onClick={() => { setOpen(!open); setSearch('') }}
-        className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg border-2 border-border bg-bg-surface text-sm text-text-primary font-body outline-none transition-all duration-200 hover:border-accent/50 cursor-pointer text-left"
+        className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg border-2 border-border bg-bg-surface text-sm text-text-primary font-body outline-none transition-all duration-200 hover:border-pos-accent/50 cursor-pointer text-left"
       >
         {value ? (
           <>
@@ -65,7 +65,7 @@ export function IconSelect({ value, onChange, label }: IconSelectProps) {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Buscar icono..."
-                className="w-full bg-bg-primary border border-border rounded-lg pl-9 pr-3 py-2 text-sm text-text-primary font-body outline-none focus:border-accent"
+                className="w-full bg-bg-primary border border-border rounded-lg pl-9 pr-3 py-2 text-sm text-text-primary font-body outline-none focus:border-pos-accent"
               />
             </div>
           </div>
@@ -79,12 +79,12 @@ export function IconSelect({ value, onChange, label }: IconSelectProps) {
                   type="button"
                   onClick={() => { onChange(opt.value); setOpen(false) }}
                   className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors cursor-pointer hover:bg-bg-surface-hover ${
-                    opt.value === value ? 'bg-accent/10 text-accent' : 'text-text-primary'
+                    opt.value === value ? 'bg-pos-accent/10 text-pos-accent' : 'text-text-primary'
                   }`}
                 >
                   <Icon name={opt.value} className="w-5 h-5 shrink-0" />
                   <span>{opt.label}</span>
-                  {opt.value === value && <span className="ml-auto text-accent text-xs">✓</span>}
+                  {opt.value === value && <span className="ml-auto text-pos-accent text-xs">✓</span>}
                 </button>
               ))
             )}

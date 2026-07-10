@@ -17,6 +17,7 @@ import ClientesPage from './routes/admin/clientes/index'
 import CajaPage from './routes/admin/caja/index'
 import MenusPage from './routes/configuraciones/menus/index'
 import ImpresorasPage from './routes/admin/impresoras/index'
+import DashboardPage from './routes/dashboard/index'
 import { AuthGuard } from './components/shared/AuthGuard'
 import { RouteGuard } from './components/shared/RouteGuard'
 import { CajaGuard } from './components/shared/CajaGuard'
@@ -24,6 +25,7 @@ import { CajaGuard } from './components/shared/CajaGuard'
 const router = createBrowserRouter([
   { path: '/', element: <Navigate to="/pos" replace /> },
   { path: '/login', element: <AuthLayout><LoginPage /></AuthLayout> },
+  { path: '/dashboard', element: <AuthGuard><ProtectedLayout><DashboardPage /></ProtectedLayout></AuthGuard> },
   { path: '/pos', element: <AuthGuard><ProtectedLayout><CajaGuard><POSPage /></CajaGuard></ProtectedLayout></AuthGuard> },
   { path: '/cocina', element: <AuthGuard><ProtectedLayout><CocinaPage /></ProtectedLayout></AuthGuard> },
   { path: '/admin/productos', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><ProductosPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },

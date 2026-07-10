@@ -14,7 +14,7 @@ export function ZoneSelector() {
           onClick={() => setZona(z.valor)}
           className={`px-3 py-1 rounded-md text-xs font-body font-semibold transition-all duration-200 cursor-pointer ${
             zona === z.valor
-              ? 'bg-accent text-bg-primary'
+              ? 'bg-pos-accent text-white'
               : 'text-text-secondary hover:text-text-primary'
           }`}
         >

@@ -92,6 +92,23 @@ export const getCategorias = (arbol?: boolean) =>
   }).then(r => r.data.data.categorias)
     .catch(() => [])
 
+export interface ComboPos {
+  id: string
+  nombre: string
+  precio: number
+  activo: boolean
+  productos: { producto_id: string; cantidad: number; nombre: string; precio: number }[]
+}
+
+export const getCombos = () =>
+  api.get<{ ok: boolean; data: { combos: ComboPos[] } }>('/combos/pos')
+    .then(r => r.data.data.combos.map(c => ({
+      ...c,
+      precio: Number(c.precio),
+      productos: c.productos.map(p => ({ ...p, precio: Number(p.precio) })),
+    })))
+    .catch(() => [])
+
 export const getMesas = () =>
   api.get<{ ok: boolean; data: { mesas: Mesa[] } }>('/mesas')
     .then(r => r.data.data.mesas)

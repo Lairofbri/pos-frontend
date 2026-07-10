@@ -30,7 +30,7 @@ function SidebarNav({
               <button
                 onClick={() => onToggleGroup(menu.id)}
                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 cursor-pointer border border-transparent
-                  ${expanded ? 'justify-start text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover hover:border-accent/10' : 'justify-center hover:bg-bg-surface-hover'}`}
+                  ${expanded ? 'justify-start text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover hover:border-pos-accent/10' : 'justify-center hover:bg-bg-surface-hover'}`}
                 title={!expanded ? menu.titulo : undefined}
               >
                 <span className="w-6 h-6 flex items-center justify-center shrink-0">
@@ -76,7 +76,7 @@ function NavItem({ item, expanded, currentPath }: { item: MenuItem; expanded: bo
       to={item.ruta ?? '#'}
       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-all duration-200 group active:scale-[0.97] ${
         isActive
-          ? 'border-l-2 border-accent bg-accent/[0.06] text-accent'
+          ? 'border-l-2 border-pos-accent bg-pos-accent/[0.06] text-pos-accent'
           : 'text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover hover:translate-x-0.5 border-l-2 border-transparent'
       } ${expanded ? 'justify-start' : 'justify-center border-l-0'}`}
       title={!expanded ? item.titulo : undefined}
@@ -129,7 +129,7 @@ export function Sidebar() {
         }`}
       >
         <div className="h-14 flex items-center justify-between px-4 border-b border-border shrink-0">
-          <span className="font-display text-lg text-accent tracking-wider">AMBER</span>
+          <span className="font-display text-lg text-pos-accent tracking-wider">AMBER</span>
           <button onClick={() => setMobileOpen(false)} className="text-text-secondary hover:text-text-primary transition-colors cursor-pointer text-lg">✕</button>
         </div>
         <SidebarNav menus={menus} expanded={true} onToggleGroup={(id) => setOpenGroupId(openGroupId === id ? null : id)} openGroupId={openGroupId} currentPath={location.pathname} />
@@ -138,9 +138,9 @@ export function Sidebar() {
       <aside className={`hidden md:flex flex-col bg-bg-surface border-r border-border transition-all duration-300 shrink-0 ${collapsed ? 'w-16' : 'w-56'}`}>
         <div className="h-14 flex items-center justify-center border-b border-border shrink-0">
           {collapsed ? (
-            <span className="font-display text-sm text-accent tracking-wider glow-terracota px-2">A</span>
+            <span className="font-display text-sm text-pos-accent tracking-wider glow-pos px-2">A</span>
           ) : (
-            <span className="font-display text-lg text-accent tracking-wider">AMBER</span>
+          <span className="font-display text-lg text-pos-accent tracking-wider">AMBER</span>
           )}
         </div>
         <SidebarNav menus={menus} expanded={!collapsed} onToggleGroup={(id) => setOpenGroupId(openGroupId === id ? null : id)} openGroupId={openGroupId} currentPath={location.pathname} />

@@ -27,10 +27,10 @@ export function NumericKeypad({ onDigit, onClear, onBackspace, onEnter }: Numeri
           onClick={() => handleKey(k)}
           className={`h-14 rounded-xl font-display text-xl border-2 transition-all duration-150 active:scale-95 cursor-pointer ${
             k === '✓'
-              ? 'bg-accent text-bg-primary border-accent hover:brightness-110'
+              ? 'bg-pos-accent text-white border-pos-accent hover:brightness-110'
               : k === '⌫'
                 ? 'bg-transparent text-text-secondary border-border hover:border-danger hover:text-danger'
-                : 'bg-bg-surface text-text-primary border-border hover:border-accent hover:text-accent'
+                : 'bg-bg-surface text-text-primary border-border hover:border-pos-accent hover:text-pos-accent'
           }`}
         >
           {k}

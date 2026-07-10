@@ -42,7 +42,7 @@ export function SearchInput({
         value={local}
         onChange={(e) => setLocal(e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-bg-surface border-2 border-border rounded-lg pl-9 pr-4 py-2.5 text-sm text-text-primary font-body placeholder:text-text-secondary/50 outline-none transition-all duration-200 focus:border-accent"
+        className="w-full bg-bg-surface border-2 border-border rounded-lg pl-9 pr-4 py-2.5 text-sm text-text-primary font-body placeholder:text-text-secondary/50 outline-none transition-all duration-200 focus:border-pos-accent"
       />
     </div>
   )

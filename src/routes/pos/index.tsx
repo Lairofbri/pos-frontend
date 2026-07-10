@@ -11,6 +11,7 @@ import { GerentePinModal } from '../../components/shared/GerentePinModal'
 import { ConfirmDialog } from '../../components/shared/ConfirmDialog'
 import { Icon } from '../../components/shared/Icon'
 import { crearOrden, agregarItem, actualizarItem, eliminarItem, cancelarItem, pagarOrden, enviarCocina, actualizarOrden, cancelarOrden, getOrdenes, getOrden } from './api'
+import type { ComboPos } from './api'
 import { useToastStore } from '../../store/toastStore'
 import { useAuthStore } from '../../store/authStore'
 import { useCocinaSocket } from '../../hooks/useSocket'
@@ -83,11 +84,12 @@ export default function POSPage() {
     },
   })
 
-  type AgregarParams = { ordenId: string; productoId: string; cantidad: number; notas?: string; _nombre: string; _precio: number }
+  type AgregarParams = { ordenId: string; productoId: string; cantidad: number; notas?: string; _nombre: string; _precio: number; _esCombo?: boolean }
   const agregarItemMutation = useMutation({
     mutationFn: (params: AgregarParams) =>
       agregarItem(params.ordenId, { producto_id: params.productoId, cantidad: params.cantidad, notas: params.notas }),
     onMutate: async (params: AgregarParams) => {
+      if (params._esCombo) return { previous: null }
       await queryClient.cancelQueries({ queryKey: ['orden', params.ordenId] })
       const previous = queryClient.getQueryData(['orden', params.ordenId])
       queryClient.setQueryData(['orden', params.ordenId], (old: Orden | undefined) => {
@@ -245,6 +247,18 @@ export default function POSPage() {
         _precio: p.precio,
       })
     }
+  }
+
+  const handleSelectCombo = (c: ComboPos) => {
+    if (!ordenActiva) return
+    agregarItemMutation.mutate({
+      ordenId: ordenActiva.id,
+      productoId: c.id,
+      cantidad: 1,
+      _nombre: c.nombre,
+      _precio: c.precio,
+      _esCombo: true,
+    })
   }
 
   const handleLongPressProducto = (p: Producto) => {
@@ -439,6 +453,7 @@ export default function POSPage() {
               <div className="flex-1 overflow-hidden">
                 <ProductGrid
                   onSelectProducto={handleSelectProducto}
+                  onSelectCombo={handleSelectCombo}
                   onLongPressProducto={handleLongPressProducto}
                 />
               </div>

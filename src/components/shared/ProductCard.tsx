@@ -95,7 +95,7 @@ export function ProductCard({
         className={`relative overflow-hidden flex flex-col rounded-[18px] border-2 transition-all duration-200 cursor-pointer animate-fadeIn
           ${
             selected
-              ? 'bg-accent/10 border-accent scale-[0.98]'
+          ? 'bg-pos-accent/10 border-pos-accent scale-[0.98]'
               : 'bg-white border-[#ede3db] hover:border-[#c66a1e] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(198,106,30,0.12)] active:scale-[0.97]'
           }
         `}
@@ -146,7 +146,7 @@ export function ProductCard({
         </div>
 
         {selected && (
-          <span className="absolute top-2 right-2 text-accent text-sm z-20 bg-white/80 rounded-full w-6 h-6 flex items-center justify-center">✓</span>
+          <span className="absolute top-2 right-2 text-pos-accent text-sm z-20 bg-white/80 rounded-full w-6 h-6 flex items-center justify-center">✓</span>
         )}
       </button>
     )
@@ -161,8 +161,8 @@ export function ProductCard({
       className={`relative overflow-hidden flex flex-col items-center justify-center gap-1.5 p-3 rounded-xl border-2 transition-all duration-200 min-h-[88px] animate-fadeIn
         ${
           selected
-            ? 'bg-accent/10 border-accent scale-[0.98]'
-            : 'bg-bg-surface border-border hover:border-accent hover:glow-terracota active:scale-[0.97]'
+            ? 'bg-pos-accent/10 border-pos-accent scale-[0.98]'
+            : 'bg-bg-surface border-border hover:border-pos-accent hover:glow-pos active:scale-[0.97]'
         }
       `}
     >
@@ -204,12 +204,12 @@ export function ProductCard({
         {producto.nombre}
       </span>
 
-      <span className="text-xs font-mono text-accent font-semibold">
+      <span className="text-xs font-mono text-pos-accent font-semibold">
         ${producto.precio?.toFixed(2) ?? '0.00'}
       </span>
 
       {selected && (
-        <span className="absolute top-1 right-1 text-accent text-xs">✓</span>
+        <span className="absolute top-1 right-1 text-pos-accent text-xs">✓</span>
       )}
     </button>
   )

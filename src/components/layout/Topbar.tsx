@@ -85,7 +85,7 @@ export function Topbar() {
 
         {/* User avatar + name */}
         <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-bg-primary border border-border/50">
-          <div className="w-6 h-6 rounded-full bg-accent/20 flex items-center justify-center text-accent font-display text-[10px] font-bold">
+          <div className="w-6 h-6 rounded-full bg-pos-accent/20 flex items-center justify-center text-pos-accent font-display text-[10px] font-bold">
             {(usuario?.nombre ?? 'U').charAt(0).toUpperCase()}
           </div>
           <span className="text-xs text-text-primary font-body font-medium hidden sm:inline">

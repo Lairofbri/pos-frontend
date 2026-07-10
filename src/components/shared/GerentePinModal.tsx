@@ -89,7 +89,7 @@ export function GerentePinModal({ open, tenantId, onAuthorized, onClose }: Geren
                   <button
                     key={u.id}
                     onClick={() => handleSelect(u.id, u.nombre)}
-                    className="w-full text-left px-4 py-3 rounded-lg border-2 border-border text-sm text-text-primary font-body hover:border-accent hover:bg-accent/5 transition-all cursor-pointer"
+                    className="w-full text-left px-4 py-3 rounded-lg border-2 border-border text-sm text-text-primary font-body hover:border-pos-accent hover:bg-pos-accent/5 transition-all cursor-pointer"
                   >
                     {u.nombre}
                   </button>
@@ -103,7 +103,7 @@ export function GerentePinModal({ open, tenantId, onAuthorized, onClose }: Geren
             <p className="text-sm text-text-secondary font-body mb-4">{selectedNombre}</p>
 
             <div className="text-center mb-4">
-              <span className="text-3xl font-mono tracking-[0.3em] text-accent">
+              <span className="text-3xl font-mono tracking-[0.3em] text-pos-accent">
                 {pin.padEnd(6, '•')}
               </span>
             </div>
@@ -119,7 +119,7 @@ export function GerentePinModal({ open, tenantId, onAuthorized, onClose }: Geren
 
             <button
               onClick={() => setStep('select')}
-              className="w-full text-xs text-text-secondary hover:text-accent transition-colors cursor-pointer text-center mt-3"
+              className="w-full text-xs text-text-secondary hover:text-pos-accent transition-colors cursor-pointer text-center mt-3"
             >
               ← Cambiar usuario
             </button>

@@ -14,7 +14,7 @@ export function Input({ label, error, className = '', ...props }: InputProps) {
         </label>
       )}
       <input
-        className={`w-full bg-bg-surface border-2 border-border rounded-lg px-4 py-2.5 text-text-primary font-body text-sm placeholder:text-text-secondary/50 outline-none transition-all duration-200 focus:border-accent focus:glow-terracota ${error ? 'border-danger' : ''} ${className}`}
+        className={`w-full bg-bg-surface border-2 border-border rounded-lg px-4 py-2.5 text-text-primary font-body text-sm placeholder:text-text-secondary/50 outline-none transition-all duration-200 focus:border-pos-accent focus:glow-pos ${error ? 'border-danger' : ''} ${className}`}
         {...props}
       />
       {error && (
