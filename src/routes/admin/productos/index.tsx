@@ -624,7 +624,7 @@ export default function ProductosPage() {
                 </button>
               )}
             </div>
-            <div className="grid grid-cols-8 gap-1.5 max-h-40 overflow-y-auto p-2 rounded-[10px] border border-[#ede3db] bg-white">
+            <div className="grid grid-cols-5 sm:grid-cols-8 gap-1.5 max-h-40 overflow-y-auto p-2 rounded-[10px] border border-[#ede3db] bg-white">
               {FOOD_EMOJIS.map((emoji) => (
                 <button
                   key={emoji}

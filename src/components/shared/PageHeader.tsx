@@ -13,7 +13,7 @@ export function PageHeader({ title, subtitle, onNew, newLabel, backTo }: PageHea
   const navigate = useNavigate()
 
   return (
-    <div className="flex items-center justify-between mb-5 shrink-0">
+    <div className="flex items-center justify-between mb-5 shrink-0 flex-wrap gap-2">
       <div className="flex items-center gap-3">
         {backTo && (
           <button

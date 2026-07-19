@@ -4,10 +4,10 @@ import { useQuery } from '@tanstack/react-query'
 import { queryDefaults } from '../../config/queries'
 import { useAuthStore } from '../../store/authStore'
 import { useSidebar } from '../../hooks/useSidebar'
-import { ZoneSelector } from '../ui/ZoneSelector'
 import { Icon } from '../shared/Icon'
 import api from '../../api/client'
 import { getCajaActiva } from '../../routes/admin/caja/api'
+import { useThemeStore } from '../../store/themeStore'
 
 export function Topbar() {
   const navigate = useNavigate()
@@ -17,6 +17,8 @@ export function Topbar() {
   const setMobileOpen = useSidebar((s) => s.setMobileOpen)
   const [loggingOut, setLoggingOut] = useState(false)
   const [hora, setHora] = useState('')
+  const isDark = useThemeStore((s) => s.isDark)
+  const toggleTheme = useThemeStore((s) => s.toggle)
 
   useEffect(() => {
     const t = setInterval(() => {
@@ -54,10 +56,18 @@ export function Topbar() {
         >
           <Icon name="menu" className="w-5 h-5" />
         </button>
-        <ZoneSelector />
       </div>
 
       <div className="flex items-center gap-3">
+        {/* Theme toggle */}
+        <button
+          onClick={toggleTheme}
+          className="flex items-center gap-1 text-xs font-mono text-text-secondary px-2 py-1 rounded-lg bg-bg-primary border border-border/50 hover:border-pos-accent transition-all cursor-pointer"
+          title={isDark ? 'Modo claro' : 'Modo oscuro'}
+        >
+          {isDark ? '☀️' : '🌙'}
+        </button>
+
         {/* Clock */}
         <div className="flex items-center gap-1.5 text-xs font-mono text-text-secondary px-2 py-1 rounded-lg bg-bg-primary border border-border/50">
           <Icon name="clock" className="w-3.5 h-3.5" />

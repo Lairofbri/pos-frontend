@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import type { Orden } from '../../../types'
 import { printOrden } from '../../../components/shared/PrintTicket'
+import { DTEQR } from './DTEQR'
 
 interface TicketPanelProps {
   orden: Orden
@@ -12,6 +13,7 @@ interface TicketPanelProps {
   onSolicitarAutorizacion?: (itemId: string) => void
   onLiberarMesa?: () => void
   onImprimirPreCuenta?: () => void
+  onActualizarPropina?: (pct: number) => void
   enviando?: boolean
 }
 
@@ -41,6 +43,7 @@ export function TicketPanel({
   onSolicitarAutorizacion,
   onLiberarMesa,
   onImprimirPreCuenta,
+  onActualizarPropina,
   enviando,
 }: TicketPanelProps) {
   const [descuentoInput, setDescuentoInput] = useState('')
@@ -76,6 +79,9 @@ export function TicketPanel({
   }
   const descuentoMonto = subtotal * (descuentoPct / 100)
   const totalConDescuento = subtotal - descuentoMonto
+  const propinaPct = orden.propina_porcentaje
+  const propinaMonto = orden.propina_monto
+  const totalAPagar = totalConDescuento + propinaMonto
 
   const handleDescuentoApply = () => {
     const pct = parseFloat(descuentoInput)
@@ -243,11 +249,41 @@ export function TicketPanel({
             </div>
           )}
 
+          {onActualizarPropina && orden.estado !== 'pagada' && orden.estado !== 'cancelada' && (
+            <div className="flex items-center gap-1 pt-1">
+              {[0, 10, 15, 20].map(pct => (
+                <button
+                  key={pct}
+                  onClick={() => onActualizarPropina(pct)}
+                  className={`flex-1 py-1 rounded-md text-[10px] font-semibold transition-colors cursor-pointer ${
+                    propinaPct === pct
+                      ? 'bg-pos-accent/10 text-pos-accent border border-pos-accent/30'
+                      : 'bg-bg-primary text-text-secondary border border-border/50 hover:border-pos-accent/40'
+                  }`}
+                >
+                  {pct === 0 ? 'Sin propina' : `${pct}%`}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {propinaMonto > 0 && (
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-pos-accent">Propina ({propinaPct}%)</span>
+              <span className="text-xs font-mono text-pos-accent tabular-nums">+${propinaMonto.toFixed(2)}</span>
+            </div>
+          )}
+
           <div className="flex items-center justify-between border-t border-border/40 pt-1.5">
-            <span className="text-xs font-body text-text-primary font-semibold">Total</span>
-            <span className="text-base lg:text-lg font-mono text-accent font-bold tabular-nums">${(descuentoPct > 0 ? totalConDescuento : subtotal).toFixed(2)}</span>
+            <span className="text-xs font-body text-text-primary font-semibold">Total a pagar</span>
+            <span className="text-base lg:text-lg font-mono text-accent font-bold tabular-nums">${totalAPagar.toFixed(2)}</span>
           </div>
         </div>
+
+        {/* DTE QR */}
+        {orden.estado === 'pagada' && (
+          <DTEQR ordenId={orden.id} cerradoEn={orden.cerrado_en} />
+        )}
 
         {/* Action buttons — compact row */}
         <div className="px-3 lg:px-4 pb-2.5 flex items-center gap-2">
@@ -312,3 +348,4 @@ export function TicketPanel({
     </div>
   )
 }
+

@@ -160,7 +160,7 @@ export default function ImpresorasPage() {
 
           <Input label="Dirección IP" value={form.ip} onChange={(e) => setForm({ ...form, ip: e.target.value })} placeholder="192.168.1.100" required />
 
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Input label="Puerto" type="number" value={String(form.puerto)} onChange={(e) => setForm({ ...form, puerto: Number(e.target.value) })} />
             <Input label="Papel (mm)" type="number" value={String(form.papel_mm)} onChange={(e) => setForm({ ...form, papel_mm: Number(e.target.value) })} />
             <Input label="Chars/línea" type="number" value={String(form.caracteres_x_linea)} onChange={(e) => setForm({ ...form, caracteres_x_linea: Number(e.target.value) })} />

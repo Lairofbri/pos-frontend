@@ -3,7 +3,6 @@ import api from '../../api/client'
 export interface CocinaItem {
   orden_id: string
   mesa_numero: number
-  zona: string
   items: {
     id: string
     nombre: string

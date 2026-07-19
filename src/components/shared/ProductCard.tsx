@@ -96,7 +96,7 @@ export function ProductCard({
           ${
             selected
           ? 'bg-pos-accent/10 border-pos-accent scale-[0.98]'
-              : 'bg-white border-[#ede3db] hover:border-[#c66a1e] hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(198,106,30,0.12)] active:scale-[0.97]'
+              : 'bg-white border-pos-border hover:border-pos-accent hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(198,106,30,0.12)] active:scale-[0.97]'
           }
         `}
       >
@@ -137,7 +137,7 @@ export function ProductCard({
 
         {/* Info area */}
         <div className="flex-1 flex flex-col items-center justify-center px-3 py-2 gap-1.5">
-          <span className="text-[15px] font-bold text-[#1D1D1D] text-center leading-tight line-clamp-2">
+          <span className="text-[15px] font-bold text-pos-text text-center leading-tight line-clamp-2">
             {producto.nombre}
           </span>
           <span className="h-7 px-3 bg-gradient-to-r from-[#b86119] to-[#d88625] text-white text-sm font-semibold rounded-full flex items-center justify-center">
@@ -214,3 +214,4 @@ export function ProductCard({
     </button>
   )
 }
+

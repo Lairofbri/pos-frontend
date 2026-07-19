@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { queryDefaults } from '../../config/queries'
 import { TableMap } from './components/TableMap'
@@ -8,15 +8,15 @@ import { RestaurantSummary } from './components/RestaurantSummary'
 import { PaymentPanel } from './components/PaymentPanel'
 import { ModifierPanel } from './components/ModifierPanel'
 import { GerentePinModal } from '../../components/shared/GerentePinModal'
+import { SwitchUserModal } from '../../components/shared/SwitchUserModal'
 import { ConfirmDialog } from '../../components/shared/ConfirmDialog'
 import { Icon } from '../../components/shared/Icon'
-import { crearOrden, agregarItem, actualizarItem, eliminarItem, cancelarItem, pagarOrden, enviarCocina, actualizarOrden, cancelarOrden, getOrdenes, getOrden } from './api'
+import { crearOrden, agregarItem, actualizarItem, eliminarItem, cancelarItem, pagarOrden, enviarCocina, actualizarOrden, cancelarOrden, getOrdenes, getOrden, actualizarPropina } from './api'
 import type { ComboPos } from './api'
 import { useToastStore } from '../../store/toastStore'
 import { useAuthStore } from '../../store/authStore'
+
 import { useCocinaSocket } from '../../hooks/useSocket'
-import { useZoneStore } from '../../store/zoneStore'
-import { useCatalogo } from '../../hooks/useCatalogo'
 import { imprimirTicket } from '../admin/impresoras/api'
 import type { Mesa, Producto, Orden, OrdenItem } from '../../types'
 
@@ -24,18 +24,15 @@ export default function POSPage() {
   const queryClient = useQueryClient()
   const showToast = useToastStore((s) => s.show)
   const tenantId = useAuthStore((s) => s.tenantId)
+  const usuario = useAuthStore((s) => s.usuario)
   const [modo, setModo] = useState<'mesa' | 'rapido'>('mesa')
   const [ordenSeleccionadaId, setOrdenSeleccionadaId] = useState<string | null>(null)
   const [mostrarPayment, setMostrarPayment] = useState(false)
   const [modifierProducto, setModifierProducto] = useState<Producto | null>(null)
   const [autorizandoItemId, setAutorizandoItemId] = useState<string | null>(null)
   const [confirmarLiberar, setConfirmarLiberar] = useState(false)
+  const [mostrarSwitchUser, setMostrarSwitchUser] = useState(false)
   const [mobileTab, setMobileTab] = useState<'productos' | 'ticket'>('productos')
-
-  const zonaActiva = useZoneStore((s) => s.zona)
-  const setZona = useZoneStore((s) => s.setZona)
-  const { data: zonas } = useCatalogo('zonas')
-
   useCocinaSocket(tenantId ?? '')
 
   const { data: ordenes } = useQuery({
@@ -172,6 +169,48 @@ export default function POSPage() {
     mutationFn: (pct: number) => actualizarOrden(ordenActiva!.id, { porcentaje_descuento: pct || undefined }),
     onSuccess: () => { invalidarOrden() },
   })
+
+  const propinaMutation = useMutation({
+    mutationFn: (pct: number) => actualizarPropina(ordenActiva!.id, { porcentaje: pct }),
+    onSuccess: () => { invalidarOrden() },
+  })
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (mostrarPayment) { setMostrarPayment(false); return }
+        if (modifierProducto) { setModifierProducto(null); return }
+        if (mostrarSwitchUser) { setMostrarSwitchUser(false); return }
+        if (autorizandoItemId) { setAutorizandoItemId(null); return }
+        if (confirmarLiberar) { setConfirmarLiberar(false); return }
+        return
+      }
+      const target = e.target as HTMLElement
+      if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.isContentEditable) return
+      if (mostrarPayment || modifierProducto || mostrarSwitchUser || autorizandoItemId || confirmarLiberar) return
+
+      if (!ordenActiva) {
+        if (e.key === 'F1') { e.preventDefault(); setModo('mesa'); return }
+        if (e.key === 'F2') { e.preventDefault(); setModo('rapido'); return }
+        return
+      }
+      if (e.key === 'c' || e.key === 'C') {
+        const tienePendientes = ordenActiva.items.some((i) => i.estado === 'pendiente')
+        if (tienePendientes) {
+          e.preventDefault()
+          cocinaMutation.mutate(ordenActiva.id)
+        }
+        return
+      }
+      if (e.key === 'p' || e.key === 'P') {
+        e.preventDefault()
+        setMostrarPayment(true)
+        return
+      }
+    }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [ordenActiva, mostrarPayment, modifierProducto, mostrarSwitchUser, autorizandoItemId, confirmarLiberar, modo, cocinaMutation])
 
   const notasMutation = useMutation({
     mutationFn: (notas: string) => actualizarOrden(ordenActiva!.id, { notas: notas || undefined }),
@@ -313,85 +352,53 @@ export default function POSPage() {
     setOrdenConReset(null)
   }
 
-  const opcionesZona = useMemo(
-    () => (zonas ?? []).map((z) => ({ value: z.valor, label: z.label })),
-    [zonas]
-  )
-
   return (
     <>
+      <div className="flex items-center justify-between px-4 lg:px-6 py-2 border-b border-border bg-bg-surface/80 shrink-0">
+        <div className="flex items-center gap-2 text-sm text-text-secondary">
+          <span className="w-2 h-2 rounded-full bg-green-500" />
+          <span className="font-body">{usuario?.nombre} <span className="text-text-tertiary">({usuario?.rol})</span></span>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setMostrarSwitchUser(true)}
+            className="text-xs text-text-secondary hover:text-pos-accent transition-colors cursor-pointer border border-border rounded-lg px-3 py-1.5 hover:border-pos-accent"
+          >
+            Cambiar usuario
+          </button>
+        </div>
+      </div>
+
       <div
         className="flex flex-col lg:grid lg:grid-cols-[1fr_max-w-md] xl:grid-cols-[1fr_420px] gap-6 h-full overflow-hidden pb-16 lg:pb-0"
-        style={{ fontFamily: "'Inter', sans-serif" }}
       >
         {/* LEFT COLUMN */}
-        <div className={`flex flex-col overflow-hidden min-h-0 px-4 lg:pl-6 lg:pr-0 lg:py-6 ${ordenActiva && mobileTab === 'ticket' ? 'hidden lg:flex' : ''}`}>
+        <div className={`flex flex-col overflow-hidden min-h-0 px-4 lg:pl-6 lg:pr-0 lg:py-6 ${mobileTab === 'ticket' ? 'hidden md:flex' : ''}`}>
           {!ordenActiva ? (
             <>
-              {/* Zone tabs + modo toggle */}
-              <div className="flex flex-wrap items-center justify-between gap-2 mb-4 lg:mb-6 shrink-0">
-                <div className="flex items-center gap-1.5 lg:gap-2 flex-wrap">
-                  {opcionesZona.map((z) => (
-                    <button
-                      key={z.value}
-                      onClick={() => setZona(z.value)}
-                      style={{
-                        height: 34,
-                        padding: '0 14px',
-                        borderRadius: 10,
-                        border: zonaActiva === z.value ? 'none' : '1px solid #D6C6B6',
-                        background: zonaActiva === z.value ? '#C7672F' : '#FFFFFF',
-                        color: zonaActiva === z.value ? '#FFFFFF' : '#3E2A1F',
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: 13,
-                        fontWeight: 500,
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        boxShadow: zonaActiva === z.value ? '0 8px 18px rgba(199,102,46,0.22)' : 'none',
-                      }}
-                    >
-                      {z.label}
-                    </button>
-                  ))}
-                </div>
-
+              {/* Modo toggle */}
+              <div className="flex flex-wrap items-center justify-end gap-2 mb-4 lg:mb-6 shrink-0">
                 <div className="flex items-center gap-1.5 lg:gap-2">
                   <button
                     onClick={() => setModo('mesa')}
-                    style={{
-                      height: 34,
-                      padding: '0 14px',
-                      borderRadius: 10,
-                      border: modo === 'mesa' ? 'none' : '1px solid #D6C6B6',
-                      background: modo === 'mesa' ? '#C7672F' : '#FFFFFF',
-                      color: modo === 'mesa' ? '#FFFFFF' : '#3E2A1F',
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: 13,
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                    }}
+                    className={`h-9 px-3.5 rounded-[10px] text-[13px] font-medium transition-all duration-200 cursor-pointer flex items-center gap-1 ${
+                      modo === 'mesa'
+                        ? 'bg-pos-accent text-white border-transparent shadow-[0_8px_18px_rgba(199,102,46,0.22)]'
+                        : 'bg-white text-pos-text border border-pos-border'
+                    }`}
                   >
-                    <Icon name="table" className="w-3.5 h-3.5 inline mr-1" />
+                    <Icon name="table" className="w-3.5 h-3.5" />
                     Mesas
                   </button>
                   <button
                     onClick={iniciarRapido}
-                    style={{
-                      height: 34,
-                      padding: '0 14px',
-                      borderRadius: 10,
-                      border: modo === 'rapido' ? 'none' : '1px solid #D6C6B6',
-                      background: modo === 'rapido' ? '#C7672F' : '#FFFFFF',
-                      color: modo === 'rapido' ? '#FFFFFF' : '#3E2A1F',
-                      fontFamily: "'Inter', sans-serif",
-                      fontSize: 13,
-                      fontWeight: 500,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                    }}
+                    className={`h-9 px-3.5 rounded-[10px] text-[13px] font-medium transition-all duration-200 cursor-pointer flex items-center gap-1 ${
+                      modo === 'rapido'
+                        ? 'bg-pos-accent text-white border-transparent'
+                        : 'bg-white text-pos-text border border-pos-border'
+                    }`}
                   >
-                    <Icon name="shopping-cart" className="w-3.5 h-3.5 inline mr-1" />
+                    <Icon name="shopping-cart" className="w-3.5 h-3.5" />
                     Rápido
                   </button>
                 </div>
@@ -403,23 +410,12 @@ export default function POSPage() {
                   <TableMap onSelectMesa={handleSelectMesa} />
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full gap-4">
-                    <p style={{ fontFamily: "'Inter', sans-serif", fontSize: 16, color: '#6D5B4E' }}>
+                    <p className="text-base text-pos-text-secondary">
                       Inicia una venta rápida sin mesa asignada
                     </p>
                     <button
                       onClick={iniciarRapido}
-                      style={{
-                        height: 44,
-                        padding: '0 24px',
-                        borderRadius: 12,
-                        background: '#C7662E',
-                        color: '#FFFFFF',
-                        fontFamily: "'Inter', sans-serif",
-                        fontSize: 16,
-                        fontWeight: 600,
-                        border: 'none',
-                        cursor: 'pointer',
-                      }}
+                      className="h-11 px-6 rounded-xl bg-pos-accent text-white text-base font-semibold cursor-pointer hover:bg-pos-accent-hover transition-colors"
                     >
                       Iniciar venta rápida
                     </button>
@@ -433,18 +429,7 @@ export default function POSPage() {
               <div className="flex items-center justify-between mb-3 lg:mb-4 shrink-0">
                 <button
                   onClick={handleCambiarMesa}
-                  style={{
-                    fontFamily: "'Inter', sans-serif",
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: '#6D5B4E',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                  }}
+                  className="flex items-center gap-1.5 text-[13px] font-medium text-pos-text-secondary cursor-pointer hover:text-pos-accent transition-colors"
                 >
                   <Icon name="arrow-left" className="w-4 h-4" />
                   {modo === 'rapido' ? 'Nueva venta' : 'Cambiar mesa'}
@@ -462,7 +447,7 @@ export default function POSPage() {
         </div>
 
         {/* RIGHT COLUMN */}
-        <div className={`flex flex-col overflow-hidden min-h-0 px-4 lg:pl-0 lg:pr-6 lg:py-6 ${!ordenActiva ? 'hidden md:flex' : ordenActiva && mobileTab === 'productos' ? 'hidden lg:flex' : ''}`}>
+        <div className={`flex flex-col overflow-hidden min-h-0 px-4 lg:pl-0 lg:pr-6 lg:py-6 ${mobileTab === 'productos' ? 'hidden md:flex' : ''}`}>
           {ordenActiva ? (
             <div className="flex-1 overflow-y-auto">
               <TicketPanel
@@ -476,6 +461,7 @@ export default function POSPage() {
                 onSolicitarAutorizacion={handleAutorizarEliminacion}
                 onLiberarMesa={handleLiberarMesa}
                 onImprimirPreCuenta={handleImprimirPreCuenta}
+                onActualizarPropina={(pct) => ordenActiva && propinaMutation.mutate(pct)}
                 enviando={cocinaMutation.isPending}
               />
             </div>
@@ -487,9 +473,8 @@ export default function POSPage() {
         </div>
       </div>
 
-      {/* Mobile bottom tabs — only when order active */}
-      {ordenActiva && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white border-t border-border flex items-center justify-around h-14 px-2 pb-1">
+      {/* Mobile bottom tabs */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white border-t border-border flex items-center justify-around h-14 px-2 pb-1">
           <button
             onClick={() => setMobileTab('productos')}
             className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full rounded-lg transition-colors ${
@@ -511,14 +496,13 @@ export default function POSPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
             <span className="text-[10px] font-semibold">Ticket</span>
-            {ordenActiva.items.length > 0 && (
+            {ordenActiva && ordenActiva.items.length > 0 && (
               <span className="absolute -top-0.5 right-1/4 min-w-[18px] h-[18px] rounded-full bg-accent text-white text-[10px] font-bold flex items-center justify-center px-1">
                 {ordenActiva.items.reduce((s, i) => s + i.cantidad, 0)}
               </span>
             )}
           </button>
         </div>
-      )}
 
       <PaymentPanel
         open={mostrarPayment}
@@ -542,6 +526,11 @@ export default function POSPage() {
         onClose={() => setAutorizandoItemId(null)}
       />
 
+      <SwitchUserModal
+        open={mostrarSwitchUser}
+        onClose={() => setMostrarSwitchUser(false)}
+      />
+
       <ConfirmDialog
         open={confirmarLiberar}
         title="Liberar mesa"
@@ -554,3 +543,4 @@ export default function POSPage() {
     </>
   )
 }
+

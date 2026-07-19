@@ -11,10 +11,10 @@ interface KanbanBoardProps {
   renderItem: (item: { id: string; content: ReactNode }) => ReactNode
 }
 
-const COLORS: Record<string, { dot: string; bg: string; border: string }> = {
-  pendientes: { dot: '#4E9AD4', bg: '#E6F2FB', border: '#4E9AD4' },
-  preparacion: { dot: '#D97A43', bg: '#FFF1E0', border: '#D97A43' },
-  listos: { dot: '#67BA78', bg: '#EAF7EC', border: '#67BA78' },
+const COLORS: Record<string, { dotClass: string; bgClass: string; borderClass: string }> = {
+  pendientes: { dotClass: 'bg-pos-reservada-border', bgClass: 'bg-pos-reservada-bg', borderClass: 'border-pos-reservada-border' },
+  preparacion: { dotClass: 'bg-pos-accent-light', bgClass: 'bg-dashboard-warning-bg', borderClass: 'border-pos-accent-light' },
+  listos: { dotClass: 'bg-pos-libre-border', bgClass: 'bg-pos-libre-bg', borderClass: 'border-pos-libre-border' },
 }
 
 export function KanbanBoard({ columns, renderItem }: KanbanBoardProps) {
@@ -33,10 +33,9 @@ export function KanbanBoard({ columns, renderItem }: KanbanBoardProps) {
               onClick={() => setMobileTab(col.id)}
               className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
                 mobileTab === col.id
-                  ? 'text-white shadow-sm'
+                  ? `text-white shadow-sm ${color?.dotClass}`
                   : 'text-text-secondary bg-bg-surface border border-border'
               }`}
-              style={mobileTab === col.id ? { background: color?.dot } : undefined}
             >
               {col.title}
               <span className="ml-1 opacity-80">{col.items.length}</span>
@@ -50,7 +49,7 @@ export function KanbanBoard({ columns, renderItem }: KanbanBoardProps) {
         <div className="flex items-center gap-2 mb-3">
           {activeCol && (
             <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full" style={{ background: COLORS[activeCol.id]?.dot }} />
+              <span className={`w-2 h-2 rounded-full ${COLORS[activeCol.id]?.dotClass}`} />
               <span className="cocina-column-header">{activeCol.title}</span>
               <span className="cocina-count-badge">{activeCol.items.length}</span>
             </div>
@@ -72,7 +71,7 @@ export function KanbanBoard({ columns, renderItem }: KanbanBoardProps) {
           return (
             <div key={col.id} className="flex-1 min-w-[280px] flex flex-col">
               <div className="flex items-center gap-2 mb-3 shrink-0">
-                {color && <span className="w-2.5 h-2.5 rounded-full" style={{ background: color.dot }} />}
+                {color && <span className={`w-2.5 h-2.5 rounded-full ${color.dotClass}`} />}
                 <span className="cocina-column-header">{col.title}</span>
                 <span className="cocina-count-badge">{col.items.length}</span>
               </div>
@@ -95,3 +94,4 @@ export function KanbanBoard({ columns, renderItem }: KanbanBoardProps) {
     </>
   )
 }
+

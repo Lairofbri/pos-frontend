@@ -47,14 +47,13 @@ export function CocinaCard({ item, onMarcarListo, onCompletada, onImprimir }: Co
           <span className="font-semibold text-sm text-text-primary">
             {item.mesa_numero ? `Mesa ${item.mesa_numero}` : 'Venta rápida'}
           </span>
-          {item.zona && <span className="text-xs text-text-secondary ml-2">{item.zona}</span>}
         </div>
         <TimerDisplay baseMinutes={item.tiempo_transcurrido} />
       </div>
 
       <div className="space-y-1 mb-3">
         {item.items.map((i) => (
-          <div key={i.id} className="flex items-center gap-2 text-xs" style={{ borderLeft: `3px solid ${ESTADO_COLORS[i.estado] || '#8C8177'}`, paddingLeft: 8 }}>
+          <div key={i.id} className="flex items-center gap-2 text-xs border-l-[3px] pl-2" style={{ borderLeftColor: ESTADO_COLORS[i.estado] || '#8C8177' }}>
             <span className="font-semibold text-text-primary">{i.cantidad}x</span>
             <span className="text-text-secondary flex-1 truncate">{i.nombre}</span>
             <button
@@ -77,12 +76,12 @@ export function CocinaCard({ item, onMarcarListo, onCompletada, onImprimir }: Co
       <div className="flex items-center justify-between pt-2 border-t border-border/50">
         <div className="flex gap-1.5">
           {itemsPendientes.length > 0 && (
-            <span className="text-[0.65rem] font-medium px-1.5 py-0.5 rounded" style={{ background: '#E6F2FB', color: '#2E73B2' }}>
+            <span className="text-[0.65rem] font-medium px-1.5 py-0.5 rounded bg-pos-reservada-bg text-pos-reservada-text">
               {itemsPendientes.length} pend.
             </span>
           )}
           {itemsEnProceso.length > 0 && (
-            <span className="text-[0.65rem] font-medium px-1.5 py-0.5 rounded" style={{ background: '#FFF1E0', color: '#D97A43' }}>
+            <span className="text-[0.65rem] font-medium px-1.5 py-0.5 rounded bg-dashboard-warning-bg text-pos-accent-light">
               {itemsEnProceso.length} prep.
             </span>
           )}
@@ -107,3 +106,4 @@ export function CocinaCard({ item, onMarcarListo, onCompletada, onImprimir }: Co
     </div>
   )
 }
+

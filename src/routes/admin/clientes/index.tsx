@@ -127,11 +127,11 @@ export default function ClientesPage() {
 
       <SidePanel open={panelOpen} onClose={cerrarPanel} title={editando ? 'Editar Cliente' : 'Nuevo Cliente'}>
         <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input label="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} required />
             <Input label="Apellido" value={form.apellido} onChange={(e) => setForm({ ...form, apellido: e.target.value })} />
           </div>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input label="Teléfono" value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} />
             <Input label="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
           </div>
@@ -141,13 +141,13 @@ export default function ClientesPage() {
 
           <Select label="Tipo documento" options={(tiposDocumento ?? []).map((t) => ({ value: t.valor, label: t.label }))} value={form.tipo_documento} onChange={(e) => setForm({ ...form, tipo_documento: e.target.value })} placeholder="Seleccionar..." />
           <Input label="Número documento" value={form.numero_documento} onChange={(e) => setForm({ ...form, numero_documento: e.target.value })} />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input label="NIT" value={form.nit} onChange={(e) => setForm({ ...form, nit: e.target.value })} />
             <Input label="NRC" value={form.nrc} onChange={(e) => setForm({ ...form, nrc: e.target.value })} />
           </div>
           <Input label="Razón social" value={form.razon_social} onChange={(e) => setForm({ ...form, razon_social: e.target.value })} />
           <Input label="Dirección" value={form.direccion} onChange={(e) => setForm({ ...form, direccion: e.target.value })} />
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Input label="Municipio" value={form.municipio} onChange={(e) => setForm({ ...form, municipio: e.target.value })} />
             <Input label="Departamento" value={form.departamento} onChange={(e) => setForm({ ...form, departamento: e.target.value })} />
           </div>

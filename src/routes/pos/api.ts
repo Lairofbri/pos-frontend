@@ -12,7 +12,7 @@ interface ProductoRaw {
 interface OrdenRaw {
   id: string; tipo: string; estado: string; numero_orden: number
   origen: string; mesa_id: string | null; mesa_numero: string | null
-  zona: string | null; cliente_id: string | null; cliente_nombre: string | null
+  cliente_id: string | null; cliente_nombre: string | null
   usuario_id: string; usuario_nombre: string | null
   subtotal: string; porcentaje_descuento: string; descuento: string
   total: string; gravado: string; iva: string
@@ -60,7 +60,6 @@ function parseOrden(r: OrdenRaw): Orden {
     numero_orden: r.numero_orden, origen: r.origen,
     mesa_id: r.mesa_id ?? undefined,
     mesa_numero: r.mesa_numero ?? undefined,
-    zona: r.zona ?? undefined,
     cliente_id: r.cliente_id ?? undefined,
     cliente_nombre: r.cliente_nombre ?? undefined,
     usuario_id: r.usuario_id,
@@ -149,3 +148,11 @@ export const cancelarOrden = (ordenId: string) =>
 
 export const cancelarItem = (ordenId: string, itemId: string) =>
   api.patch(`/ordenes/${ordenId}/items/${itemId}`, { estado: 'cancelado' }).then(r => r.data.data)
+
+export const actualizarPropina = (ordenId: string, data: { porcentaje?: number; monto?: number }) =>
+  api.patch(`/ordenes/${ordenId}/propina`, data).then(r => r.data.data)
+
+export const obtenerDTEPorOrden = (ordenId: string) =>
+  api.get<{ ok: boolean; data: { codigo_generacion: string; sello_recepcion: string | null; numero_control: string | null; tipo_dte: string; estado: string; json_respuesta: Record<string, unknown> } }>(`/dte/orden/${ordenId}`)
+    .then(r => r.data.data)
+    .catch(() => null)

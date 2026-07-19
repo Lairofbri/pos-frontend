@@ -5,11 +5,9 @@ import { listarMesas, crearMesa, actualizarMesa } from './api'
 import { DataTable, type Column } from '../../../components/shared/DataTable'
 import { SidePanel } from '../../../components/shared/SidePanel'
 import { Input } from '../../../components/ui/Input'
-import { Select } from '../../../components/ui/Select'
 import { Button } from '../../../components/ui/Button'
 import { Badge } from '../../../components/ui/Badge'
 import { useToastStore } from '../../../store/toastStore'
-import { useCatalogo } from '../../../hooks/useCatalogo'
 import type { Mesa } from '../../../types'
 
 const columns: Column<Mesa>[] = [
@@ -25,7 +23,6 @@ const columns: Column<Mesa>[] = [
     render: (m) => <span className="text-text-secondary">{m.nombre ?? '—'}</span>,
   },
   { key: 'capacidad', header: 'Cap.', sortable: true, render: (m) => <span className="font-mono text-text-secondary">{m.capacidad}</span> },
-  { key: 'zona', header: 'Zona', sortable: true },
   {
     key: 'estado',
     header: 'Estado',
@@ -48,8 +45,7 @@ export default function MesasPage() {
   const showToast = useToastStore((s) => s.show)
   const [panelOpen, setPanelOpen] = useState(false)
   const [editando, setEditando] = useState<Mesa | null>(null)
-  const [form, setForm] = useState({ numero: '', nombre: '', capacidad: '4', zona: 'salon' })
-  const { data: opcionesZona } = useCatalogo('zonas')
+  const [form, setForm] = useState({ numero: '', nombre: '', capacidad: '4' })
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['mesas-admin'],
@@ -58,20 +54,20 @@ export default function MesasPage() {
   })
 
   const crearMutation = useMutation({
-    mutationFn: () => crearMesa({ numero: form.numero, nombre: form.nombre || undefined, capacidad: parseInt(form.capacidad || '4'), zona: form.zona }),
+    mutationFn: () => crearMesa({ numero: form.numero, nombre: form.nombre || undefined, capacidad: parseInt(form.capacidad || '4') }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['mesas-admin'] }); queryClient.invalidateQueries({ queryKey: ['mesas'] }); cerrarPanel(); showToast({ type: 'success', message: 'Mesa creada' }) },
   })
 
   const editarMutation = useMutation({
-    mutationFn: () => editando ? actualizarMesa(editando.id, { numero: form.numero, nombre: form.nombre || undefined, capacidad: parseInt(form.capacidad || '4'), zona: form.zona }) : Promise.reject(),
+    mutationFn: () => editando ? actualizarMesa(editando.id, { numero: form.numero, nombre: form.nombre || undefined, capacidad: parseInt(form.capacidad || '4') }) : Promise.reject(),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['mesas-admin'] }); queryClient.invalidateQueries({ queryKey: ['mesas'] }); cerrarPanel(); showToast({ type: 'success', message: 'Mesa actualizada' }) },
   })
 
-  const abrirNuevo = () => { setEditando(null); setForm({ numero: '', nombre: '', capacidad: '4', zona: 'salon' }); setPanelOpen(true) }
+  const abrirNuevo = () => { setEditando(null); setForm({ numero: '', nombre: '', capacidad: '4' }); setPanelOpen(true) }
 
   const abrirEditar = (m: Mesa) => {
     setEditando(m)
-    setForm({ numero: m.numero, nombre: m.nombre ?? '', capacidad: m.capacidad.toString(), zona: m.zona })
+    setForm({ numero: m.numero, nombre: m.nombre ?? '', capacidad: m.capacidad.toString() })
     setPanelOpen(true)
   }
 
@@ -101,7 +97,6 @@ export default function MesasPage() {
           <Input label="Número" value={form.numero} onChange={(e) => setForm({ ...form, numero: e.target.value })} placeholder="1, B2, etc." required />
           <Input label="Nombre (opcional)" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} placeholder="Mesa 1, Barra 1" />
           <Input label="Capacidad" type="number" value={form.capacidad} onChange={(e) => setForm({ ...form, capacidad: e.target.value })} min={1} />
-          <Select label="Zona" options={(opcionesZona ?? []).map((z) => ({ value: z.valor, label: z.label }))} value={form.zona} onChange={(e) => setForm({ ...form, zona: e.target.value })} />
           <Button className="w-full" onClick={guardar} loading={crearMutation.isPending || editarMutation.isPending} disabled={!form.numero}>
             {editando ? 'Guardar cambios' : 'Crear mesa'}
           </Button>

@@ -46,7 +46,7 @@ export function printOrden(orden: Orden) {
   <div class="header">
     <h1>AMBER POS</h1>
     <p>${new Date().toLocaleString('es-MX')}</p>
-    <p>Mesa: ${escapeHtml(orden.mesa_numero ?? 'Mostrador')} | ${escapeHtml(orden.zona ?? '')}</p>
+    <p>Mesa: ${escapeHtml(orden.mesa_numero ?? 'Mostrador')}</p>
     ${orden.usuario_nombre ? `<p>${escapeHtml(orden.usuario_nombre)}</p>` : ''}
   </div>
   <div class="divider"></div>

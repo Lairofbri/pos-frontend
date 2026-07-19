@@ -203,14 +203,14 @@ export default function MenusPage() {
                   <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => cambiarOrden(item, 'up')}
-                      className="w-6 h-6 rounded bg-bg-primary text-text-secondary hover:text-text-primary hover:border-accent border border-border cursor-pointer text-xs flex items-center justify-center"
+                      className="w-10 h-10 sm:w-6 sm:h-6 rounded bg-bg-primary text-text-secondary hover:text-text-primary hover:border-accent border border-border cursor-pointer text-xs flex items-center justify-center"
                       title="Subir"
                     >
                       ▲
                     </button>
                     <button
                       onClick={() => cambiarOrden(item, 'down')}
-                      className="w-6 h-6 rounded bg-bg-primary text-text-secondary hover:text-text-primary hover:border-accent border border-border cursor-pointer text-xs flex items-center justify-center"
+                      className="w-10 h-10 sm:w-6 sm:h-6 rounded bg-bg-primary text-text-secondary hover:text-text-primary hover:border-accent border border-border cursor-pointer text-xs flex items-center justify-center"
                       title="Bajar"
                     >
                       ▼

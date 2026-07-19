@@ -1,96 +1,245 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
-@theme inline {
-  --color-bg-primary: #FAF7F4;
-  --color-bg-surface: #FFFFFF;
-  --color-bg-surface-hover: #F5F0EB;
-  --color-accent: #C7662E;
-  --color-accent-light: #D97A43;
-  --color-accent-dark: #B85A27;
-  --color-text-primary: #2D241C;
-  --color-text-secondary: #7A6B5D;
-  --color-success: #4A9D6E;
-  --color-danger: #CF5C5C;
-  --color-warning: #D9A05B;
-  --color-info: #5B8EBF;
-  --color-border: #E6DDD4;
+/* ═══════════════════════════════════════════════
+   LAYER 1: Raw CSS variables — LIGHT mode
+   ═══════════════════════════════════════════════ */
+:root {
+  /* Base */
+  --bg-primary: #FAF7F4;
+  --bg-surface: #FFFFFF;
+  --bg-surface-hover: #F5F0EB;
+  --accent: #C7662E;
+  --accent-light: #D97A43;
+  --accent-dark: #B85A27;
+  --text-primary: #2D241C;
+  --text-secondary: #7A6B5D;
+  --success: #4A9D6E;
+  --danger: #CF5C5C;
+  --warning: #D9A05B;
+  --info: #5B8EBF;
+  --border: #E6DDD4;
 
-  --color-status-libre: #4A9D6E;
-  --color-status-ocupada: #D9734E;
-  --color-status-pendiente: #CF5C5C;
-  --color-status-reservada: #5B8EBF;
+  /* Status */
+  --status-libre: #4A9D6E;
+  --status-ocupada: #D9734E;
+  --status-pendiente: #CF5C5C;
+  --status-reservada: #5B8EBF;
+
+  /* POS */
+  --pos-accent: #C7662E;
+  --pos-accent-hover: #B85A27;
+  --pos-accent-light: #D97A43;
+  --pos-text: #3E2A1F;
+  --pos-text-secondary: #6D5B4E;
+  --pos-text-muted: #8C8177;
+  --pos-border: #D8C7B5;
+  --pos-border-soft: #E6DDD3;
+  --pos-libre-bg: #EAF7EC;
+  --pos-libre-border: #67BA78;
+  --pos-libre-text: #3A9150;
+  --pos-ocupada-bg: #FBE8E7;
+  --pos-ocupada-border: #C5544B;
+  --pos-ocupada-text: #A83C36;
+  --pos-reservada-bg: #E6F2FB;
+  --pos-reservada-border: #4E9AD4;
+  --pos-reservada-text: #2E73B2;
+  --pos-wood-base: #F3E8D8;
+  --pos-wood-bottom: #E8D6C0;
+  --pos-sidebar-bg: #FBF6EF;
+  --pos-sidebar-end: #F6E8D4;
+
+  /* Menú */
+  --menu-bg: #E2C3A0;
+  --menu-accent: #C66A1E;
+  --menu-accent-hover: #B65C15;
+  --menu-accent-light: #DE922B;
+  --menu-sidebar: rgba(255, 245, 238, 0.55);
+  --menu-sidebar-blur: 22px;
+  --menu-tree-line: #C78C5B;
+  --menu-active-bg: #FFF7EF;
+  --menu-active-border: #D49A54;
+  --menu-card-border: #C9893C;
+  --menu-text: #1F1F1F;
+  --menu-text-secondary: #666666;
+  --menu-text-muted: #8A8A8A;
+  --menu-breadcrumb: #B36A24;
+  --menu-switch-active: #B76A18;
+  --menu-switch-inactive: #D5D5D5;
+  --menu-input-border: #D5D5D5;
+
+  /* Dashboard */
+  --dashboard-success-bg: #EAF7EC;
+  --dashboard-success-text: #3A9150;
+  --dashboard-danger-bg: #FBE8E7;
+  --dashboard-danger-text: #A83C36;
+  --dashboard-warning-bg: #FFF1E0;
+  --dashboard-warning-text: #C7662E;
+  --dashboard-info-bg: #E6F2FB;
+  --dashboard-info-text: #2E73B2;
+  --dashboard-cream: #F8F4EF;
+
+  /* Admin */
+  --admin-header-bg: #F3E8D8;
+  --admin-header-text: #3B281E;
+  --admin-row-alt: #FAF6F1;
+  --admin-row-hover: #F3E8D8;
+
+  /* Login */
+  --login-glass-bg: rgba(250, 246, 241, 0.95);
+  --login-input-bg: #FFFFFF;
+}
+
+/* ═══════════════════════════════════════════════
+   LAYER 1: CSS variables — DARK mode
+   ═══════════════════════════════════════════════ */
+.dark {
+  --bg-primary: #1a1816;
+  --bg-surface: #24201d;
+  --bg-surface-hover: #2e2a26;
+  --text-primary: #f0ebe5;
+  --text-secondary: #a89a8c;
+  --success: #5cbf7a;
+  --danger: #e07070;
+  --warning: #e0a050;
+  --info: #6aadcf;
+  --border: #3d352e;
+
+  --status-libre: #5cbf7a;
+  --status-ocupada: #e0856e;
+  --status-pendiente: #e07070;
+  --status-reservada: #6aadcf;
+
+  --pos-text: #f0ebe5;
+  --pos-text-secondary: #a89a8c;
+  --pos-text-muted: #8a7e74;
+  --pos-border: #3d352e;
+  --pos-border-soft: #4a423a;
+  --pos-wood-base: #2a2520;
+  --pos-wood-bottom: #1f1b17;
+  --pos-sidebar-bg: #1e1a16;
+  --pos-sidebar-end: #241f1a;
+
+  --menu-bg: #2a2520;
+  --menu-text: #f0ebe5;
+  --menu-text-secondary: #a89a8c;
+  --menu-text-muted: #8a7e74;
+  --menu-active-bg: #2e2a26;
+  --menu-active-border: #5a4a3a;
+
+  --dashboard-success-bg: #1a2e1a;
+  --dashboard-success-text: #5cbf7a;
+  --dashboard-danger-bg: #2e1a1a;
+  --dashboard-danger-text: #e07070;
+  --dashboard-warning-bg: #2e2a1a;
+  --dashboard-warning-text: #e0a050;
+  --dashboard-info-bg: #1a2a2e;
+  --dashboard-info-text: #6aadcf;
+  --dashboard-cream: #1e1a16;
+
+  --admin-header-bg: #2a2520;
+  --admin-header-text: #f0ebe5;
+  --admin-row-alt: #24201d;
+  --admin-row-hover: #2e2a26;
+
+  --login-glass-bg: rgba(30, 26, 22, 0.95);
+  --login-input-bg: #2e2a26;
+}
+
+/* ═══════════════════════════════════════════════
+   LAYER 2: Map variables to Tailwind utilities
+   ═══════════════════════════════════════════════ */
+@theme inline {
+  --color-bg-primary: var(--bg-primary);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-surface-hover: var(--bg-surface-hover);
+  --color-accent: var(--accent);
+  --color-accent-light: var(--accent-light);
+  --color-accent-dark: var(--accent-dark);
+  --color-text-primary: var(--text-primary);
+  --color-text-secondary: var(--text-secondary);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  --color-info: var(--info);
+  --color-border: var(--border);
+
+  --color-status-libre: var(--status-libre);
+  --color-status-ocupada: var(--status-ocupada);
+  --color-status-pendiente: var(--status-pendiente);
+  --color-status-reservada: var(--status-reservada);
 
   --font-display: "Tektur", sans-serif;
   --font-body: "Sora", sans-serif;
   --font-mono: "JetBrains Mono", monospace;
 
-  /* POS-specific palette (spec exact) */
-  --color-pos-accent: #C7662E;
-  --color-pos-accent-hover: #B85A27;
-  --color-pos-accent-light: #D97A43;
-  --color-pos-text: #3E2A1F;
-  --color-pos-text-secondary: #6D5B4E;
-  --color-pos-text-muted: #8C8177;
-  --color-pos-border: #D8C7B5;
-  --color-pos-border-soft: #E6DDD3;
+  --color-pos-accent: var(--pos-accent);
+  --color-pos-accent-hover: var(--pos-accent-hover);
+  --color-pos-accent-light: var(--pos-accent-light);
+  --color-pos-text: var(--pos-text);
+  --color-pos-text-secondary: var(--pos-text-secondary);
+  --color-pos-text-muted: var(--pos-text-muted);
+  --color-pos-border: var(--pos-border);
+  --color-pos-border-soft: var(--pos-border-soft);
 
-  --color-pos-libre-bg: #EAF7EC;
-  --color-pos-libre-border: #67BA78;
-  --color-pos-libre-text: #3A9150;
-  --color-pos-ocupada-bg: #FBE8E7;
-  --color-pos-ocupada-border: #C5544B;
-  --color-pos-ocupada-text: #A83C36;
-  --color-pos-reservada-bg: #E6F2FB;
-  --color-pos-reservada-border: #4E9AD4;
-  --color-pos-reservada-text: #2E73B2;
+  --color-pos-libre-bg: var(--pos-libre-bg);
+  --color-pos-libre-border: var(--pos-libre-border);
+  --color-pos-libre-text: var(--pos-libre-text);
+  --color-pos-ocupada-bg: var(--pos-ocupada-bg);
+  --color-pos-ocupada-border: var(--pos-ocupada-border);
+  --color-pos-ocupada-text: var(--pos-ocupada-text);
+  --color-pos-reservada-bg: var(--pos-reservada-bg);
+  --color-pos-reservada-border: var(--pos-reservada-border);
+  --color-pos-reservada-text: var(--pos-reservada-text);
 
-  --color-pos-wood-base: #F3E8D8;
-  --color-pos-wood-bottom: #E8D6C0;
+  --color-pos-wood-base: var(--pos-wood-base);
+  --color-pos-wood-bottom: var(--pos-wood-bottom);
 
-  --color-pos-sidebar-bg: #FBF6EF;
-  --color-pos-sidebar-end: #F6E8D4;
+  --color-pos-sidebar-bg: var(--pos-sidebar-bg);
+  --color-pos-sidebar-end: var(--pos-sidebar-end);
 
   --font-pos: "Inter", sans-serif;
 
-  /* Gestión de menú (spec nuevo) */
-  --color-menu-bg: #E2C3A0;
-  --color-menu-accent: #C66A1E;
-  --color-menu-accent-hover: #B65C15;
-  --color-menu-accent-light: #DE922B;
-  --color-menu-sidebar: rgba(255, 245, 238, 0.55);
-  --color-menu-sidebar-blur: 22px;
-  --color-menu-tree-line: #C78C5B;
-  --color-menu-active-bg: #FFF7EF;
-  --color-menu-active-border: #D49A54;
-  --color-menu-card-border: #C9893C;
-  --color-menu-text: #1F1F1F;
-  --color-menu-text-secondary: #666666;
-  --color-menu-text-muted: #8A8A8A;
-  --color-menu-breadcrumb: #B36A24;
-  --color-menu-switch-active: #B76A18;
-  --color-menu-switch-inactive: #D5D5D5;
-  --color-menu-input-border: #D5D5D5;
+  --color-menu-bg: var(--menu-bg);
+  --color-menu-accent: var(--menu-accent);
+  --color-menu-accent-hover: var(--menu-accent-hover);
+  --color-menu-accent-light: var(--menu-accent-light);
+  --color-menu-sidebar: var(--menu-sidebar);
+  --color-menu-sidebar-blur: var(--menu-sidebar-blur);
+  --color-menu-tree-line: var(--menu-tree-line);
+  --color-menu-active-bg: var(--menu-active-bg);
+  --color-menu-active-border: var(--menu-active-border);
+  --color-menu-card-border: var(--menu-card-border);
+  --color-menu-text: var(--menu-text);
+  --color-menu-text-secondary: var(--menu-text-secondary);
+  --color-menu-text-muted: var(--menu-text-muted);
+  --color-menu-breadcrumb: var(--menu-breadcrumb);
+  --color-menu-switch-active: var(--menu-switch-active);
+  --color-menu-switch-inactive: var(--menu-switch-inactive);
+  --color-menu-input-border: var(--menu-input-border);
 
-  /* Dashboard tokens */
-  --color-dashboard-success-bg: #EAF7EC;
-  --color-dashboard-success-text: #3A9150;
-  --color-dashboard-danger-bg: #FBE8E7;
-  --color-dashboard-danger-text: #A83C36;
-  --color-dashboard-warning-bg: #FFF1E0;
-  --color-dashboard-warning-text: #C7662E;
-  --color-dashboard-info-bg: #E6F2FB;
-  --color-dashboard-info-text: #2E73B2;
-  --color-dashboard-cream: #F8F4EF;
+  --color-dashboard-success-bg: var(--dashboard-success-bg);
+  --color-dashboard-success-text: var(--dashboard-success-text);
+  --color-dashboard-danger-bg: var(--dashboard-danger-bg);
+  --color-dashboard-danger-text: var(--dashboard-danger-text);
+  --color-dashboard-warning-bg: var(--dashboard-warning-bg);
+  --color-dashboard-warning-text: var(--dashboard-warning-text);
+  --color-dashboard-info-bg: var(--dashboard-info-bg);
+  --color-dashboard-info-text: var(--dashboard-info-text);
+  --color-dashboard-cream: var(--dashboard-cream);
 
-  /* Admin redesigned tokens */
-  --color-admin-header-bg: #F3E8D8;
-  --color-admin-header-text: #3B281E;
-  --color-admin-row-alt: #FAF6F1;
-  --color-admin-row-hover: #F3E8D8;
-  --color-admin-panel-gradient: linear-gradient(180deg, #F3E8D8 0%, #FAF6F1 100%);
+  --color-admin-header-bg: var(--admin-header-bg);
+  --color-admin-header-text: var(--admin-header-text);
+  --color-admin-row-alt: var(--admin-row-alt);
+  --color-admin-row-hover: var(--admin-row-hover);
+
+  --color-login-glass-bg: var(--login-glass-bg);
+  --color-login-input-bg: var(--login-input-bg);
 }
 
+/* ═══════════════════════════════════════════════
+   LAYER 3: Base styles
+   ═══════════════════════════════════════════════ */
 @layer base {
   body {
     @apply bg-bg-primary text-text-primary font-body antialiased;
@@ -108,17 +257,20 @@
     height: 6px;
   }
   ::-webkit-scrollbar-track {
-    background: #FAF7F4;
+    background: var(--bg-primary);
   }
   ::-webkit-scrollbar-thumb {
-    background: #E6DDD4;
+    background: var(--border);
     border-radius: 3px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #D9734E;
+    background: var(--pos-accent-light);
   }
 }
 
+/* ═══════════════════════════════════════════════
+   Utility classes
+   ═══════════════════════════════════════════════ */
 @utility glow-terracota {
   box-shadow: 0 0 12px rgba(199, 102, 46, 0.25);
 }
@@ -148,7 +300,7 @@
 @utility pos-wood-texture {
   position: relative;
   background:
-    linear-gradient(180deg, var(--color-pos-wood-base) 0%, var(--color-pos-wood-bottom) 100%),
+    linear-gradient(180deg, var(--pos-wood-base) 0%, var(--pos-wood-bottom) 100%),
     repeating-linear-gradient(
       45deg,
       transparent,
@@ -168,9 +320,9 @@
 }
 
 @utility menu-glass {
-  background: var(--color-menu-sidebar);
-  backdrop-filter: blur(var(--color-menu-sidebar-blur));
-  -webkit-backdrop-filter: blur(var(--color-menu-sidebar-blur));
+  background: var(--menu-sidebar);
+  backdrop-filter: blur(var(--menu-sidebar-blur));
+  -webkit-backdrop-filter: blur(var(--menu-sidebar-blur));
 }
 
 @utility menu-gradient {
@@ -229,7 +381,7 @@
 
 @utility animate-fadeInUp {
   animation: fadeInUp 0.3s ease-out both;
-} 
+}
 
 @keyframes ripple {
   from { opacity: 0.5; transform: translate(-50%, -50%) scale(0); }
@@ -247,8 +399,8 @@
 /* === Dashboard utilities === */
 
 @utility dashboard-card {
-  background: var(--color-bg-surface);
-  border: 1px solid var(--color-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
   border-radius: 18px;
   box-shadow: 0 3px 10px rgba(70, 55, 40, 0.08);
   padding: 20px;
@@ -256,8 +408,8 @@
 }
 
 @utility dashboard-card-hover {
-  background: var(--color-bg-surface);
-  border: 1px solid var(--color-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
   border-radius: 18px;
   box-shadow: 0 3px 10px rgba(70, 55, 40, 0.08);
   padding: 20px;
@@ -274,41 +426,41 @@
   font-size: 2.25rem;
   line-height: 1;
   font-weight: 500;
-  color: var(--color-text-primary);
+  color: var(--text-primary);
 }
 
 @utility dashboard-trend-up {
-  color: var(--color-dashboard-success-text);
+  color: var(--dashboard-success-text);
 }
 
 @utility dashboard-trend-down {
-  color: var(--color-dashboard-danger-text);
+  color: var(--dashboard-danger-text);
 }
 
 @utility dashboard-alert-critical {
-  border-left: 4px solid var(--color-dashboard-danger-text);
-  background: var(--color-dashboard-danger-bg);
+  border-left: 4px solid var(--dashboard-danger-text);
+  background: var(--dashboard-danger-bg);
 }
 
 @utility dashboard-alert-warning {
-  border-left: 4px solid var(--color-dashboard-warning-text);
-  background: var(--color-dashboard-warning-bg);
+  border-left: 4px solid var(--dashboard-warning-text);
+  background: var(--dashboard-warning-bg);
 }
 
 @utility dashboard-alert-info {
-  border-left: 4px solid var(--color-dashboard-info-text);
-  background: var(--color-dashboard-info-bg);
+  border-left: 4px solid var(--dashboard-info-text);
+  background: var(--dashboard-info-bg);
 }
 
 @utility dashboard-bg-cream {
-  background: var(--color-dashboard-cream);
+  background: var(--dashboard-cream);
 }
 
 /* === Admin utilities === */
 
 @utility admin-table-header {
-  background: var(--color-admin-header-bg);
-  color: var(--color-admin-header-text);
+  background: var(--admin-header-bg);
+  color: var(--admin-header-text);
 }
 
 @utility admin-row-hover {
@@ -316,41 +468,41 @@
 }
 
 .admin-row-hover:hover {
-  background: var(--color-admin-row-hover);
+  background: var(--admin-row-hover);
 }
 
 @utility admin-sidepanel-header {
-  background: linear-gradient(180deg, #F3E8D8 0%, #FFFAF5 100%);
-  border-bottom: 1px solid var(--color-border);
+  background: linear-gradient(180deg, var(--admin-header-bg) 0%, var(--bg-surface) 100%);
+  border-bottom: 1px solid var(--border);
 }
 
 /* === Login utilities === */
 
 @utility login-glass-card {
-  background: rgba(250, 246, 241, 0.95);
+  background: var(--login-glass-bg);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid var(--color-pos-border);
+  border: 1px solid var(--pos-border);
 }
 
 @utility login-input {
-  background: #FFFFFF;
-  border: 1px solid var(--color-pos-border-soft);
+  background: var(--login-input-bg);
+  border: 1px solid var(--pos-border-soft);
   border-radius: 12px;
   padding: 0.625rem 1rem;
   font-size: 0.875rem;
-  color: var(--color-pos-text);
+  color: var(--pos-text);
   outline: none;
   transition: all 0.2s;
 }
 
 .login-input:focus {
-  border-color: var(--color-pos-accent);
+  border-color: var(--pos-accent);
   box-shadow: 0 0 0 3px rgba(199, 102, 46, 0.12);
 }
 
 @utility login-btn-primary {
-  background: var(--color-pos-accent);
+  background: var(--pos-accent);
   border-radius: 12px;
   padding: 0.75rem 1.5rem;
   font-weight: 600;
@@ -361,7 +513,7 @@
 }
 
 .login-btn-primary:hover {
-  background: var(--color-pos-accent-hover);
+  background: var(--pos-accent-hover);
   transform: scale(1.02);
 }
 
@@ -375,23 +527,23 @@
   font-family: var(--font-display);
   font-size: 0.8125rem;
   font-weight: 700;
-  color: var(--color-text-primary);
+  color: var(--text-primary);
   padding-bottom: 0.75rem;
-  border-bottom: 2px solid var(--color-border);
+  border-bottom: 2px solid var(--border);
 }
 
 @utility cocina-count-badge {
   font-family: var(--font-mono);
   font-size: 0.6875rem;
-  color: var(--color-text-secondary);
-  background: var(--color-bg-surface);
+  color: var(--text-secondary);
+  background: var(--bg-surface);
   padding: 0.125rem 0.5rem;
   border-radius: 999px;
 }
 
 @utility cocina-card {
-  background: var(--color-bg-surface);
-  border: 1px solid var(--color-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
   border-radius: 14px;
   padding: 1rem;
   box-shadow: 0 2px 6px rgba(70, 55, 40, 0.06);
@@ -409,7 +561,7 @@
 }
 
 @utility cocina-timer-warning {
-  color: var(--color-dashboard-danger-text);
+  color: var(--dashboard-danger-text);
 }
 
 @utility cocina-pulse {

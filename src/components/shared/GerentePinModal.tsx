@@ -104,7 +104,7 @@ export function GerentePinModal({ open, tenantId, onAuthorized, onClose }: Geren
 
             <div className="text-center mb-4">
               <span className="text-3xl font-mono tracking-[0.3em] text-pos-accent">
-                {pin.padEnd(6, '•')}
+                {'•'.repeat(pin.length)}
               </span>
             </div>
 

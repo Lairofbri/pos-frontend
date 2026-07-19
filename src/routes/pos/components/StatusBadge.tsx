@@ -38,19 +38,8 @@ export function StatusBadge({ estado }: { estado: StatusKey }) {
 
   return (
     <span
+      className="inline-flex items-center justify-center h-[30px] px-3.5 rounded-full text-[13px] font-semibold tracking-wide leading-[18px] uppercase"
       style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: 30,
-        paddingLeft: 14,
-        paddingRight: 14,
-        borderRadius: 999,
-        fontSize: 13,
-        fontWeight: 600,
-        letterSpacing: '0.02em',
-        lineHeight: '18px',
-        textTransform: 'uppercase',
         color: s.text,
         backgroundColor: s.bg,
         border: `1px solid ${s.border}`,

@@ -9,33 +9,33 @@ const SUMMARY_CARDS = [
   {
     key: 'libres' as const,
     label: 'Libres',
-    bg: 'bg-[#EAF7EC]',
-    border: 'border-[#67BA78]',
-    text: 'text-[#3A9150]',
+    bg: 'bg-pos-libre-bg',
+    border: 'border-pos-libre-border',
+    text: 'text-pos-libre-text',
     shadow: 'shadow-[0_2px_6px_rgba(92,180,120,0.15)]',
   },
   {
     key: 'ocupadas' as const,
     label: 'Ocupadas',
-    bg: 'bg-[#FBE8E7]',
-    border: 'border-[#C5544B]',
-    text: 'text-[#A83C36]',
+    bg: 'bg-pos-ocupada-bg',
+    border: 'border-pos-ocupada-border',
+    text: 'text-pos-ocupada-text',
     shadow: 'shadow-[0_2px_6px_rgba(197,84,75,0.18)]',
   },
   {
     key: 'reservadas' as const,
     label: 'Reservadas',
-    bg: 'bg-[#E6F2FB]',
-    border: 'border-[#4E9AD4]',
-    text: 'text-[#2E73B2]',
+    bg: 'bg-pos-reservada-bg',
+    border: 'border-pos-reservada-border',
+    text: 'text-pos-reservada-text',
     shadow: 'shadow-[0_2px_6px_rgba(78,154,212,0.18)]',
   },
   {
     key: 'inactivas' as const,
     label: 'Inactivas',
-    bg: 'bg-[#F5F2EF]',
-    border: 'border-[#C7BEB5]',
-    text: 'text-[#8C8177]',
+    bg: 'bg-bg-surface',
+    border: 'border-pos-border',
+    text: 'text-pos-text-muted',
     shadow: 'shadow-[0_2px_6px_rgba(0,0,0,0.06)]',
   },
 ]
@@ -71,16 +71,16 @@ function CajaCard({ estado }: { estado?: string | null }) {
   const abierta = estado === 'abierta'
 
   return (
-    <div className="bg-white rounded-[18px] border border-[#E2D8CF] pos-summary-shadow px-[18px] py-[14px] lg:p-[18px] flex items-center justify-between min-h-[80px] lg:min-h-[90px]">
+    <div className="bg-white rounded-[18px] border border-pos-border pos-summary-shadow px-[18px] py-[14px] lg:p-[18px] flex items-center justify-between min-h-[80px] lg:min-h-[90px]">
       <div>
-        <span className="block text-sm font-medium text-[#6D5B4E] mb-1.5">
+        <span className="block text-sm font-medium text-pos-text-secondary mb-1.5">
           Caja
         </span>
-        <span className="text-base lg:text-[16px] font-semibold text-[#3E2A1F]">
+        <span className="text-base lg:text-[16px] font-semibold text-pos-text">
           {abierta ? 'Abierta' : 'Cerrada'}
         </span>
       </div>
-      <div className={`w-12 h-12 rounded-[14px] flex items-center justify-center overflow-hidden ${abierta ? 'bg-[#EAF7EC]' : 'bg-[#F0EBE6]'}`}>
+      <div className={`w-12 h-12 rounded-[14px] flex items-center justify-center overflow-hidden ${abierta ? 'bg-pos-libre-bg' : 'bg-pos-ocupada-bg'}`}>
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={abierta ? '#3A9150' : '#8C8177'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <rect x="2" y="4" width="20" height="16" rx="2" />
           <path d="M12 9v4" />
@@ -94,10 +94,10 @@ function CajaCard({ estado }: { estado?: string | null }) {
 function MetricRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between py-1.5">
-      <span className="text-sm lg:text-[14px] font-normal text-[#6D5B4E]">
+      <span className="text-sm lg:text-[14px] font-normal text-pos-text-secondary">
         {label}
       </span>
-      <span className="text-sm lg:text-[16px] font-medium text-[#3E2A1F]">
+      <span className="text-sm lg:text-[16px] font-medium text-pos-text">
         {value}
       </span>
     </div>
@@ -164,8 +164,8 @@ export function RestaurantSummary() {
       <CajaCard estado={cajaActiva?.estado} />
 
       {/* Ventas card */}
-      <div className="bg-white rounded-[18px] border border-[#E2D8CF] pos-summary-shadow p-4 lg:p-[18px] flex flex-col gap-0.5">
-        <span className="text-sm lg:text-[14px] font-medium text-[#6D5B4E] mb-2.5">
+      <div className="bg-white rounded-[18px] border border-pos-border pos-summary-shadow p-4 lg:p-[18px] flex flex-col gap-0.5">
+        <span className="text-sm lg:text-[14px] font-medium text-pos-text-secondary mb-2.5">
           Ventas del día
         </span>
         <MetricRow label="Total" value={totalIngresos} />
@@ -176,10 +176,11 @@ export function RestaurantSummary() {
       {/* Button */}
       <button
         onClick={() => navigate('/admin/caja')}
-        className="h-11 lg:h-[44px] rounded-xl bg-[#C7662E] text-white text-sm lg:text-base font-semibold border-none cursor-pointer transition-colors hover:bg-[#B85A27]"
+        className="h-11 lg:h-[44px] rounded-xl bg-pos-accent text-white text-sm lg:text-base font-semibold border-none cursor-pointer transition-colors hover:bg-pos-accent-hover"
       >
         Ir a Caja
       </button>
     </div>
   )
 }
+

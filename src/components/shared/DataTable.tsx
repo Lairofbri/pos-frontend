@@ -112,72 +112,95 @@ export function DataTable<T>({
   }
 
   return (
-    <div className="overflow-x-auto rounded-xl border border-border bg-bg-surface" role="region" aria-label="Tabla de datos">
-      <table className="w-full text-sm" role="table">
-        <thead>
-          <tr className="admin-table-header" role="row">
-            {columns.map((col) => {
-              const isActive = sortKey === col.key
-              return (
-                <th
-                  key={String(col.key)}
-                  scope="col"
-                  role="columnheader"
-                  aria-sort={col.sortable ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
-                  tabIndex={col.sortable ? 0 : undefined}
-                  className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${
-                    col.sortable
-                      ? 'cursor-pointer hover:opacity-80 select-none focus-visible:outline-2 focus-visible:outline-pos-accent'
-                      : ''
-                  }`}
-                  style={{ width: col.width }}
-                  onClick={() => col.sortable && toggleSort(col.key)}
-                  onKeyDown={(e) => {
-                    if (col.sortable && (e.key === 'Enter' || e.key === ' ')) {
-                      e.preventDefault()
-                      toggleSort(col.key)
-                    }
-                  }}
-                >
-                  <span className="inline-flex items-center gap-1">
-                    {col.header}
-                    {col.sortable && isActive && (
-                      <span className="text-pos-accent text-[10px]" aria-hidden>
-                        {sortDir === 'asc' ? '▲' : '▼'}
-                      </span>
-                    )}
-                  </span>
-                </th>
-              )
-            })}
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((item, idx) => (
-            <tr
-              key={keyExtractor(item)}
-              onClick={() => onRowClick?.(item)}
-              tabIndex={onRowClick ? 0 : undefined}
-              onKeyDown={(e) => {
-                if (onRowClick && (e.key === 'Enter' || e.key === ' ')) {
-                  e.preventDefault()
-                  onRowClick(item)
-                }
-              }}
-              className={`border-b border-border/50 transition-colors duration-150 admin-row-hover ${
-                idx % 2 === 1 ? 'bg-admin-row-alt' : 'bg-bg-surface'
-              } ${onRowClick ? 'cursor-pointer' : ''}`}
-              role={onRowClick ? 'button' : undefined}
-            >
-              {columns.map((col) => (
-                <td key={String(col.key)} className="px-4 py-3 text-text-primary" role="cell">
-                  {col.render ? col.render(item) : String(item[col.key] ?? '')}
-                </td>
-              ))}
+    <div className="rounded-xl border border-border bg-bg-surface" role="region" aria-label="Tabla de datos">
+      {/* Desktop: Table view */}
+      <div className="hidden sm:block overflow-x-auto">
+        <table className="w-full text-sm" role="table">
+          <thead>
+            <tr className="admin-table-header" role="row">
+              {columns.map((col) => {
+                const isActive = sortKey === col.key
+                return (
+                  <th
+                    key={String(col.key)}
+                    scope="col"
+                    role="columnheader"
+                    aria-sort={col.sortable ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
+                    tabIndex={col.sortable ? 0 : undefined}
+                    className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${
+                      col.sortable
+                        ? 'cursor-pointer hover:opacity-80 select-none focus-visible:outline-2 focus-visible:outline-pos-accent'
+                        : ''
+                    }`}
+                    style={{ width: col.width }}
+                    onClick={() => col.sortable && toggleSort(col.key)}
+                    onKeyDown={(e) => {
+                      if (col.sortable && (e.key === 'Enter' || e.key === ' ')) {
+                        e.preventDefault()
+                        toggleSort(col.key)
+                      }
+                    }}
+                  >
+                    <span className="inline-flex items-center gap-1">
+                      {col.header}
+                      {col.sortable && isActive && (
+                        <span className="text-pos-accent text-[10px]" aria-hidden>
+                          {sortDir === 'asc' ? '▲' : '▼'}
+                        </span>
+                      )}
+                    </span>
+                  </th>
+                )
+              })}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {sorted.map((item, idx) => (
+              <tr
+                key={keyExtractor(item)}
+                onClick={() => onRowClick?.(item)}
+                tabIndex={onRowClick ? 0 : undefined}
+                onKeyDown={(e) => {
+                  if (onRowClick && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault()
+                    onRowClick(item)
+                  }
+                }}
+                className={`border-b border-border/50 transition-colors duration-150 admin-row-hover ${
+                  idx % 2 === 1 ? 'bg-admin-row-alt' : 'bg-bg-surface'
+                } ${onRowClick ? 'cursor-pointer' : ''}`}
+                role={onRowClick ? 'button' : undefined}
+              >
+                {columns.map((col) => (
+                  <td key={String(col.key)} className="px-4 py-3 text-text-primary" role="cell">
+                    {col.render ? col.render(item) : String(item[col.key] ?? '')}
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {/* Mobile: Card view */}
+      <div className="sm:hidden divide-y divide-border/50">
+        {sorted.map((item) => (
+          <div
+            key={keyExtractor(item)}
+            onClick={() => onRowClick?.(item)}
+            className={`p-4 transition-colors duration-150 ${onRowClick ? 'cursor-pointer active:bg-bg-surface-hover' : ''}`}
+          >
+            {columns.map((col) => (
+              <div key={String(col.key)} className="flex items-center justify-between py-1">
+                <span className="text-xs font-semibold text-text-secondary uppercase">{col.header}</span>
+                <span className="text-sm text-text-primary">
+                  {col.render ? col.render(item) : String(item[col.key] ?? '')}
+                </span>
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }

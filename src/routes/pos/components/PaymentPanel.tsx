@@ -27,11 +27,12 @@ export function PaymentPanel({ open, onClose, orden, onConfirmar, loading }: Pay
 
   if (!orden) return null
 
+  const totalAPagar = orden.total + orden.propina_monto
   const efectivo = parseFloat(montoEfectivo || '0')
   const tarjeta = parseFloat(montoTarjeta || '0')
   const totalPagado = metodo === 'mixto' ? efectivo + tarjeta : efectivo || tarjeta
   const cambio = metodo === 'efectivo' || metodo === 'mixto'
-    ? Math.max(0, totalPagado - orden.total)
+    ? Math.max(0, totalPagado - totalAPagar)
     : 0
 
   const buildPayload = (): { metodo: string; monto_efectivo?: number; monto_tarjeta?: number; referencia_tarjeta?: string } => {
@@ -39,7 +40,7 @@ export function PaymentPanel({ open, onClose, orden, onConfirmar, loading }: Pay
       case 'efectivo':
         return { metodo, monto_efectivo: efectivo || undefined }
       case 'tarjeta':
-        return { metodo, monto_tarjeta: orden.total, referencia_tarjeta: referenciaTarjeta || undefined }
+        return { metodo, monto_tarjeta: totalAPagar, referencia_tarjeta: referenciaTarjeta || undefined }
       case 'mixto':
         return { metodo, monto_efectivo: efectivo || undefined, monto_tarjeta: tarjeta || undefined, referencia_tarjeta: referenciaTarjeta || undefined }
       default:
@@ -52,7 +53,10 @@ export function PaymentPanel({ open, onClose, orden, onConfirmar, loading }: Pay
       <div className="flex flex-col gap-6">
         <div className="text-center">
           <p className="text-xs text-text-secondary font-body uppercase tracking-wider">Total a pagar</p>
-          <p className="text-3xl font-mono text-accent font-bold mt-1">${orden.total?.toFixed(2) ?? '0.00'}</p>
+          <p className="text-3xl font-mono text-accent font-bold mt-1">${totalAPagar.toFixed(2)}</p>
+          {orden.propina_monto > 0 && (
+            <p className="text-[11px] text-text-secondary mt-1">Incluye propina ${orden.propina_monto.toFixed(2)} ({orden.propina_porcentaje}%)</p>
+          )}
         </div>
 
         <div>

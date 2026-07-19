@@ -11,7 +11,7 @@ export interface LoginRequest {
 }
 
 export interface LoginPinRequest {
-  usuario_id: string
+  usuario_id?: string
   pin: string
 }
 
@@ -105,7 +105,6 @@ export interface Mesa {
   numero: string
   nombre?: string
   capacidad: number
-  zona: string
   estado: 'disponible' | 'ocupada' | 'reservada' | 'inactiva'
   activo: boolean
   orden_activa?: Orden | null
@@ -130,7 +129,6 @@ export interface Orden {
   origen: string
   mesa_id?: string
   mesa_numero?: string
-  zona?: string
   cliente_id?: string
   cliente_nombre?: string
   usuario_id: string

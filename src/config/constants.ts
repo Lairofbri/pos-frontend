@@ -3,7 +3,4 @@ export const STORAGE_KEYS = {
   REFRESH_TOKEN: 'refresh_token',
   TENANT_ID: 'tenant_id',
   USUARIO_DATA: 'usuario_data',
-  ZONA: 'zona',
 } as const
-
-export const DEFAULT_ZONA = 'salon'
