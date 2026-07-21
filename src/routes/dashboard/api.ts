@@ -101,5 +101,4 @@ export function getAlertas(): DashboardAlerta[] {
 export function getCajaActiva() {
   return api.get<{ ok: boolean; data: any }>('/caja/activa')
     .then(r => r.data.data)
-    .catch(() => ({ estado: 'abierta', monto_inicial: 200, total_ventas: 1250.75 }))
 }

@@ -1,19 +1,14 @@
 import { type ReactNode } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { getCajaActiva } from '../../routes/admin/caja/api'
+import { useCajaActiva } from '../../hooks/useCajaActiva'
+import { InlineError } from './InlineError'
 import { Spinner } from '../ui/Spinner'
-import { queryDefaults } from '../../config/queries'
 
 interface CajaGuardProps {
   children: ReactNode
 }
 
 export function CajaGuard({ children }: CajaGuardProps) {
-  const { data: cajaActiva, isLoading } = useQuery({
-    queryKey: ['caja-activa'],
-    queryFn: getCajaActiva,
-    ...queryDefaults('caja-activa'),
-  })
+  const { caja, isLoading, isError, mensajeError, refetch } = useCajaActiva()
 
   if (isLoading) {
     return (
@@ -23,7 +18,18 @@ export function CajaGuard({ children }: CajaGuardProps) {
     )
   }
 
-  if (!cajaActiva || cajaActiva.estado !== 'abierta') {
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3 px-4">
+        <InlineError message={mensajeError ?? 'Error al verificar caja'} onRetry={() => refetch()} />
+        <p className="text-xs text-text-secondary font-body text-center max-w-sm mt-2">
+          Si el problema persiste, abre un turno desde <strong className="text-pos-accent cursor-pointer" onClick={() => window.location.href = '/admin/caja'}>Administración &gt; Caja</strong>
+        </p>
+      </div>
+    )
+  }
+
+  if (!caja || caja.estado !== 'abierta') {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-4">
         <span className="text-6xl">💰</span>

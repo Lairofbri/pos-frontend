@@ -12,10 +12,10 @@ import type { CocinaItem } from './api'
 
 type ColumnaId = 'pendientes' | 'preparacion' | 'listos'
 
-const columnasConfig: { id: ColumnaId; title: string }[] = [
-  { id: 'pendientes', title: 'Nuevas' },
-  { id: 'preparacion', title: 'En Preparación' },
-  { id: 'listos', title: 'Listas' },
+const columnasConfig: { id: ColumnaId; title: string; icon: string }[] = [
+  { id: 'pendientes', title: 'Nuevas', icon: '🆕' },
+  { id: 'preparacion', title: 'En Preparación', icon: '👨‍🍳' },
+  { id: 'listos', title: 'Listas', icon: '✅' },
 ]
 
 export default function CocinaPage() {
@@ -25,11 +25,18 @@ export default function CocinaPage() {
 
   useCocinaSocket(tenantId ?? '')
 
-  const { data: items, isLoading } = useQuery({
+  const { data: rawItems, isLoading } = useQuery({
     queryKey: ['cocina'],
     queryFn: getItemsActivos,
     ...queryDefaults('cocina'),
   })
+
+  const items = useMemo(() => (rawItems ?? []).map((item) => ({
+    ...item,
+    tiempo_transcurrido: item.items.length > 0
+      ? Math.floor((Date.now() - new Date(item.items[0].enviado_en).getTime()) / 60000)
+      : 0,
+  })), [rawItems])
 
   const marcarListoMutation = useMutation({
     mutationFn: ({ ordenId, itemId }: { ordenId: string; itemId: string }) =>
@@ -85,6 +92,7 @@ export default function CocinaPage() {
     return columnasConfig.map((cfg) => ({
       id: cfg.id,
       title: cfg.title,
+      icon: cfg.icon,
       items: grouped[cfg.id].map((item) => ({
         id: item.orden_id,
         content: (

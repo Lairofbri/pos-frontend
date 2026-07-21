@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { queryDefaults } from '../../config/queries'
-import { getDashboardMetrics, getMesas, getTopProductos, getVentasPorHora, getAlertas, getCajaActiva } from './api'
+import { getDashboardMetrics, getMesas, getTopProductos, getVentasPorHora, getAlertas } from './api'
+import { useCajaActiva } from '../../hooks/useCajaActiva'
 import { MetricsSection } from './components/MetricsSection'
 import { OperationalStatus } from './components/OperationalStatus'
 import { ProductPerformance } from './components/ProductPerformance'
@@ -8,16 +9,20 @@ import { TrendsSection } from './components/TrendsSection'
 import { AlertsSection } from './components/AlertsSection'
 import { PageHeader } from '../../components/shared/PageHeader'
 import { Spinner } from '../../components/ui/Spinner'
+import { useAuthStore } from '../../store/authStore'
 
 export default function DashboardPage() {
+  const sucursalId = useAuthStore((s) => s.sucursalId)
+  const { caja } = useCajaActiva()
+
   const { data: metrics, isLoading: mLoading } = useQuery({
-    queryKey: ['dashboard-metrics'],
+    queryKey: ['dashboard-metrics', sucursalId],
     queryFn: getDashboardMetrics,
     ...queryDefaults('dashboard-metrics'),
   })
 
   const { data: mesas } = useQuery({
-    queryKey: ['mesas'],
+    queryKey: ['mesas', sucursalId],
     queryFn: getMesas,
     ...queryDefaults('mesas'),
   })
@@ -29,15 +34,9 @@ export default function DashboardPage() {
   })
 
   const { data: ventasPorHora, isLoading: vLoading } = useQuery({
-    queryKey: ['dashboard-ventas-hora'],
+    queryKey: ['dashboard-ventas-hora', sucursalId],
     queryFn: getVentasPorHora,
     ...queryDefaults('dashboard-ventas-hora'),
-  })
-
-  const { data: caja } = useQuery({
-    queryKey: ['dashboard-caja'],
-    queryFn: getCajaActiva,
-    ...queryDefaults('dashboard-caja'),
   })
 
   const alertas = getAlertas()

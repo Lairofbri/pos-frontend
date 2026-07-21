@@ -110,14 +110,44 @@ export interface Mesa {
   orden_activa?: Orden | null
 }
 
+export type MetodoPago =
+  | 'efectivo'
+  | 'tarjeta'
+  | 'tarjeta_debito'
+  | 'tarjeta_credito'
+  | 'mixto'
+  | 'transferencia'
+  | 'bitcoin'
+  | 'monedero_electronico'
+  | 'cheque'
+  | 'tarjeta_empresarial'
+  | 'bonos'
+  | 'vales'
+  | 'otro'
+
 export interface Pago {
   id: string
-  metodo: 'efectivo' | 'tarjeta' | 'mixto'
+  metodo: MetodoPago
   monto_efectivo: number
   monto_tarjeta: number
+  monto_transferencia?: number
+  monto_bitcoin?: number
+  monto_monedero?: number
+  monto_cheque?: number
+  monto_tarjeta_empresarial?: number
+  monto_bonos?: number
+  monto_vales?: number
+  monto_otro?: number
   total_pagado: number
   vuelto: number
   referencia_tarjeta?: string
+  referencia_transferencia?: string
+  banco_emisor?: string
+  hash_bitcoin?: string
+  wallet_id?: string
+  wallet_id_monedero?: string
+  referencia_cheque?: string
+  descripcion_otro?: string
   creado_en: string
 }
 
@@ -199,6 +229,19 @@ export interface CajaTurno {
   fecha_cierre?: string
   notas_apertura?: string
   notas_cierre?: string
+  total_ventas?: number
+  total_efectivo?: number
+  total_tarjeta?: number
+  total_transferencia?: number
+  total_bitcoin?: number
+  total_monedero?: number
+  total_cheque?: number
+  total_tarjeta_empresarial?: number
+  total_bonos?: number
+  total_vales?: number
+  total_otros?: number
+  total_retiros?: number
+  total_depositos?: number
 }
 
 export interface CajaCuadre {
@@ -211,6 +254,14 @@ export interface CajaCuadre {
   total_ventas: number
   total_efectivo: number
   total_tarjeta: number
+  total_transferencia?: number
+  total_bitcoin?: number
+  total_monedero?: number
+  total_cheque?: number
+  total_tarjeta_empresarial?: number
+  total_bonos?: number
+  total_vales?: number
+  total_otros?: number
   total_retiros: number
   total_depositos: number
   notas_cierre?: string

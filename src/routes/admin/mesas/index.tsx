@@ -1,13 +1,14 @@
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
+import { useApiMutation } from '../../../hooks/useApiMutation'
 import { queryDefaults } from '../../../config/queries'
 import { listarMesas, crearMesa, actualizarMesa } from './api'
 import { DataTable, type Column } from '../../../components/shared/DataTable'
 import { SidePanel } from '../../../components/shared/SidePanel'
+import { LoadingOverlay } from '../../../components/shared/LoadingOverlay'
 import { Input } from '../../../components/ui/Input'
 import { Button } from '../../../components/ui/Button'
 import { Badge } from '../../../components/ui/Badge'
-import { useToastStore } from '../../../store/toastStore'
 import type { Mesa } from '../../../types'
 
 const columns: Column<Mesa>[] = [
@@ -41,8 +42,6 @@ const columns: Column<Mesa>[] = [
 ]
 
 export default function MesasPage() {
-  const queryClient = useQueryClient()
-  const showToast = useToastStore((s) => s.show)
   const [panelOpen, setPanelOpen] = useState(false)
   const [editando, setEditando] = useState<Mesa | null>(null)
   const [form, setForm] = useState({ numero: '', nombre: '', capacidad: '4' })
@@ -53,14 +52,18 @@ export default function MesasPage() {
     ...queryDefaults('mesas-admin'),
   })
 
-  const crearMutation = useMutation({
+  const crearMutation = useApiMutation({
     mutationFn: () => crearMesa({ numero: form.numero, nombre: form.nombre || undefined, capacidad: parseInt(form.capacidad || '4') }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['mesas-admin'] }); queryClient.invalidateQueries({ queryKey: ['mesas'] }); cerrarPanel(); showToast({ type: 'success', message: 'Mesa creada' }) },
+    queryKey: ['mesas-admin', 'mesas'],
+    successMessage: 'Mesa creada exitosamente',
+    onSuccess: () => cerrarPanel(),
   })
 
-  const editarMutation = useMutation({
-    mutationFn: () => editando ? actualizarMesa(editando.id, { numero: form.numero, nombre: form.nombre || undefined, capacidad: parseInt(form.capacidad || '4') }) : Promise.reject(),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['mesas-admin'] }); queryClient.invalidateQueries({ queryKey: ['mesas'] }); cerrarPanel(); showToast({ type: 'success', message: 'Mesa actualizada' }) },
+  const editarMutation = useApiMutation({
+    mutationFn: () => editando ? actualizarMesa(editando.id, { numero: form.numero, nombre: form.nombre || undefined, capacidad: parseInt(form.capacidad || '4') }) : Promise.reject(new Error('No editando')),
+    queryKey: ['mesas-admin', 'mesas'],
+    successMessage: 'Mesa actualizada exitosamente',
+    onSuccess: () => cerrarPanel(),
   })
 
   const abrirNuevo = () => { setEditando(null); setForm({ numero: '', nombre: '', capacidad: '4' }); setPanelOpen(true) }
@@ -74,6 +77,7 @@ export default function MesasPage() {
   const cerrarPanel = () => { setPanelOpen(false); setEditando(null) }
 
   const guardar = () => { if (editando) editarMutation.mutate(); else crearMutation.mutate() }
+  const isMutating = crearMutation.isPending || editarMutation.isPending
 
   return (
     <>
@@ -92,14 +96,17 @@ export default function MesasPage() {
         />
       </div>
 
-      <SidePanel open={panelOpen} onClose={cerrarPanel} title={editando ? 'Editar Mesa' : 'Nueva Mesa'}>
-        <div className="flex flex-col gap-4">
-          <Input label="Número" value={form.numero} onChange={(e) => setForm({ ...form, numero: e.target.value })} placeholder="1, B2, etc." required />
-          <Input label="Nombre (opcional)" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} placeholder="Mesa 1, Barra 1" />
-          <Input label="Capacidad" type="number" value={form.capacidad} onChange={(e) => setForm({ ...form, capacidad: e.target.value })} min={1} />
-          <Button className="w-full" onClick={guardar} loading={crearMutation.isPending || editarMutation.isPending} disabled={!form.numero}>
-            {editando ? 'Guardar cambios' : 'Crear mesa'}
-          </Button>
+      <SidePanel open={panelOpen} onClose={() => { if (!isMutating) cerrarPanel() }} title={editando ? 'Editar Mesa' : 'Nueva Mesa'}>
+        <div className="relative">
+          {isMutating && <LoadingOverlay />}
+          <div className="flex flex-col gap-4">
+            <Input label="Número" value={form.numero} onChange={(e) => setForm({ ...form, numero: e.target.value })} placeholder="1, B2, etc." required />
+            <Input label="Nombre (opcional)" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} placeholder="Mesa 1, Barra 1" />
+            <Input label="Capacidad" type="number" value={form.capacidad} onChange={(e) => setForm({ ...form, capacidad: e.target.value })} min={1} />
+            <Button className="w-full" onClick={guardar} loading={isMutating} disabled={!form.numero}>
+              {editando ? 'Guardar cambios' : 'Crear mesa'}
+            </Button>
+          </div>
         </div>
       </SidePanel>
     </>

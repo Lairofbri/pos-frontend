@@ -14,8 +14,20 @@ export interface PinUser {
   rol: string
 }
 
+export interface SucursalOption {
+  id: string
+  tenant_id: string
+  nombre: string
+  es_principal: boolean
+}
+
+interface EmpresasResponse {
+  tenants: Empresa[]
+  sucursales: SucursalOption[]
+}
+
 export const getEmpresas = () =>
-  api.get<{ ok: boolean; data: { tenants: Empresa[] } }>('/empresas').then(r => r.data.data.tenants)
+  api.get<{ ok: boolean; data: EmpresasResponse }>('/empresas').then(r => r.data.data)
 
 export const login = (data: LoginRequest) =>
   api.post<{ data: LoginResponse }>('/auth/login', data).then(r => r.data.data)

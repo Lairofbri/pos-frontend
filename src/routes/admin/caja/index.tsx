@@ -1,8 +1,10 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryDefaults } from '../../../config/queries'
-import { getCajaActiva, abrirCaja, cerrarCaja, registrarMovimiento, getHistorialCajas, getResumenDiario, obtenerCuadre } from './api'
+import { abrirCaja, cerrarCaja, registrarMovimiento, getHistorialCajas, getResumenDiario, obtenerCuadre } from './api'
+import { useCajaActiva } from '../../../hooks/useCajaActiva'
 import { SidePanel } from '../../../components/shared/SidePanel'
+import { InlineError } from '../../../components/shared/InlineError'
 import { Input } from '../../../components/ui/Input'
 import { Button } from '../../../components/ui/Button'
 import { Badge } from '../../../components/ui/Badge'
@@ -16,6 +18,7 @@ type Tab = 'activa' | 'historial'
 export default function CajaPage() {
   const queryClient = useQueryClient()
   const showToast = useToastStore((s) => s.show)
+  const { caja: cajaActiva, isLoading: loadingActiva, isError: cajaError, mensajeError: cajaMensaje, refetch: cajaRefetch } = useCajaActiva()
   const { data: movTipos } = useCatalogo('movimientos_tipo')
   const [tab, setTab] = useState<Tab>('activa')
   const [abrirPanel, setAbrirPanel] = useState(false)
@@ -28,12 +31,6 @@ export default function CajaPage() {
   const [movTipo, setMovTipo] = useState<'retiro' | 'deposito'>('retiro')
   const [movMonto, setMovMonto] = useState('')
   const [movMotivo, setMovMotivo] = useState('')
-
-  const { data: cajaActiva, isLoading: loadingActiva } = useQuery({
-    queryKey: ['caja-activa'],
-    queryFn: getCajaActiva,
-    ...queryDefaults('caja-activa'),
-  })
 
   const { data: resumen, isLoading: loadingResumen } = useQuery({
     queryKey: ['resumen-diario'],
@@ -89,6 +86,8 @@ export default function CajaPage() {
       {tab === 'activa' ? (
         loadingActiva ? (
           <div className="flex justify-center py-20"><Spinner size="lg" /></div>
+        ) : cajaError ? (
+          <InlineError message={cajaMensaje ?? 'Error al consultar caja'} onRetry={() => cajaRefetch()} />
         ) : cajaActiva?.estado === 'abierta' ? (
           <div className="space-y-4">
             <div className="bg-bg-surface rounded-xl border border-border p-5">

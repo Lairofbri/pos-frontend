@@ -17,6 +17,7 @@ import ClientesPage from './routes/admin/clientes/index'
 import CajaPage from './routes/admin/caja/index'
 import MenusPage from './routes/configuraciones/menus/index'
 import ImpresorasPage from './routes/admin/impresoras/index'
+import SucursalesPage from './routes/admin/sucursales/index'
 import DashboardPage from './routes/dashboard/index'
 import { AuthGuard } from './components/shared/AuthGuard'
 import { RouteGuard } from './components/shared/RouteGuard'
@@ -39,6 +40,7 @@ const router = createBrowserRouter([
   { path: '/admin/caja', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><CajaPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '/configuraciones/menus', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><MenusPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '/admin/impresoras', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><ImpresorasPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+  { path: '/admin/sucursales', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><SucursalesPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '*', element: <Navigate to="/pos" replace /> },
 ])
 

@@ -3,4 +3,5 @@ export const STORAGE_KEYS = {
   REFRESH_TOKEN: 'refresh_token',
   TENANT_ID: 'tenant_id',
   USUARIO_DATA: 'usuario_data',
+  SUCURSAL_ID: 'sucursal_id',
 } as const

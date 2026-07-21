@@ -25,8 +25,16 @@ interface OrdenRaw {
 interface PagoRaw {
   id: string; metodo: string
   monto_efectivo: string; monto_tarjeta: string
+  monto_transferencia: string | null; monto_bitcoin: string | null
+  monto_monedero: string | null; monto_cheque: string | null
+  monto_tarjeta_empresarial: string | null; monto_bonos: string | null
+  monto_vales: string | null; monto_otro: string | null
   total_pagado: string; vuelto: string
-  referencia_tarjeta: string | null; creado_en: string
+  referencia_tarjeta: string | null; referencia_transferencia: string | null
+  banco_emisor: string | null; hash_bitcoin: string | null
+  wallet_id: string | null; wallet_id_monedero: string | null
+  referencia_cheque: string | null; descripcion_otro: string | null
+  creado_en: string
 }
 
 function parseProducto(r: ProductoRaw): Producto {
@@ -46,9 +54,24 @@ function parsePago(r: PagoRaw): Pago {
     id: r.id, metodo: r.metodo as Pago['metodo'],
     monto_efectivo: parseFloat(r.monto_efectivo),
     monto_tarjeta: parseFloat(r.monto_tarjeta),
+    monto_transferencia: r.monto_transferencia ? parseFloat(r.monto_transferencia) : undefined,
+    monto_bitcoin: r.monto_bitcoin ? parseFloat(r.monto_bitcoin) : undefined,
+    monto_monedero: r.monto_monedero ? parseFloat(r.monto_monedero) : undefined,
+    monto_cheque: r.monto_cheque ? parseFloat(r.monto_cheque) : undefined,
+    monto_tarjeta_empresarial: r.monto_tarjeta_empresarial ? parseFloat(r.monto_tarjeta_empresarial) : undefined,
+    monto_bonos: r.monto_bonos ? parseFloat(r.monto_bonos) : undefined,
+    monto_vales: r.monto_vales ? parseFloat(r.monto_vales) : undefined,
+    monto_otro: r.monto_otro ? parseFloat(r.monto_otro) : undefined,
     total_pagado: parseFloat(r.total_pagado),
     vuelto: parseFloat(r.vuelto),
     referencia_tarjeta: r.referencia_tarjeta ?? undefined,
+    referencia_transferencia: r.referencia_transferencia ?? undefined,
+    banco_emisor: r.banco_emisor ?? undefined,
+    hash_bitcoin: r.hash_bitcoin ?? undefined,
+    wallet_id: r.wallet_id ?? undefined,
+    wallet_id_monedero: r.wallet_id_monedero ?? undefined,
+    referencia_cheque: r.referencia_cheque ?? undefined,
+    descripcion_otro: r.descripcion_otro ?? undefined,
     creado_en: r.creado_en,
   }
 }
@@ -134,7 +157,7 @@ export const eliminarItem = (ordenId: string, itemId: string) =>
 export const actualizarItem = (ordenId: string, itemId: string, data: { cantidad?: number; notas?: string; descuento_porcentaje?: number }) =>
   api.patch(`/ordenes/${ordenId}/items/${itemId}`, data).then(r => r.data.data)
 
-export const pagarOrden = (ordenId: string, pdata: { metodo: string; monto_efectivo?: number; monto_tarjeta?: number; referencia_tarjeta?: string }) =>
+export const pagarOrden = (ordenId: string, pdata: Record<string, unknown>) =>
   api.post(`/ordenes/${ordenId}/pagar`, pdata).then(r => r.data.data)
 
 export const enviarCocina = (ordenId: string) =>

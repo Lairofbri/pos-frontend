@@ -1,14 +1,15 @@
-import { useState, type FormEvent } from 'react'
+import { useState, useMemo, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { queryDefaults } from '../../config/queries'
 import { getEmpresas, login, loginPin } from './api'
+import type { SucursalOption } from './api'
 import { useAuthStore } from '../../store/authStore'
 import { NumericKeypad } from '../../components/shared/NumericKeypad'
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const { setAuth, setTenantId } = useAuthStore()
+  const { setAuth, setTenantId, setSucursalId } = useAuthStore()
 
   const [mode, setMode] = useState<'login' | 'pin'>('login')
   const [email, setEmail] = useState('')
@@ -18,16 +19,28 @@ export default function LoginPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const { data: empresas, isError: empresasError, refetch: refetchEmpresas } = useQuery({
+  const { data, isError: empresasError, refetch: refetchEmpresas } = useQuery({
     queryKey: ['empresas'],
     queryFn: getEmpresas,
     ...queryDefaults('empresas'),
   })
 
+  const empresas = data?.tenants ?? []
+  const todasSucursales = data?.sucursales ?? []
+
   const [empresaId, setEmpresaId] = useState('')
   const defaultEmpresaId = empresas?.[0]?.id ?? ''
   const effectiveEmpresaId = empresaId || defaultEmpresaId
   const selectedEmpresa = empresas?.find((e) => e.id === effectiveEmpresaId)
+
+  const sucursales = useMemo(() =>
+    todasSucursales.filter((s: SucursalOption) => s.tenant_id === effectiveEmpresaId),
+    [todasSucursales, effectiveEmpresaId]
+  )
+
+  const [sucursalId, setLocalSucursalId] = useState('')
+  const defaultSucursalId = sucursales.find((s: SucursalOption) => s.es_principal)?.id ?? sucursales[0]?.id ?? ''
+  const effectiveSucursalId = sucursalId || defaultSucursalId
 
   const handleLogin = async (e: FormEvent) => {
     e.preventDefault()
@@ -38,6 +51,7 @@ export default function LoginPage() {
       const res = await login({ email, password, tenant_id: effectiveEmpresaId })
       setAuth(res.access_token, res.usuario)
       setTenantId(effectiveEmpresaId)
+      if (effectiveSucursalId) setSucursalId(effectiveSucursalId)
       navigate('/pos', { replace: true })
     } catch { setError('Credenciales inválidas') }
     finally { setLoading(false) }
@@ -52,6 +66,7 @@ export default function LoginPage() {
       const res = await loginPin({ pin }, effectiveEmpresaId)
       setAuth(res.access_token, res.usuario)
       setTenantId(effectiveEmpresaId)
+      if (effectiveSucursalId) setSucursalId(effectiveSucursalId)
       navigate('/pos', { replace: true })
     } catch { setError('PIN incorrecto') }
     finally { setLoading(false) }
@@ -85,19 +100,45 @@ export default function LoginPage() {
           <h1 className="font-display text-2xl text-pos-text tracking-wider">{selectedEmpresa?.nombre || 'AMBER POS'}</h1>
         </div>
 
-        {empresas && (
-          <div className="mb-5">
-            <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Empresa</label>
-            <select
-              value={effectiveEmpresaId}
-              onChange={(e) => { setEmpresaId(e.target.value); setError('') }}
-              className="login-input w-full appearance-none cursor-pointer"
-              style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%238C8177\' d=\'M6 8L1 3h10z\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
-            >
-              {empresas.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
-            </select>
-          </div>
-        )}
+        <div className="mb-5 space-y-3">
+          {empresas.length > 1 && (
+            <div>
+              <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Empresa</label>
+              <select
+                value={effectiveEmpresaId}
+                onChange={(e) => { setEmpresaId(e.target.value); setError('') }}
+                className="login-input w-full appearance-none cursor-pointer"
+                style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%238C8177\' d=\'M6 8L1 3h10z\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
+              >
+                {empresas.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
+              </select>
+            </div>
+          )}
+
+          {sucursales.length > 1 && (
+            <div>
+              <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2">Sucursal</label>
+              <div className="grid grid-cols-2 gap-2">
+                {sucursales.map((s: SucursalOption) => (
+                  <button
+                    key={s.id}
+                    onClick={() => { setLocalSucursalId(s.id); setError('') }}
+                    className={`p-3 rounded-xl border-2 text-sm font-body transition-all duration-200 cursor-pointer text-left ${
+                      effectiveSucursalId === s.id
+                        ? 'border-accent bg-accent/10 text-accent shadow-sm'
+                        : 'border-border text-text-secondary hover:border-accent/50 hover:bg-bg-surface'
+                    }`}
+                  >
+                    <span className="block font-medium truncate">{s.nombre}</span>
+                    {s.es_principal && (
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-accent/70 mt-0.5 block">Principal</span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
 
         {mode === 'login' ? (
           <form onSubmit={handleLogin} className="flex flex-col gap-4">

@@ -1,7 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { queryDefaults } from '../../../config/queries'
+import { useCajaActiva } from '../../../hooks/useCajaActiva'
 import { getMesas } from '../api'
-import { getCajaActiva, getResumenDiario } from '../../admin/caja/api'
+import { getResumenDiario } from '../../admin/caja/api'
 import { useNavigate } from 'react-router-dom'
 import { useMemo } from 'react'
 
@@ -113,11 +114,7 @@ export function RestaurantSummary() {
     ...queryDefaults('mesas'),
   })
 
-  const { data: cajaActiva } = useQuery({
-    queryKey: ['caja-activa'],
-    queryFn: getCajaActiva,
-    ...queryDefaults('caja-activa'),
-  })
+  const { caja: cajaActiva } = useCajaActiva()
 
   const { data: resumen } = useQuery({
     queryKey: ['caja-resumen-diario'],

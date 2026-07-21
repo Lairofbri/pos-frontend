@@ -9,40 +9,49 @@ const api = axios.create({
 })
 
 api.interceptors.request.use((config) => {
-  const token = useAuthStore.getState().token
+  const { token, sucursalId } = useAuthStore.getState()
   if (token) config.headers.Authorization = `Bearer ${token}`
+  if (sucursalId) config.headers['X-Sucursal-Id'] = sucursalId
   return config
 })
-
-const MENSAJES_POR_CODIGO: Record<number, string> = {
-  400: 'Solicitud inválida. Revisa los datos ingresados.',
-  403: 'No tienes permiso para realizar esta acción.',
-  404: 'El recurso solicitado no fue encontrado.',
-  409: 'Ya existe un registro con esos datos.',
-  429: 'Demasiadas solicitudes. Intenta más tarde.',
-  500: 'Error interno del servidor. Intenta más tarde.',
-}
 
 let toastTimer: ReturnType<typeof setTimeout> | null = null
 
 function mostrarToast(error: any) {
-  const status = error.response?.status
   const mensajeBackend = error.response?.data?.mensaje
-  const titulo = MENSAJES_POR_CODIGO[status] || (mensajeBackend ? 'Error' : 'Error')
+  const message = mensajeBackend || 'Error inesperado'
 
   if (toastTimer) clearTimeout(toastTimer)
   toastTimer = setTimeout(() => {
     useToastStore.getState().show({
       type: 'error',
-      message: titulo,
-      description: mensajeBackend || undefined,
+      message,
     })
     toastTimer = null
   }, 0)
 }
 
+function parseItem(value: unknown): unknown {
+  if (value === null || value === undefined) return value
+  if (Array.isArray(value)) return value.map(parseItem)
+  if (typeof value === 'object' && !(value instanceof Date)) {
+    const result: Record<string, unknown> = {}
+    for (const key in value) result[key] = parseItem((value as Record<string, unknown>)[key])
+    return result
+  }
+  if (typeof value === 'string' && /^-?\d+\.?\d*$/.test(value.trim()) && value.trim() !== '') {
+    return Number(value)
+  }
+  return value
+}
+
 api.interceptors.response.use(
-  (res) => res,
+  (res) => {
+    if (res.data && typeof res.data === 'object') {
+      res.data = parseItem(res.data)
+    }
+    return res
+  },
   async (error) => {
     const apiMessage = error.response?.data?.mensaje
     if (apiMessage) error.message = apiMessage

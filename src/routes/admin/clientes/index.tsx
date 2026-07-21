@@ -1,15 +1,16 @@
 import { useState } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
+import { useApiMutation } from '../../../hooks/useApiMutation'
 import { queryDefaults } from '../../../config/queries'
 import { listarClientes, crearCliente, actualizarCliente, eliminarCliente } from './api'
 import { DataTable, type Column } from '../../../components/shared/DataTable'
 import { SidePanel } from '../../../components/shared/SidePanel'
+import { LoadingOverlay } from '../../../components/shared/LoadingOverlay'
 import { Input } from '../../../components/ui/Input'
 import { Select } from '../../../components/ui/Select'
 import { Button } from '../../../components/ui/Button'
 import { Badge } from '../../../components/ui/Badge'
 import { ConfirmDialog } from '../../../components/shared/ConfirmDialog'
-import { useToastStore } from '../../../store/toastStore'
 import { useCatalogo } from '../../../hooks/useCatalogo'
 import type { Cliente } from '../../../types'
 
@@ -36,38 +37,23 @@ const columns: Column<Cliente>[] = [
   },
 ]
 
+const FORM_INICIAL = {
+  nombre: '', apellido: '', telefono: '', email: '',
+  tipo_documento: '', numero_documento: '', nit: '', nrc: '',
+  razon_social: '', direccion: '', municipio: '', departamento: '',
+}
+
 export default function ClientesPage() {
-  const queryClient = useQueryClient()
   const { data: tiposDocumento } = useCatalogo('tipos_documento')
-  const showToast = useToastStore((s) => s.show)
   const [panelOpen, setPanelOpen] = useState(false)
   const [editando, setEditando] = useState<Cliente | null>(null)
   const [confirmDelete, setConfirmDelete] = useState<Cliente | null>(null)
-  const [form, setForm] = useState({
-    nombre: '', apellido: '', telefono: '', email: '',
-    tipo_documento: '', numero_documento: '', nit: '', nrc: '',
-    razon_social: '', direccion: '', municipio: '', departamento: '',
-  })
+  const [form, setForm] = useState(FORM_INICIAL)
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['clientes'],
     queryFn: () => listarClientes(),
     ...queryDefaults('clientes'),
-  })
-
-  const crearMutation = useMutation({
-    mutationFn: () => crearCliente(cleanForm()),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['clientes'] }); cerrarPanel(); showToast({ type: 'success', message: 'Cliente creado' }) },
-  })
-
-  const editarMutation = useMutation({
-    mutationFn: () => editando ? actualizarCliente(editando.id, cleanForm()) : Promise.reject(),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['clientes'] }); cerrarPanel(); showToast({ type: 'success', message: 'Cliente actualizado' }) },
-  })
-
-  const eliminarMutation = useMutation({
-    mutationFn: () => confirmDelete ? eliminarCliente(confirmDelete.id) : Promise.reject(),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['clientes'] }); setConfirmDelete(null); showToast({ type: 'success', message: 'Cliente eliminado' }) },
   })
 
   const cleanForm = () => ({
@@ -85,7 +71,28 @@ export default function ClientesPage() {
     departamento: form.departamento || undefined,
   })
 
-  const abrirNuevo = () => { setEditando(null); resetForm(); setPanelOpen(true) }
+  const crearMutation = useApiMutation({
+    mutationFn: () => crearCliente(cleanForm()),
+    queryKey: ['clientes'],
+    successMessage: 'Cliente creado exitosamente',
+    onSuccess: () => cerrarPanel(),
+  })
+
+  const editarMutation = useApiMutation({
+    mutationFn: () => editando ? actualizarCliente(editando.id, cleanForm()) : Promise.reject(new Error('No editando')),
+    queryKey: ['clientes'],
+    successMessage: 'Cliente actualizado exitosamente',
+    onSuccess: () => cerrarPanel(),
+  })
+
+  const eliminarMutation = useApiMutation({
+    mutationFn: () => confirmDelete ? eliminarCliente(confirmDelete.id) : Promise.reject(new Error('No confirmado')),
+    queryKey: ['clientes'],
+    successMessage: 'Cliente eliminado exitosamente',
+    onSuccess: () => setConfirmDelete(null),
+  })
+
+  const abrirNuevo = () => { setEditando(null); setForm(FORM_INICIAL); setPanelOpen(true) }
 
   const abrirEditar = (c: Cliente) => {
     setEditando(c)
@@ -100,13 +107,8 @@ export default function ClientesPage() {
 
   const cerrarPanel = () => { setPanelOpen(false); setEditando(null) }
 
-  const resetForm = () => setForm({
-    nombre: '', apellido: '', telefono: '', email: '',
-    tipo_documento: '', numero_documento: '', nit: '', nrc: '',
-    razon_social: '', direccion: '', municipio: '', departamento: '',
-  })
-
   const guardar = () => { if (editando) editarMutation.mutate(); else crearMutation.mutate() }
+  const isMutating = crearMutation.isPending || editarMutation.isPending
 
   return (
     <>
@@ -125,38 +127,38 @@ export default function ClientesPage() {
         />
       </div>
 
-      <SidePanel open={panelOpen} onClose={cerrarPanel} title={editando ? 'Editar Cliente' : 'Nuevo Cliente'}>
-        <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Input label="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} required />
-            <Input label="Apellido" value={form.apellido} onChange={(e) => setForm({ ...form, apellido: e.target.value })} />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Input label="Teléfono" value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} />
-            <Input label="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-          </div>
-
-          <hr className="border-border" />
-          <p className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Documentación fiscal</p>
-
-          <Select label="Tipo documento" options={(tiposDocumento ?? []).map((t) => ({ value: t.valor, label: t.label }))} value={form.tipo_documento} onChange={(e) => setForm({ ...form, tipo_documento: e.target.value })} placeholder="Seleccionar..." />
-          <Input label="Número documento" value={form.numero_documento} onChange={(e) => setForm({ ...form, numero_documento: e.target.value })} />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Input label="NIT" value={form.nit} onChange={(e) => setForm({ ...form, nit: e.target.value })} />
-            <Input label="NRC" value={form.nrc} onChange={(e) => setForm({ ...form, nrc: e.target.value })} />
-          </div>
-          <Input label="Razón social" value={form.razon_social} onChange={(e) => setForm({ ...form, razon_social: e.target.value })} />
-          <Input label="Dirección" value={form.direccion} onChange={(e) => setForm({ ...form, direccion: e.target.value })} />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Input label="Municipio" value={form.municipio} onChange={(e) => setForm({ ...form, municipio: e.target.value })} />
-            <Input label="Departamento" value={form.departamento} onChange={(e) => setForm({ ...form, departamento: e.target.value })} />
-          </div>
-
-          <div className="flex gap-2 pt-2">
-            <Button className="flex-1" onClick={guardar} loading={crearMutation.isPending || editarMutation.isPending} disabled={!form.nombre}>
-              {editando ? 'Guardar cambios' : 'Crear cliente'}
-            </Button>
-            {editando && <Button variant="danger" onClick={() => setConfirmDelete(editando)}>Eliminar</Button>}
+      <SidePanel open={panelOpen} onClose={() => { if (!isMutating) cerrarPanel() }} title={editando ? 'Editar Cliente' : 'Nuevo Cliente'}>
+        <div className="relative">
+          {isMutating && <LoadingOverlay />}
+          <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input label="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} required />
+              <Input label="Apellido" value={form.apellido} onChange={(e) => setForm({ ...form, apellido: e.target.value })} />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input label="Teléfono" value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} />
+              <Input label="Email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
+            </div>
+            <hr className="border-border" />
+            <p className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Documentación fiscal</p>
+            <Select label="Tipo documento" options={(tiposDocumento ?? []).map((t) => ({ value: t.valor, label: t.label }))} value={form.tipo_documento} onChange={(e) => setForm({ ...form, tipo_documento: e.target.value })} placeholder="Seleccionar..." />
+            <Input label="Número documento" value={form.numero_documento} onChange={(e) => setForm({ ...form, numero_documento: e.target.value })} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input label="NIT" value={form.nit} onChange={(e) => setForm({ ...form, nit: e.target.value })} />
+              <Input label="NRC" value={form.nrc} onChange={(e) => setForm({ ...form, nrc: e.target.value })} />
+            </div>
+            <Input label="Razón social" value={form.razon_social} onChange={(e) => setForm({ ...form, razon_social: e.target.value })} />
+            <Input label="Dirección" value={form.direccion} onChange={(e) => setForm({ ...form, direccion: e.target.value })} />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Input label="Municipio" value={form.municipio} onChange={(e) => setForm({ ...form, municipio: e.target.value })} />
+              <Input label="Departamento" value={form.departamento} onChange={(e) => setForm({ ...form, departamento: e.target.value })} />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button className="flex-1" onClick={guardar} loading={isMutating} disabled={!form.nombre}>
+                {editando ? 'Guardar cambios' : 'Crear cliente'}
+              </Button>
+              {editando && <Button variant="danger" onClick={() => setConfirmDelete(editando)}>Eliminar</Button>}
+            </div>
           </div>
         </div>
       </SidePanel>

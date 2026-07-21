@@ -15,16 +15,19 @@ interface AuthState {
   token: string | null
   usuario: Usuario | null
   tenantId: string | null
+  sucursalId: string | null
   setAuth: (token: string, usuario: Usuario) => void
   setToken: (token: string) => void
   setTenantId: (id: string) => void
+  setSucursalId: (id: string) => void
   clearAuth: () => void
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
-  token: null, // solo en memoria — nunca en localStorage
+  token: null,
   usuario: getStoredUsuario(),
   tenantId: localStorage.getItem(STORAGE_KEYS.TENANT_ID),
+  sucursalId: localStorage.getItem(STORAGE_KEYS.SUCURSAL_ID),
   setAuth: (token, usuario) => {
     localStorage.setItem(STORAGE_KEYS.USUARIO_DATA, JSON.stringify(usuario))
     set({ token, usuario })
@@ -34,9 +37,14 @@ export const useAuthStore = create<AuthState>((set) => ({
     localStorage.setItem(STORAGE_KEYS.TENANT_ID, id)
     set({ tenantId: id })
   },
+  setSucursalId: (id) => {
+    localStorage.setItem(STORAGE_KEYS.SUCURSAL_ID, id)
+    set({ sucursalId: id })
+  },
   clearAuth: () => {
     localStorage.removeItem(STORAGE_KEYS.USUARIO_DATA)
     localStorage.removeItem(STORAGE_KEYS.TENANT_ID)
-    set({ token: null, usuario: null, tenantId: null })
+    localStorage.removeItem(STORAGE_KEYS.SUCURSAL_ID)
+    set({ token: null, usuario: null, tenantId: null, sucursalId: null })
   },
 }))

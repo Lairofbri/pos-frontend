@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryDefaults } from '../../../config/queries'
 import { listarUsuarios, crearUsuario, actualizarUsuario, resetearPin } from './api'
+import { listarSucursales } from '../sucursales/api'
 import { DataTable, type Column } from '../../../components/shared/DataTable'
 import { SidePanel } from '../../../components/shared/SidePanel'
 import { Input } from '../../../components/ui/Input'
@@ -30,6 +31,11 @@ const columns: Column<Usuario>[] = [
     },
   },
   {
+    key: 'sucursal_id',
+    header: 'Sucursal',
+    render: (u) => u.sucursal_id ? <Badge variant="default">Asignado</Badge> : <span className="text-text-secondary text-xs">Todas</span>,
+  },
+  {
     key: 'activo',
     header: 'Estado',
     render: (u) => <Badge variant={u.activo ? 'success' : 'danger'}>{u.activo ? 'Activo' : 'Inactivo'}</Badge>,
@@ -43,8 +49,13 @@ export default function UsuariosPage() {
   const [editando, setEditando] = useState<Usuario | null>(null)
   const [resetPinOpen, setResetPinOpen] = useState(false)
   const [nuevoPin, setNuevoPin] = useState('')
-  const [form, setForm] = useState({ nombre: '', apellido: '', email: '', password: '', pin: '', rol: 'cajero' })
+  const [form, setForm] = useState({ nombre: '', apellido: '', email: '', password: '', pin: '', rol: 'cajero', sucursal_id: '' })
   const { data: roles } = useCatalogo('roles')
+  const { data: sucursales } = useQuery({
+    queryKey: ['sucursales'],
+    queryFn: () => listarSucursales(),
+    ...queryDefaults('sucursales'),
+  })
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['usuarios'],
@@ -60,12 +71,13 @@ export default function UsuariosPage() {
       password: form.password || undefined,
        pin: form.pin,
       rol: form.rol,
+      sucursal_id: form.sucursal_id || undefined,
     }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['usuarios'] }); cerrarPanel(); showToast({ type: 'success', message: 'Usuario creado' }) },
   })
 
   const editarMutation = useMutation({
-    mutationFn: () => editando ? actualizarUsuario(editando.id, { nombre: form.nombre, apellido: form.apellido || undefined, email: form.email || undefined, rol: form.rol }) : Promise.reject(),
+    mutationFn: () => editando ? actualizarUsuario(editando.id, { nombre: form.nombre, apellido: form.apellido || undefined, email: form.email || undefined, rol: form.rol, sucursal_id: form.sucursal_id || undefined }) : Promise.reject(),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['usuarios'] }); cerrarPanel(); showToast({ type: 'success', message: 'Usuario actualizado' }) },
   })
 
@@ -81,13 +93,13 @@ export default function UsuariosPage() {
 
   const abrirNuevo = () => {
     setEditando(null)
-    setForm({ nombre: '', apellido: '', email: '', password: '', pin: '', rol: 'cajero' })
+    setForm({ nombre: '', apellido: '', email: '', password: '', pin: '', rol: 'cajero', sucursal_id: '' })
     setPanelOpen(true)
   }
 
   const abrirEditar = (u: Usuario) => {
     setEditando(u)
-    setForm({ nombre: u.nombre, apellido: u.apellido ?? '', email: u.email ?? '', password: '', pin: '', rol: u.rol })
+    setForm({ nombre: u.nombre, apellido: u.apellido ?? '', email: u.email ?? '', password: '', pin: '', rol: u.rol, sucursal_id: u.sucursal_id ?? '' })
     setPanelOpen(true)
   }
 
@@ -123,6 +135,12 @@ export default function UsuariosPage() {
             options={(roles ?? []).map((r) => ({ value: r.valor, label: r.label }))}
             value={form.rol}
             onChange={(e) => setForm({ ...form, rol: e.target.value })}
+          />
+          <Select
+            label="Sucursal"
+            options={[{ value: '', label: 'Todas (sin asignar)' }, ...(sucursales ?? []).filter(s => s.activo).map((s) => ({ value: s.id, label: s.nombre }))]}
+            value={form.sucursal_id}
+            onChange={(e) => setForm({ ...form, sucursal_id: e.target.value })}
           />
 
           {!editando && (

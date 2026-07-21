@@ -1,22 +1,30 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { queryDefaults } from '../../config/queries'
 import { useAuthStore } from '../../store/authStore'
 import { useSidebar } from '../../hooks/useSidebar'
+import { useCajaActiva } from '../../hooks/useCajaActiva'
 import { Icon } from '../shared/Icon'
 import api from '../../api/client'
-import { getCajaActiva } from '../../routes/admin/caja/api'
+import { listarSucursales } from '../../routes/admin/sucursales/api'
 import { useThemeStore } from '../../store/themeStore'
+
+const QUERIES_SUCURSAL = ['ordenes', 'mesas', 'cocina', 'caja-activa', 'resumen-diario', 'dashboard-metrics']
 
 export function Topbar() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const usuario = useAuthStore((s) => s.usuario)
+  const sucursalId = useAuthStore((s) => s.sucursalId)
+  const setSucursalId = useAuthStore((s) => s.setSucursalId)
   const clearAuth = useAuthStore((s) => s.clearAuth)
   const token = useAuthStore((s) => s.token)
   const setMobileOpen = useSidebar((s) => s.setMobileOpen)
   const [loggingOut, setLoggingOut] = useState(false)
   const [hora, setHora] = useState('')
+  const [sucursalOpen, setSucursalOpen] = useState(false)
+  const sucursalRef = useRef<HTMLDivElement>(null)
   const isDark = useThemeStore((s) => s.isDark)
   const toggleTheme = useThemeStore((s) => s.toggle)
 
@@ -27,11 +35,33 @@ export function Topbar() {
     return () => clearInterval(t)
   }, [])
 
-  const { data: cajaActiva } = useQuery({
-    queryKey: ['caja-activa'],
-    queryFn: getCajaActiva,
-    ...queryDefaults('caja-activa'),
+  useEffect(() => {
+    const cerrar = (e: MouseEvent) => {
+      if (sucursalRef.current && !sucursalRef.current.contains(e.target as Node)) {
+        setSucursalOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', cerrar)
+    return () => document.removeEventListener('mousedown', cerrar)
+  }, [])
+
+  const { caja: cajaActiva, isError: cajaError, mensajeError: cajaMensaje } = useCajaActiva()
+
+  const { data: sucursales } = useQuery({
+    queryKey: ['sucursales'],
+    queryFn: listarSucursales,
+    ...queryDefaults('sucursales'),
   })
+
+  const sucursalActual = sucursales?.find((s) => s.id === sucursalId)
+  const tieneMultiplesSucursales = (sucursales?.length ?? 0) > 1
+
+  const cambiarSucursal = (id: string) => {
+    if (id === sucursalId) { setSucursalOpen(false); return }
+    setSucursalId(id)
+    setSucursalOpen(false)
+    QUERIES_SUCURSAL.forEach((key) => queryClient.invalidateQueries({ queryKey: [key] }))
+  }
 
   const handleLogout = async () => {
     setLoggingOut(true)
@@ -59,6 +89,49 @@ export function Topbar() {
       </div>
 
       <div className="flex items-center gap-3">
+        {/* Sucursal */}
+        {sucursalActual && (
+          <div ref={sucursalRef} className="relative">
+            <button
+              onClick={() => setSucursalOpen(!sucursalOpen)}
+              className={`flex items-center gap-1.5 text-xs font-body px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                tieneMultiplesSucursales
+                  ? 'bg-accent/10 text-accent border-accent/30 hover:bg-accent/20'
+                  : 'bg-bg-primary text-text-secondary border-border/50'
+              }`}
+              title={sucursalActual.nombre}
+            >
+              <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+              <span className="max-w-24 truncate">{sucursalActual.nombre}</span>
+              {tieneMultiplesSucursales && (
+                <svg className={`w-3 h-3 transition-transform ${sucursalOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                </svg>
+              )}
+            </button>
+
+            {tieneMultiplesSucursales && sucursalOpen && (
+              <div className="absolute right-0 mt-1.5 w-48 py-1 rounded-xl bg-bg-surface border border-border shadow-lg z-50">
+                {sucursales?.map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => cambiarSucursal(s.id)}
+                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs text-left transition-colors cursor-pointer ${
+                      s.id === sucursalId
+                        ? 'bg-accent/10 text-accent font-semibold'
+                        : 'text-text-secondary hover:bg-bg-primary hover:text-text-primary'
+                    }`}
+                  >
+                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${s.activo ? 'bg-accent' : 'bg-text-disabled'}`} />
+                    <span className="truncate">{s.nombre}</span>
+                    {s.es_principal && <span className="ml-auto text-[9px] uppercase tracking-wider text-text-muted font-semibold">Ppal</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Theme toggle */}
         <button
           onClick={toggleTheme}
@@ -75,7 +148,16 @@ export function Topbar() {
         </div>
 
         {/* Caja badge */}
-        {cajaActiva?.estado === 'abierta' ? (
+        {cajaError ? (
+          <button
+            onClick={() => navigate('/admin/caja')}
+            title={cajaMensaje ?? 'Error de caja'}
+            className="flex items-center gap-1.5 text-xs font-mono px-2.5 py-1 rounded-lg bg-danger/10 text-danger border border-danger/30 hover:bg-danger/20 transition-all duration-200 cursor-pointer"
+          >
+            <Icon name="alert" className="w-3 h-3" />
+            <span className="hidden sm:inline truncate max-w-24">{cajaMensaje ?? 'Error'}</span>
+          </button>
+        ) : cajaActiva?.estado === 'abierta' ? (
           <button
             onClick={() => navigate('/admin/caja')}
             className="flex items-center gap-1.5 text-xs font-mono px-2.5 py-1 rounded-lg bg-status-libre/10 text-status-libre border border-status-libre/30 hover:bg-status-libre/20 transition-all duration-200 cursor-pointer"

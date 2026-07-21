@@ -155,7 +155,7 @@ export default function POSPage() {
   })
 
   const pagarMutation = useMutation({
-    mutationFn: (pdata: { metodo: string; monto_efectivo?: number; monto_tarjeta?: number; referencia_tarjeta?: string }) =>
+    mutationFn: (pdata: Record<string, unknown>) =>
       pagarOrden(ordenSeleccionadaId!, pdata),
     onSuccess: () => {
       const id = ordenSeleccionadaId
@@ -504,13 +504,15 @@ export default function POSPage() {
           </button>
         </div>
 
-      <PaymentPanel
-        open={mostrarPayment}
-        onClose={() => setMostrarPayment(false)}
-        orden={ordenActiva ?? null}
-        onConfirmar={(pdata) => pagarMutation.mutate(pdata)}
-        loading={pagarMutation.isPending}
-      />
+      {ordenActiva && (
+        <PaymentPanel
+          open={mostrarPayment}
+          onClose={() => setMostrarPayment(false)}
+          orden={ordenActiva}
+          onConfirmar={(pdata) => pagarMutation.mutate(pdata)}
+          loading={pagarMutation.isPending}
+        />
+      )}
 
       <ModifierPanel
         open={!!modifierProducto}
