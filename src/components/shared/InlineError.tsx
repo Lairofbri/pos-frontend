@@ -9,8 +9,8 @@ export function InlineError({
 }) {
   return (
     <div className="flex flex-col items-center justify-center py-12 gap-3" role="alert">
-      <div className="w-12 h-12 rounded-full bg-danger/10 flex items-center justify-center">
-        <Icon name="alert" className="w-6 h-6 text-danger" />
+      <div className="size-12 rounded-full bg-danger/10 flex items-center justify-center">
+        <Icon name="alert" className="size-6 text-danger" />
       </div>
       <p className="text-sm text-danger font-body text-center max-w-md">{message}</p>
       {onRetry && (

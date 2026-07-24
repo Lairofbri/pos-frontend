@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { Search } from 'lucide-react'
 
 interface SearchInputProps {
   value?: string
@@ -35,9 +36,7 @@ export function SearchInput({
 
   return (
     <div className="relative">
-      <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-text-secondary text-sm">
-        🔍
-      </span>
+      <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-text-secondary" />
       <input
         value={local}
         onChange={(e) => setLocal(e.target.value)}

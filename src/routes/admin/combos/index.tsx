@@ -5,9 +5,10 @@ import { listarCombos, crearCombo, actualizarCombo, eliminarCombo } from './api'
 import { listarProductos } from '../productos/api'
 import { DataTable, type Column } from '../../../components/shared/DataTable'
 import { SidePanel } from '../../../components/shared/SidePanel'
-import { Input } from '../../../components/ui/Input'
-import { Button } from '../../../components/ui/Button'
-import { Badge } from '../../../components/ui/Badge'
+import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
 import { ConfirmDialog } from '../../../components/shared/ConfirmDialog'
 import { useToastStore } from '../../../store/toastStore'
 import type { Combo } from '../../../types'
@@ -140,14 +141,14 @@ export default function CombosPage() {
           <div>
             <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2 block">Productos del combo</label>
             {productos.length > 0 && (
-              <div className="space-y-1.5 mb-3">
+              <div className="flex flex-col gap-1.5 mb-3">
                 {productos.map((p) => (
                   <div key={p.producto_id} className="flex items-center gap-2 bg-bg-primary rounded-lg px-3 py-2 border border-border">
                     <span className="text-sm flex-1 truncate text-text-primary font-body">{p.nombre}</span>
                     <div className="flex items-center gap-1">
-                      <button onClick={() => cambiarCantidad(p.producto_id, p.cantidad - 1)} className="w-6 h-6 rounded bg-bg-surface text-text-secondary hover:text-text-primary cursor-pointer text-xs">−</button>
+                      <button onClick={() => cambiarCantidad(p.producto_id, p.cantidad - 1)} className="size-6 rounded bg-bg-surface text-text-secondary hover:text-text-primary cursor-pointer text-xs">−</button>
                       <span className="font-mono text-sm text-text-primary w-5 text-center">{p.cantidad}</span>
-                      <button onClick={() => cambiarCantidad(p.producto_id, p.cantidad + 1)} className="w-6 h-6 rounded bg-bg-surface text-text-secondary hover:text-text-primary cursor-pointer text-xs">+</button>
+                      <button onClick={() => cambiarCantidad(p.producto_id, p.cantidad + 1)} className="size-6 rounded bg-bg-surface text-text-secondary hover:text-text-primary cursor-pointer text-xs">+</button>
                     </div>
                     <button onClick={() => quitarProducto(p.producto_id)} className="text-text-secondary hover:text-danger cursor-pointer text-xs">✕</button>
                   </div>
@@ -156,16 +157,11 @@ export default function CombosPage() {
             )}
 
             {disponibles.length > 0 && (
-              <select
+              <Select
                 value=""
-                onChange={(e) => { if (e.target.value) { agregarProducto(e.target.value); e.target.value = '' } }}
-                className="w-full bg-bg-surface border-2 border-border rounded-lg px-3 py-2 text-sm text-text-primary font-body outline-none focus:border-accent cursor-pointer"
-              >
-                <option value="" disabled>Agregar producto...</option>
-                {disponibles.map((p) => (
-                  <option key={p.id} value={p.id}>{p.nombre} — ${p.precio.toFixed(2)}</option>
-                ))}
-              </select>
+                onValueChange={(v) => { if (v) { agregarProducto(v) } }}
+                options={[{ value: '', label: 'Agregar producto...' }, ...disponibles.map((p) => ({ value: p.id, label: `${p.nombre} — $${p.precio.toFixed(2)}` }))]}
+              />
             )}
           </div>
 

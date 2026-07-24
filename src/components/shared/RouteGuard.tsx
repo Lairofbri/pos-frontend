@@ -49,10 +49,12 @@ export function RouteGuard({ children }: RouteGuardProps) {
     return <>{children}</>
   }
 
+  const rutaPermitida = rutasPermitidas.some(r => rutaActual === r || rutaActual.startsWith(r + '/'))
+
   if (
     !siempreAccesibles.includes(rutaActual) &&
     rutaActual !== '/' &&
-    !rutasPermitidas.includes(rutaActual)
+    !rutaPermitida
   ) {
     return <Navigate to="/pos" replace />
   }

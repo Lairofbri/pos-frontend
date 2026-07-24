@@ -146,7 +146,7 @@ export function ProductCard({
         </div>
 
         {selected && (
-          <span className="absolute top-2 right-2 text-pos-accent text-sm z-20 bg-white/80 rounded-full w-6 h-6 flex items-center justify-center">✓</span>
+          <span className="absolute top-2 right-2 text-pos-accent text-sm z-20 bg-white/80 rounded-full size-6 flex items-center justify-center">✓</span>
         )}
       </button>
     )
@@ -183,7 +183,7 @@ export function ProductCard({
       </span>
 
       {showImage ? (
-        <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0">
+        <div className="size-10 rounded-lg overflow-hidden shrink-0">
           <img
             src={imgAbs(producto.imagen_url)}
             alt={producto.nombre}
@@ -193,7 +193,7 @@ export function ProductCard({
         </div>
       ) : (
         <div
-          className="w-10 h-10 rounded-lg shrink-0 flex items-center justify-center text-white/80 text-lg font-display"
+          className="size-10 rounded-lg shrink-0 flex items-center justify-center text-white/80 text-lg font-display"
           style={{ backgroundColor: bgColor }}
         >
           {producto.nombre.charAt(0).toUpperCase()}

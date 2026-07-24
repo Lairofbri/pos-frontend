@@ -46,7 +46,7 @@ export function IconSelect({ value, onChange, label }: IconSelectProps) {
       >
         {value ? (
           <>
-            <Icon name={value} className="w-5 h-5 shrink-0" />
+            <Icon name={value} className="size-5 shrink-0" />
             <span className="flex-1">{selectedLabel}</span>
           </>
         ) : (
@@ -59,7 +59,7 @@ export function IconSelect({ value, onChange, label }: IconSelectProps) {
         <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-bg-surface border-2 border-border rounded-xl shadow-2xl max-h-64 overflow-hidden">
           <div className="p-2 border-b border-border">
             <div className="relative">
-              <Icon name="search" className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
+              <Icon name="search" className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-text-secondary" />
               <input
                 autoFocus
                 value={search}
@@ -82,7 +82,7 @@ export function IconSelect({ value, onChange, label }: IconSelectProps) {
                     opt.value === value ? 'bg-pos-accent/10 text-pos-accent' : 'text-text-primary'
                   }`}
                 >
-                  <Icon name={opt.value} className="w-5 h-5 shrink-0" />
+                  <Icon name={opt.value} className="size-5 shrink-0" />
                   <span>{opt.label}</span>
                   {opt.value === value && <span className="ml-auto text-pos-accent text-xs">✓</span>}
                 </button>

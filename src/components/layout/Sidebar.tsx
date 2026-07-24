@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { ChevronRight, ChevronLeft, X } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { queryDefaults } from '../../config/queries'
 import { NavLink, useLocation } from 'react-router-dom'
@@ -22,7 +23,7 @@ function SidebarNav({
   currentPath: string
 }) {
   return (
-    <nav className="flex-1 overflow-y-auto p-2 space-y-1">
+    <nav className="flex-1 overflow-y-auto p-2 flex flex-col gap-1">
       {menus.map((menu, idx) => (
         <div key={menu.id}>
           {menu.children.length > 0 ? (
@@ -33,23 +34,21 @@ function SidebarNav({
                   ${expanded ? 'justify-start text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover hover:border-pos-accent/10' : 'justify-center hover:bg-bg-surface-hover'}`}
                 title={!expanded ? menu.titulo : undefined}
               >
-                <span className="w-6 h-6 flex items-center justify-center shrink-0">
-                  <Icon name={menu.icono} className="w-6 h-6 shrink-0" />
+                <span className="size-6 flex items-center justify-center shrink-0">
+                  <Icon name={menu.icono} className="size-6 shrink-0" />
                 </span>
                 {expanded && (
                   <>
                     <span className="flex-1 text-left text-[10px] font-semibold uppercase tracking-widest">
                       {menu.titulo}
                     </span>
-                    <span className={`text-[10px] transition-transform duration-200 ${openGroupId === menu.id ? 'rotate-90' : ''}`}>
-                      ▸
-                    </span>
+                    <ChevronRight className={`size-3 transition-transform duration-200 ${openGroupId === menu.id ? 'rotate-90' : ''}`} />
                   </>
                 )}
               </button>
 
               {expanded && openGroupId === menu.id && (
-                <div className="ml-2 space-y-0.5 mt-0.5 mb-1 pl-3 border-l border-border/50">
+                <div className="ml-2 flex flex-col gap-0.5 mt-0.5 mb-1 pl-3 border-l border-border/50">
                   {menu.children.map((child) => (
                     <NavItem key={child.id} item={child} expanded={expanded} currentPath={currentPath} />
                   ))}
@@ -81,8 +80,8 @@ function NavItem({ item, expanded, currentPath }: { item: MenuItem; expanded: bo
       } ${expanded ? 'justify-start' : 'justify-center border-l-0'}`}
       title={!expanded ? item.titulo : undefined}
     >
-      <span className="w-6 h-6 flex items-center justify-center shrink-0">
-        <Icon name={item.icono} className="w-6 h-6 shrink-0" />
+      <span className="size-6 flex items-center justify-center shrink-0">
+        <Icon name={item.icono} className="size-6 shrink-0" />
       </span>
       {expanded && (
         <span className="text-[13px] font-body">{item.titulo}</span>
@@ -130,7 +129,7 @@ export function Sidebar() {
       >
         <div className="h-14 flex items-center justify-between px-4 border-b border-border shrink-0">
           <span className="font-display text-lg text-pos-accent tracking-wider">AMBER</span>
-          <button onClick={() => setMobileOpen(false)} className="text-text-secondary hover:text-text-primary transition-colors cursor-pointer text-lg">✕</button>
+          <button onClick={() => setMobileOpen(false)} className="text-text-secondary hover:text-text-primary transition-colors cursor-pointer"><X className="size-5" /></button>
         </div>
         <SidebarNav menus={menus} expanded={true} onToggleGroup={(id) => setOpenGroupId(openGroupId === id ? null : id)} openGroupId={openGroupId} currentPath={location.pathname} />
       </aside>
@@ -146,7 +145,7 @@ export function Sidebar() {
         <SidebarNav menus={menus} expanded={!collapsed} onToggleGroup={(id) => setOpenGroupId(openGroupId === id ? null : id)} openGroupId={openGroupId} currentPath={location.pathname} />
         <div className="p-2 border-t border-border shrink-0">
           <button onClick={toggle} className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-text-secondary hover:text-text-primary hover:bg-bg-surface-hover transition-colors cursor-pointer text-sm group" title={collapsed ? 'Expandir' : 'Colapsar'}>
-            <span className="transition-transform duration-200 group-hover:scale-110">{collapsed ? '→' : '←'}</span>
+            {collapsed ? <ChevronRight className="size-4 transition-transform duration-200 group-hover:scale-110" /> : <ChevronLeft className="size-4 transition-transform duration-200 group-hover:scale-110" />}
             {!collapsed && <span>Colapsar</span>}
           </button>
         </div>

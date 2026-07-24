@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Sun, Moon } from 'lucide-react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useTheme } from 'next-themes'
 import { queryDefaults } from '../../config/queries'
 import { useAuthStore } from '../../store/authStore'
 import { useSidebar } from '../../hooks/useSidebar'
@@ -8,7 +10,6 @@ import { useCajaActiva } from '../../hooks/useCajaActiva'
 import { Icon } from '../shared/Icon'
 import api from '../../api/client'
 import { listarSucursales } from '../../routes/admin/sucursales/api'
-import { useThemeStore } from '../../store/themeStore'
 
 const QUERIES_SUCURSAL = ['ordenes', 'mesas', 'cocina', 'caja-activa', 'resumen-diario', 'dashboard-metrics']
 
@@ -25,8 +26,8 @@ export function Topbar() {
   const [hora, setHora] = useState('')
   const [sucursalOpen, setSucursalOpen] = useState(false)
   const sucursalRef = useRef<HTMLDivElement>(null)
-  const isDark = useThemeStore((s) => s.isDark)
-  const toggleTheme = useThemeStore((s) => s.toggle)
+  const { theme, setTheme } = useTheme()
+  const isDark = theme === 'dark'
 
   useEffect(() => {
     const t = setInterval(() => {
@@ -84,7 +85,7 @@ export function Topbar() {
           className="md:hidden text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
           aria-label="Abrir menú"
         >
-          <Icon name="menu" className="w-5 h-5" />
+          <Icon name="menu" className="size-5" />
         </button>
       </div>
 
@@ -101,10 +102,10 @@ export function Topbar() {
               }`}
               title={sucursalActual.nombre}
             >
-              <span className="w-1.5 h-1.5 rounded-full bg-accent shrink-0" />
+              <span className="size-1.5 rounded-full bg-accent shrink-0" />
               <span className="max-w-24 truncate">{sucursalActual.nombre}</span>
               {tieneMultiplesSucursales && (
-                <svg className={`w-3 h-3 transition-transform ${sucursalOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <svg className={`size-3 transition-transform ${sucursalOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               )}
@@ -122,7 +123,7 @@ export function Topbar() {
                         : 'text-text-secondary hover:bg-bg-primary hover:text-text-primary'
                     }`}
                   >
-                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${s.activo ? 'bg-accent' : 'bg-text-disabled'}`} />
+                    <span className={`size-1.5 rounded-full shrink-0 ${s.activo ? 'bg-accent' : 'bg-text-disabled'}`} />
                     <span className="truncate">{s.nombre}</span>
                     {s.es_principal && <span className="ml-auto text-[9px] uppercase tracking-wider text-text-muted font-semibold">Ppal</span>}
                   </button>
@@ -134,16 +135,16 @@ export function Topbar() {
 
         {/* Theme toggle */}
         <button
-          onClick={toggleTheme}
+          onClick={() => setTheme(isDark ? 'light' : 'dark')}
           className="flex items-center gap-1 text-xs font-mono text-text-secondary px-2 py-1 rounded-lg bg-bg-primary border border-border/50 hover:border-pos-accent transition-all cursor-pointer"
           title={isDark ? 'Modo claro' : 'Modo oscuro'}
         >
-          {isDark ? '☀️' : '🌙'}
+          {isDark ? <Sun className="size-3.5" /> : <Moon className="size-3.5" />}
         </button>
 
         {/* Clock */}
         <div className="flex items-center gap-1.5 text-xs font-mono text-text-secondary px-2 py-1 rounded-lg bg-bg-primary border border-border/50">
-          <Icon name="clock" className="w-3.5 h-3.5" />
+          <Icon name="clock" className="size-3.5" />
           <span>{hora}</span>
         </div>
 
@@ -154,7 +155,7 @@ export function Topbar() {
             title={cajaMensaje ?? 'Error de caja'}
             className="flex items-center gap-1.5 text-xs font-mono px-2.5 py-1 rounded-lg bg-danger/10 text-danger border border-danger/30 hover:bg-danger/20 transition-all duration-200 cursor-pointer"
           >
-            <Icon name="alert" className="w-3 h-3" />
+            <Icon name="alert" className="size-3" />
             <span className="hidden sm:inline truncate max-w-24">{cajaMensaje ?? 'Error'}</span>
           </button>
         ) : cajaActiva?.estado === 'abierta' ? (
@@ -162,7 +163,7 @@ export function Topbar() {
             onClick={() => navigate('/admin/caja')}
             className="flex items-center gap-1.5 text-xs font-mono px-2.5 py-1 rounded-lg bg-status-libre/10 text-status-libre border border-status-libre/30 hover:bg-status-libre/20 transition-all duration-200 cursor-pointer"
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-status-libre animate-pulse" />
+            <span className="size-1.5 rounded-full bg-status-libre animate-pulse" />
             Caja Abierta
           </button>
         ) : (
@@ -170,14 +171,14 @@ export function Topbar() {
             onClick={() => navigate('/admin/caja')}
             className="flex items-center gap-1.5 text-xs font-mono px-2.5 py-1 rounded-lg bg-status-pendiente/10 text-status-pendiente border border-status-pendiente/30 hover:bg-status-pendiente/20 transition-all duration-200 cursor-pointer"
           >
-            <span className="w-1.5 h-1.5 rounded-full bg-status-pendiente" />
+            <span className="size-1.5 rounded-full bg-status-pendiente" />
             Caja Cerrada
           </button>
         )}
 
         {/* User avatar + name */}
         <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-bg-primary border border-border/50">
-          <div className="w-6 h-6 rounded-full bg-pos-accent/20 flex items-center justify-center text-pos-accent font-display text-[10px] font-bold">
+          <div className="size-6 rounded-full bg-pos-accent/20 flex items-center justify-center text-pos-accent font-display text-[10px] font-bold">
             {(usuario?.nombre ?? 'U').charAt(0).toUpperCase()}
           </div>
           <span className="text-xs text-text-primary font-body font-medium hidden sm:inline">
@@ -191,7 +192,7 @@ export function Topbar() {
           disabled={loggingOut}
           className="flex items-center gap-1 text-xs text-text-secondary hover:text-danger transition-colors cursor-pointer disabled:opacity-50 px-1"
         >
-          <Icon name="log-out" className="w-3.5 h-3.5" />
+          <Icon name="log-out" className="size-3.5" />
           <span className="hidden sm:inline">{loggingOut ? '...' : 'Salir'}</span>
         </button>
       </div>

@@ -1,4 +1,5 @@
 import { type ReactNode } from 'react'
+import { DollarSign } from 'lucide-react'
 import { useCajaActiva } from '../../hooks/useCajaActiva'
 import { InlineError } from './InlineError'
 import { Spinner } from '../ui/Spinner'
@@ -32,7 +33,7 @@ export function CajaGuard({ children }: CajaGuardProps) {
   if (!caja || caja.estado !== 'abierta') {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4 px-4">
-        <span className="text-6xl">💰</span>
+        <DollarSign className="size-16 text-pos-accent/60" />
         <h2 className="font-display text-xl text-text-primary">Caja Cerrada</h2>
         <p className="text-text-secondary text-sm font-body text-center max-w-sm">
           No hay una caja abierta. Ve a <strong className="text-pos-accent">Administración &gt; Caja</strong> para abrir un turno antes de operar.

@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, { type AxiosError } from 'axios'
 import { useAuthStore } from '../store/authStore'
 import { useToastStore } from '../store/toastStore'
 
@@ -17,7 +17,7 @@ api.interceptors.request.use((config) => {
 
 let toastTimer: ReturnType<typeof setTimeout> | null = null
 
-function mostrarToast(error: any) {
+function mostrarToast(error: AxiosError<{ mensaje?: string }>) {
   const mensajeBackend = error.response?.data?.mensaje
   const message = mensajeBackend || 'Error inesperado'
 
@@ -70,12 +70,12 @@ api.interceptors.response.use(
         return api(original)
       } catch {
         useAuthStore.getState().clearAuth()
-        mostrarToast({ response: { status: 401, data: { mensaje: 'Sesión expirada. Inicia sesión nuevamente.' } } })
+        mostrarToast({ response: { status: 401, data: { mensaje: 'Sesión expirada. Inicia sesión nuevamente.' } } } as unknown as AxiosError<{ mensaje?: string }>)
         window.location.href = '/login'
       }
     }
 
-    mostrarToast(error)
+    mostrarToast(error as unknown as AxiosError<{ mensaje?: string }>)
     return Promise.reject(error)
   }
 )

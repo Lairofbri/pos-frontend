@@ -1,7 +1,10 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
-import type { Orden } from '../../../types'
+import { Unlock, ClipboardList, Printer } from 'lucide-react'
 import { printOrden } from '../../../components/shared/PrintTicket'
 import { DTEQR } from './DTEQR'
+import { Textarea } from '@/components/ui/Textarea'
+import { Input } from '@/components/ui/Input'
+import type { Orden } from '../../../types'
 
 interface TicketPanelProps {
   orden: Orden
@@ -104,7 +107,7 @@ export function TicketPanel({
       }
     }
     return { normales, combos }
-  }, [orden.items])
+  }, [orden])
 
   const renderItem = (item: typeof orden.items[0], esCombo = false) => {
     const descItem = item.descuento_porcentaje ?? 0
@@ -137,7 +140,7 @@ export function TicketPanel({
               className="text-text-secondary/50 hover:text-accent transition-colors cursor-pointer text-[11px]"
               title="Autorización de gerente"
             >
-              🔓
+              <Unlock className="size-3.5" />
             </button>
           ) : (
             <button
@@ -211,19 +214,19 @@ export function TicketPanel({
         {/* Notes — 1 row, no space waste */}
         {onGuardarNotas && (
           <div className="px-3 lg:px-4 pt-2 pb-1">
-            <textarea
+            <Textarea
               value={notasTexto}
               onChange={(e) => setNotasTexto(e.target.value)}
               onBlur={() => notasTexto !== (orden.notas ?? '') && onGuardarNotas(notasTexto)}
               placeholder="Notas para la orden..."
               rows={1}
-              className="w-full bg-bg-primary border border-border/50 rounded-lg px-2.5 py-1.5 text-[11px] text-text-primary font-body placeholder:text-text-secondary/40 outline-none focus:border-accent resize-none transition-colors"
+              className="min-h-[28px] text-[11px]"
             />
           </div>
         )}
 
         {/* Totals */}
-        <div className="px-3 lg:px-4 py-2 space-y-1">
+        <div className="px-3 lg:px-4 py-2 flex flex-col gap-1">
           <div className="flex items-center justify-between">
             <span className="text-[11px] text-text-secondary">Subtotal</span>
             <span className="text-xs font-mono text-text-primary tabular-nums">${subtotal.toFixed(2)}</span>
@@ -238,12 +241,12 @@ export function TicketPanel({
 
           {onDescuento && (
             <div className="flex items-center gap-1.5">
-              <input
+              <Input
                 type="number" min="0" max="100" value={descuentoInput}
                 onChange={(e) => setDescuentoInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleDescuentoApply()}
                 placeholder="%"
-                className="w-14 bg-bg-primary border border-border/50 rounded-md px-1.5 py-1 text-[11px] font-mono text-text-primary outline-none focus:border-accent text-center transition-colors"
+                className="w-14 text-center [&>input]:text-center"
               />
               <button onClick={handleDescuentoApply} disabled={!descuentoInput} className="text-[10px] px-1.5 py-1 rounded-md bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-colors cursor-pointer disabled:opacity-40 font-semibold">Aplicar</button>
             </div>
@@ -312,15 +315,15 @@ export function TicketPanel({
             className="h-8 px-2 rounded-lg border border-border/50 text-text-secondary hover:text-text-primary hover:border-border transition-colors cursor-pointer text-[10px] disabled:opacity-30 shrink-0"
             title="Imprimir pre-cuenta"
           >
-            {imprimiendo ? '...' : '📋'}
+            {imprimiendo ? '...' : <ClipboardList className="size-4" />}
           </button>
           <button
             onClick={() => printOrden(orden)}
             disabled={orden.items.length === 0}
-            className="h-8 w-8 rounded-lg border border-border/50 text-text-secondary hover:text-text-primary hover:border-border transition-colors cursor-pointer text-xs disabled:opacity-30 shrink-0 flex items-center justify-center"
+            className="h-8 w-8 rounded-lg border border-border/50 text-text-secondary hover:text-text-primary hover:border-border transition-colors cursor-pointer disabled:opacity-30 shrink-0 flex items-center justify-center"
             title="Imprimir ticket (navegador)"
           >
-            🖨
+            <Printer className="size-4" />
           </button>
           <button
             onClick={onPagar}

@@ -81,7 +81,7 @@ export function KanbanBoard({ columns, renderItem }: KanbanBoardProps) {
                 {activeCol.items.length}
               </span>
             </div>
-            <div className="flex-1 overflow-y-auto space-y-2 pb-4">
+            <div className="flex-1 overflow-y-auto flex flex-col gap-2 pb-4">
               {activeCol.items.length === 0 ? (
                 <EmptyState />
               ) : (
@@ -108,7 +108,7 @@ export function KanbanBoard({ columns, renderItem }: KanbanBoardProps) {
                   {col.items.length}
                 </span>
               </div>
-              <div className="flex-1 overflow-y-auto p-3 space-y-2">
+              <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
                 {col.items.length === 0 ? (
                   <EmptyState />
                 ) : (

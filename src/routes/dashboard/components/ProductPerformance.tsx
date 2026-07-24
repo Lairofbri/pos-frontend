@@ -10,10 +10,10 @@ export function ProductPerformance({ productos }: ProductPerformanceProps) {
 
   return (
     <DashboardCard title="Rendimiento de productos">
-      <div className="space-y-3">
+      <div className="flex flex-col gap-3">
         {productos.map((p) => (
           <div key={p.id} className="flex items-center gap-3">
-            <span className="w-7 h-7 rounded-lg bg-wood-light flex items-center justify-center text-base shrink-0">
+            <span className="size-7 rounded-lg bg-wood-light flex items-center justify-center text-base shrink-0">
               {p.icono}
             </span>
             <div className="flex-1 min-w-0">

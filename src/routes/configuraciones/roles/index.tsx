@@ -1,12 +1,12 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryDefaults } from '../../../config/queries'
 import { listarRoles, listarPermisos, obtenerPermisosRol, actualizarPermisosRol, resetPermisosRol } from './api'
 import { Toggle } from '../../../components/ui/Toggle'
-import { Button } from '../../../components/ui/Button'
-import { Badge } from '../../../components/ui/Badge'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
 import { ConfirmDialog } from '../../../components/shared/ConfirmDialog'
-import { Spinner } from '../../../components/ui/Spinner'
+import { Spinner } from '@/components/ui/Spinner'
 import { useToastStore } from '../../../store/toastStore'
 import { useCatalogo } from '../../../hooks/useCatalogo'
 import type { Permiso } from './api'
@@ -14,7 +14,7 @@ import type { Permiso } from './api'
 function PermisosEditor({ rol, onSave }: { rol: string; onSave: () => void }) {
   const queryClient = useQueryClient()
   const showToast = useToastStore((s) => s.show)
-  const [permisosLocales, setPermisosLocales] = useState<Record<string, boolean>>({})
+  const [editedPermisos, setEditedPermisos] = useState<Record<string, boolean>>({})
   const [dirty, setDirty] = useState(false)
   const [confirmReset, setConfirmReset] = useState(false)
 
@@ -30,20 +30,21 @@ function PermisosEditor({ rol, onSave }: { rol: string; onSave: () => void }) {
     ...queryDefaults('permisos-rol'),
   })
 
-  useEffect(() => {
-    if (permisosRol && Object.keys(permisosLocales).length === 0) {
-      setPermisosLocales(Object.fromEntries(permisosRol.map((p) => [p.codigo, p.activo])))
-    }
+  const permisosBase = useMemo(() => {
+    if (!permisosRol) return {}
+    return Object.fromEntries(permisosRol.map((p) => [p.codigo, p.activo]))
   }, [permisosRol])
+
+  const permisosLocales = dirty ? { ...permisosBase, ...editedPermisos } : permisosBase
 
   const guardarMutation = useMutation({
     mutationFn: () => actualizarPermisosRol(rol, { permisos: Object.entries(permisosLocales).map(([codigo, activo]) => ({ codigo, activo })) }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['permisos-rol', rol] }); setDirty(false); onSave(); showToast({ type: 'success', message: 'Permisos actualizados' }) },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['permisos-rol', rol] }); setDirty(false); setEditedPermisos({}); onSave(); showToast({ type: 'success', message: 'Permisos actualizados' }) },
   })
 
   const resetMutation = useMutation({
     mutationFn: () => resetPermisosRol(rol),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['permisos-rol', rol] }); setConfirmReset(false); setDirty(false); showToast({ type: 'success', message: 'Permisos restablecidos' }) },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['permisos-rol', rol] }); setConfirmReset(false); setDirty(false); setEditedPermisos({}); showToast({ type: 'success', message: 'Permisos restablecidos' }) },
   })
 
   const grupos = useMemo(() => {
@@ -58,7 +59,7 @@ function PermisosEditor({ rol, onSave }: { rol: string; onSave: () => void }) {
   }, [catalogo])
 
   const togglePermiso = (codigo: string) => {
-    setPermisosLocales((prev) => ({ ...prev, [codigo]: !prev[codigo] }))
+    setEditedPermisos((prev) => ({ ...prev, [codigo]: !(codigo in prev ? prev[codigo] : permisosBase[codigo]) }))
     setDirty(true)
   }
 
@@ -67,7 +68,7 @@ function PermisosEditor({ rol, onSave }: { rol: string; onSave: () => void }) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="flex flex-col gap-6">
       {grupos.map(([grupo, permisos]) => (
         <div key={grupo}>
           <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">{grupo}</h3>

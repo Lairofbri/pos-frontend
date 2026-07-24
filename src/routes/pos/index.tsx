@@ -356,7 +356,7 @@ export default function POSPage() {
     <>
       <div className="flex items-center justify-between px-4 lg:px-6 py-2 border-b border-border bg-bg-surface/80 shrink-0">
         <div className="flex items-center gap-2 text-sm text-text-secondary">
-          <span className="w-2 h-2 rounded-full bg-green-500" />
+          <span className="size-2 rounded-full bg-green-500" />
           <span className="font-body">{usuario?.nombre} <span className="text-text-tertiary">({usuario?.rol})</span></span>
         </div>
         <div className="flex items-center gap-2">
@@ -387,7 +387,7 @@ export default function POSPage() {
                         : 'bg-white text-pos-text border border-pos-border'
                     }`}
                   >
-                    <Icon name="table" className="w-3.5 h-3.5" />
+                    <Icon name="table" className="size-3.5" />
                     Mesas
                   </button>
                   <button
@@ -398,7 +398,7 @@ export default function POSPage() {
                         : 'bg-white text-pos-text border border-pos-border'
                     }`}
                   >
-                    <Icon name="shopping-cart" className="w-3.5 h-3.5" />
+                    <Icon name="shopping-cart" className="size-3.5" />
                     Rápido
                   </button>
                 </div>
@@ -431,7 +431,7 @@ export default function POSPage() {
                   onClick={handleCambiarMesa}
                   className="flex items-center gap-1.5 text-[13px] font-medium text-pos-text-secondary cursor-pointer hover:text-pos-accent transition-colors"
                 >
-                  <Icon name="arrow-left" className="w-4 h-4" />
+                  <Icon name="arrow-left" className="size-4" />
                   {modo === 'rapido' ? 'Nueva venta' : 'Cambiar mesa'}
                 </button>
               </div>
@@ -481,7 +481,7 @@ export default function POSPage() {
               mobileTab === 'productos' ? 'text-pos-accent bg-pos-accent/5' : 'text-text-secondary'
             }`}
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
             </svg>
             <span className="text-[10px] font-semibold">Productos</span>
@@ -492,7 +492,7 @@ export default function POSPage() {
               mobileTab === 'ticket' ? 'text-pos-accent bg-pos-accent/5' : 'text-text-secondary'
             }`}
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
             </svg>
             <span className="text-[10px] font-semibold">Ticket</span>

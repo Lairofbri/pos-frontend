@@ -1,13 +1,14 @@
 import { useState, useMemo, useCallback, useRef } from 'react'
+import { FolderTree, Package } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryDefaults } from '../../../config/queries'
 import { listarProductos, crearProducto, actualizarProducto, subirImagen, eliminarImagenProducto } from './api'
 import { listarCategorias, crearCategoria, actualizarCategoria, eliminarCategoria } from '../categorias/api'
-import { Input } from '../../../components/ui/Input'
-import { Select } from '../../../components/ui/Select'
-import { Button } from '../../../components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
+import { Button } from '@/components/ui/Button'
 import { Toggle } from '../../../components/ui/Toggle'
-import { Spinner } from '../../../components/ui/Spinner'
+import { Spinner } from '@/components/ui/Spinner'
 import { SidePanel } from '../../../components/shared/SidePanel'
 import { ConfirmDialog } from '../../../components/shared/ConfirmDialog'
 import { useToastStore } from '../../../store/toastStore'
@@ -388,7 +389,7 @@ export default function ProductosPage() {
       <div className="flex items-center gap-3 mb-3 shrink-0">
         <button
           onClick={goBack}
-          className={`w-9 h-9 rounded-xl border border-[#ede3db] bg-white flex items-center justify-center text-lg text-[#5a3d2b] cursor-pointer transition-all hover:bg-[#f5ede7] active:scale-95 ${navStack.length <= 1 ? 'invisible' : ''}`}
+          className={`size-9 rounded-xl border border-[#ede3db] bg-white flex items-center justify-center text-lg text-[#5a3d2b] cursor-pointer transition-all hover:bg-[#f5ede7] active:scale-95 ${navStack.length <= 1 ? 'invisible' : ''}`}
         >
           ←
         </button>
@@ -417,7 +418,7 @@ export default function ProductosPage() {
       {/* ─── Search (product level only) ─── */}
       {showProductLevel && (
         <div className="flex items-center gap-2 bg-[#f5efe9] rounded-[14px] px-3 py-2 mb-3 border border-transparent focus-within:border-[#c66a1e] focus-within:bg-white transition-all shrink-0">
-          <svg className="w-4 h-4 text-[#b8a292] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="size-4 text-[#b8a292] shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
           <input
@@ -443,7 +444,7 @@ export default function ProductosPage() {
 
             {currentCategories.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-1 text-[#b8a292]">
-                <span className="text-3xl mb-1">📂</span>
+                <FolderTree className="size-8 text-[#b8a292] mb-1" />
                 <span className="font-semibold text-sm text-[#7a5e4a]">Sin subcategorías</span>
                 <span className="text-xs">Crea una categoría para organizar productos</span>
               </div>
@@ -458,12 +459,12 @@ export default function ProductosPage() {
                   >
                     <button
                       onClick={(e) => { e.stopPropagation(); abrirEditarCat(cat) }}
-                      className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white/80 border border-[#ede3db] flex items-center justify-center text-xs text-[#a0806e] opacity-0 group-hover:opacity-100 hover:text-[#c66a1e] hover:border-[#c66a1e] transition-all cursor-pointer"
+                      className="absolute top-2 right-2 size-6 rounded-full bg-white/80 border border-[#ede3db] flex items-center justify-center text-xs text-[#a0806e] opacity-0 group-hover:opacity-100 hover:text-[#c66a1e] hover:border-[#c66a1e] transition-all cursor-pointer"
                       title="Editar categoría"
                     >
                       ✎
                     </button>
-                    <div className="w-11 h-11 rounded-[16px] bg-gradient-to-br from-[#fff8f0] to-[#ffedd5] flex items-center justify-center text-2xl transition-transform group-hover:scale-110">
+                    <div className="size-11 rounded-[16px] bg-gradient-to-br from-[#fff8f0] to-[#ffedd5] flex items-center justify-center text-2xl transition-transform group-hover:scale-110">
                       {cat.icono || iconoPorDefecto(cat.nombre)}
                     </div>
                     <span className="font-semibold text-sm text-[#2d241c] leading-tight">{cat.nombre}</span>
@@ -500,7 +501,7 @@ export default function ProductosPage() {
               </div>
             ) : productosFiltrados.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-1 text-[#b8a292]">
-                <span className="text-3xl mb-1">📦</span>
+                <Package className="size-8 text-[#b8a292] mb-1" />
                 <span className="font-semibold text-sm text-[#7a5e4a]">Sin productos</span>
                 <span className="text-xs">Agrega productos a esta categoría</span>
               </div>
@@ -595,7 +596,7 @@ export default function ProductosPage() {
               label="Nivel 1 — Categoría principal"
               options={catOptionsNivel1}
               value={catNivel1}
-              onChange={(e) => { setCatNivel1(e.target.value); setCatNivel2('') }}
+              onValueChange={(v) => { setCatNivel1(v); setCatNivel2('') }}
               placeholder="— Raíz —"
             />
 
@@ -604,7 +605,7 @@ export default function ProductosPage() {
                 label="Nivel 2 — Subcategoría"
                 options={catOptionsNivel2}
                 value={catNivel2}
-                onChange={(e) => setCatNivel2(e.target.value)}
+                onValueChange={(v) => setCatNivel2(v)}
                 placeholder="— Ninguna —"
               />
             )}
@@ -630,7 +631,7 @@ export default function ProductosPage() {
                   key={emoji}
                   type="button"
                   onClick={() => setCatForm({ ...catForm, icono: emoji === catForm.icono ? '' : emoji })}
-                  className={`w-8 h-8 flex items-center justify-center text-xl rounded-lg transition-all cursor-pointer ${
+                  className={`size-8 flex items-center justify-center text-xl rounded-lg transition-all cursor-pointer ${
                     catForm.icono === emoji
                       ? 'bg-[#c66a1e] text-white scale-110 shadow-md'
                       : 'hover:bg-[#ffedd5] hover:scale-110'
@@ -690,7 +691,7 @@ export default function ProductosPage() {
                 label="Categoría"
                 options={categoriasOptions}
                 value={prodForm.categoria_id}
-                onChange={(e) => setProdForm({ ...prodForm, categoria_id: e.target.value })}
+                onValueChange={(v) => setProdForm({ ...prodForm, categoria_id: v })}
                 placeholder="Sin categoría"
               />
 

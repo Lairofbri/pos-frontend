@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
 import { Button } from '../ui/Button'
 
 interface PageHeaderProps {
@@ -18,9 +19,9 @@ export function PageHeader({ title, subtitle, onNew, newLabel, backTo }: PageHea
         {backTo && (
           <button
             onClick={() => navigate(backTo)}
-            className="w-8 h-8 rounded-xl border border-border bg-bg-surface flex items-center justify-center text-text-secondary hover:text-pos-accent hover:border-pos-accent transition-all cursor-pointer text-sm"
+            className="size-8 rounded-xl border border-border bg-bg-surface flex items-center justify-center text-text-secondary hover:text-pos-accent hover:border-pos-accent transition-all cursor-pointer"
           >
-            ←
+            <ArrowLeft className="size-4" />
           </button>
         )}
         <div>

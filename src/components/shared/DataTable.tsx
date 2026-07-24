@@ -1,7 +1,16 @@
 import { useState, useMemo, type ReactNode } from 'react'
+import { ArrowUp, ArrowDown, Inbox, AlertTriangle } from 'lucide-react'
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from '@/components/ui/table'
 
 function Spinner({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
-  const sizes = { sm: 'w-4 h-4', md: 'w-6 h-6', lg: 'w-8 h-8' }
+  const sizes = { sm: 'size-4', md: 'size-6', lg: 'size-8' }
   return (
     <div
       className={`${sizes[size]} border-2 border-wood-mid border-t-pos-accent rounded-full animate-spin`}
@@ -11,10 +20,10 @@ function Spinner({ size = 'md' }: { size?: 'sm' | 'md' | 'lg' }) {
   )
 }
 
-function EmptyState({ message = 'No hay registros', icon = '📭' }: { message?: string; icon?: string }) {
+function EmptyState({ message = 'No hay registros' }: { message?: string }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 gap-3" role="status">
-      <span className="text-4xl" aria-hidden>{icon}</span>
+      <Inbox className="size-10 text-text-secondary" aria-hidden />
       <p className="text-text-secondary font-body text-sm">{message}</p>
     </div>
   )
@@ -23,7 +32,7 @@ function EmptyState({ message = 'No hay registros', icon = '📭' }: { message?:
 function ErrorState({ message = 'Ocurrió un error', onRetry }: { message?: string; onRetry?: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 gap-3" role="alert">
-      <span className="text-4xl" aria-hidden>⚠️</span>
+      <AlertTriangle className="size-10 text-danger" aria-hidden />
       <p className="text-danger text-sm font-body text-center">{message}</p>
       {onRetry && (
         <button
@@ -113,21 +122,19 @@ export function DataTable<T>({
 
   return (
     <div className="rounded-xl border border-border bg-bg-surface" role="region" aria-label="Tabla de datos">
-      {/* Desktop: Table view */}
       <div className="hidden sm:block overflow-x-auto">
-        <table className="w-full text-sm" role="table">
-          <thead>
-            <tr className="admin-table-header" role="row">
+        <Table>
+          <TableHeader>
+            <TableRow className="admin-table-header">
               {columns.map((col) => {
                 const isActive = sortKey === col.key
                 return (
-                  <th
+                  <TableHead
                     key={String(col.key)}
                     scope="col"
-                    role="columnheader"
                     aria-sort={col.sortable ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none'}
                     tabIndex={col.sortable ? 0 : undefined}
-                    className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider ${
+                    className={`text-xs font-semibold uppercase tracking-wider ${
                       col.sortable
                         ? 'cursor-pointer hover:opacity-80 select-none focus-visible:outline-2 focus-visible:outline-pos-accent'
                         : ''
@@ -144,19 +151,19 @@ export function DataTable<T>({
                     <span className="inline-flex items-center gap-1">
                       {col.header}
                       {col.sortable && isActive && (
-                        <span className="text-pos-accent text-[10px]" aria-hidden>
-                          {sortDir === 'asc' ? '▲' : '▼'}
-                        </span>
+                        sortDir === 'asc'
+                          ? <ArrowUp className="size-3 text-pos-accent" aria-hidden />
+                          : <ArrowDown className="size-3 text-pos-accent" aria-hidden />
                       )}
                     </span>
-                  </th>
+                  </TableHead>
                 )
               })}
-            </tr>
-          </thead>
-          <tbody>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
             {sorted.map((item, idx) => (
-              <tr
+              <TableRow
                 key={keyExtractor(item)}
                 onClick={() => onRowClick?.(item)}
                 tabIndex={onRowClick ? 0 : undefined}
@@ -166,23 +173,22 @@ export function DataTable<T>({
                     onRowClick(item)
                   }
                 }}
-                className={`border-b border-border/50 transition-colors duration-150 admin-row-hover ${
-                  idx % 2 === 1 ? 'bg-admin-row-alt' : 'bg-bg-surface'
+                className={`admin-row-hover ${
+                  idx % 2 === 1 ? 'bg-admin-row-alt' : ''
                 } ${onRowClick ? 'cursor-pointer' : ''}`}
                 role={onRowClick ? 'button' : undefined}
               >
                 {columns.map((col) => (
-                  <td key={String(col.key)} className="px-4 py-3 text-text-primary" role="cell">
+                  <TableCell key={String(col.key)} className="text-text-primary">
                     {col.render ? col.render(item) : String(item[col.key] ?? '')}
-                  </td>
+                  </TableCell>
                 ))}
-              </tr>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </div>
 
-      {/* Mobile: Card view */}
       <div className="sm:hidden divide-y divide-border/50">
         {sorted.map((item) => (
           <div

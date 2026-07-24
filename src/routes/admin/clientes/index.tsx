@@ -6,10 +6,10 @@ import { listarClientes, crearCliente, actualizarCliente, eliminarCliente } from
 import { DataTable, type Column } from '../../../components/shared/DataTable'
 import { SidePanel } from '../../../components/shared/SidePanel'
 import { LoadingOverlay } from '../../../components/shared/LoadingOverlay'
-import { Input } from '../../../components/ui/Input'
-import { Select } from '../../../components/ui/Select'
-import { Button } from '../../../components/ui/Button'
-import { Badge } from '../../../components/ui/Badge'
+import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
 import { ConfirmDialog } from '../../../components/shared/ConfirmDialog'
 import { useCatalogo } from '../../../hooks/useCatalogo'
 import type { Cliente } from '../../../types'
@@ -141,7 +141,7 @@ export default function ClientesPage() {
             </div>
             <hr className="border-border" />
             <p className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Documentación fiscal</p>
-            <Select label="Tipo documento" options={(tiposDocumento ?? []).map((t) => ({ value: t.valor, label: t.label }))} value={form.tipo_documento} onChange={(e) => setForm({ ...form, tipo_documento: e.target.value })} placeholder="Seleccionar..." />
+            <Select label="Tipo documento" options={(tiposDocumento ?? []).map((t) => ({ value: t.valor, label: t.label }))} value={form.tipo_documento} onValueChange={(v) => setForm({ ...form, tipo_documento: v })} placeholder="Seleccionar..." />
             <Input label="Número documento" value={form.numero_documento} onChange={(e) => setForm({ ...form, numero_documento: e.target.value })} />
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Input label="NIT" value={form.nit} onChange={(e) => setForm({ ...form, nit: e.target.value })} />

@@ -6,9 +6,9 @@ import { listarMesas, crearMesa, actualizarMesa } from './api'
 import { DataTable, type Column } from '../../../components/shared/DataTable'
 import { SidePanel } from '../../../components/shared/SidePanel'
 import { LoadingOverlay } from '../../../components/shared/LoadingOverlay'
-import { Input } from '../../../components/ui/Input'
-import { Button } from '../../../components/ui/Button'
-import { Badge } from '../../../components/ui/Badge'
+import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
 import type { Mesa } from '../../../types'
 
 const columns: Column<Mesa>[] = [

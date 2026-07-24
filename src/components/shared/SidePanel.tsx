@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react'
+import { X } from 'lucide-react'
 
 interface SidePanelProps {
   open: boolean
@@ -35,9 +36,9 @@ export function SidePanel({ open, onClose, title, children }: SidePanelProps) {
           <h2 className="font-display text-lg text-text-primary">{title}</h2>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/80 border border-border flex items-center justify-center text-text-secondary hover:text-text-primary hover:border-pos-accent transition-all cursor-pointer text-sm"
+            className="size-8 rounded-full bg-white/80 border border-border flex items-center justify-center text-text-secondary hover:text-text-primary hover:border-pos-accent transition-all cursor-pointer"
           >
-            ✕
+            <X className="size-4" />
           </button>
         </div>
 

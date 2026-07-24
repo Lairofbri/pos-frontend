@@ -59,7 +59,7 @@ export function SwitchUserModal({ open, onClose }: SwitchUserModalProps) {
 
         {loading ? (
           <div className="flex justify-center py-8">
-            <div className="w-6 h-6 border-2 border-wood-mid border-t-pos-accent rounded-full animate-spin" />
+            <div className="size-6 border-2 border-wood-mid border-t-pos-accent rounded-full animate-spin" />
           </div>
         ) : (
           <NumericKeypad

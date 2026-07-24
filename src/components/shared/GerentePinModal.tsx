@@ -84,7 +84,7 @@ export function GerentePinModal({ open, tenantId, onAuthorized, onClose }: Geren
             ) : gerentes.length === 0 ? (
               <p className="text-sm text-danger text-center font-body py-4">No hay gerentes disponibles</p>
             ) : (
-              <div className="space-y-2 max-h-48 overflow-y-auto">
+              <div className="flex flex-col gap-2 max-h-48 overflow-y-auto">
                 {gerentes.map((u) => (
                   <button
                     key={u.id}

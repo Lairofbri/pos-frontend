@@ -1,3 +1,4 @@
+import { Input } from '@/components/ui/Input'
 import { METODOS_CONFIG } from './metodos'
 
 interface PaymentFieldsProps {
@@ -18,29 +19,23 @@ function InputField({ label, value, onChange, placeholder, inputMode, readOnly, 
   mono?: boolean
 }) {
   return (
-    <div>
-      <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5 block">
-        {label}
-      </label>
-      <input
-        type="text"
-        inputMode={inputMode ?? 'text'}
-        value={value}
-        onChange={(e) => {
-          if (inputMode === 'decimal') {
-            onChange(e.target.value.replace(/[^0-9.]/g, ''))
-          } else {
-            onChange(e.target.value)
-          }
-        }}
-        placeholder={placeholder}
-        readOnly={readOnly}
-        maxLength={maxLength}
-        className={`w-full bg-bg-primary border-2 border-border rounded-lg px-4 py-3 text-lg font-mono text-text-primary outline-none focus:border-accent transition-colors ${
-          readOnly ? 'opacity-60 cursor-not-allowed' : ''
-        } ${mono ? 'font-mono' : 'font-body'}`}
-      />
-    </div>
+    <Input
+      label={label}
+      type="text"
+      inputMode={inputMode ?? 'text'}
+      value={value}
+      onChange={(e) => {
+        if (inputMode === 'decimal') {
+          onChange(e.target.value.replace(/[^0-9.]/g, ''))
+        } else {
+          onChange(e.target.value)
+        }
+      }}
+      placeholder={placeholder}
+      readOnly={readOnly}
+      maxLength={maxLength}
+      className={mono ? 'font-mono text-lg' : ''}
+    />
   )
 }
 
@@ -52,7 +47,7 @@ export function PaymentFields({ metodo, campos, onCampoChange }: PaymentFieldsPr
 
   if (metodo === 'mixto') {
     return (
-      <div className="space-y-3">
+      <div className="flex flex-col gap-3">
         <InputField
           label="Monto en efectivo"
           value={campos.monto_efectivo ?? ''}
@@ -81,7 +76,7 @@ export function PaymentFields({ metodo, campos, onCampoChange }: PaymentFieldsPr
   }
 
   return (
-    <div className="space-y-3 animate-fadeIn">
+    <div className="flex flex-col gap-3 animate-fadeIn">
       <InputField
         label="Monto"
         value={campos.monto ?? ''}

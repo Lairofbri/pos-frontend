@@ -1,16 +1,18 @@
 import { useState } from 'react'
+import { Printer } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryDefaults } from '../../../config/queries'
 import { listarImpresoras, crearImpresora, actualizarImpresora, eliminarImpresora, probarImpresora } from './api'
 import type { Impresora } from './api'
 import { SidePanel } from '../../../components/shared/SidePanel'
-import { Input } from '../../../components/ui/Input'
-import { Button } from '../../../components/ui/Button'
+import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
+import { Button } from '@/components/ui/Button'
 import { ConfirmDialog } from '../../../components/shared/ConfirmDialog'
 import { useToastStore } from '../../../store/toastStore'
 import { PageHeader } from '../../../components/shared/PageHeader'
-import { Badge } from '../../../components/ui/Badge'
-import { Spinner } from '../../../components/ui/Spinner'
+import { Badge } from '@/components/ui/Badge'
+import { Spinner } from '@/components/ui/Spinner'
 import { EmptyState } from '../../../components/shared/EmptyState'
 import { ErrorState } from '../../../components/shared/ErrorState'
 
@@ -101,9 +103,9 @@ export default function ImpresorasPage() {
       ) : error ? (
         <ErrorState message="Error al cargar impresoras" onRetry={() => refetch()} />
       ) : !impresoras || impresoras.length === 0 ? (
-        <EmptyState message="No hay impresoras configuradas. Crea una para empezar." icon="🖨️" />
+        <EmptyState message="No hay impresoras configuradas. Crea una para empezar." icon={<Printer className="size-10 text-text-secondary" />} />
       ) : (
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           {impresoras.map((imp) => (
             <div
               key={imp.id}
@@ -147,16 +149,12 @@ export default function ImpresorasPage() {
         <form onSubmit={(e) => { e.preventDefault(); guardarMutation.mutate() }} className="flex flex-col gap-4 p-4">
           <Input label="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} placeholder="Ej: Caja Principal" required />
 
-          <div>
-            <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Tipo</label>
-            <select
-              value={form.tipo}
-              onChange={(e) => setForm({ ...form, tipo: e.target.value as TipoImpresora })}
-              className="w-full bg-bg-surface border-2 border-border rounded-lg px-4 py-2.5 text-text-primary font-body text-sm outline-none focus:border-accent cursor-pointer appearance-none"
-            >
-              {TIPOS.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
-            </select>
-          </div>
+          <Select
+            label="Tipo"
+            value={form.tipo}
+            onValueChange={(v) => setForm({ ...form, tipo: v as TipoImpresora })}
+            options={TIPOS.map((t) => ({ value: t.value, label: t.label }))}
+          />
 
           <Input label="Dirección IP" value={form.ip} onChange={(e) => setForm({ ...form, ip: e.target.value })} placeholder="192.168.1.100" required />
 

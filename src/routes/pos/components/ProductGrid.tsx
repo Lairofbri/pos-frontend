@@ -1,8 +1,10 @@
 import { useState, useMemo } from 'react'
+import { Sparkles, FolderTree, Package } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { queryDefaults } from '../../../config/queries'
 import { getProductos, getCategorias, getCombos, type ComboPos } from '../api'
 import { ProductCard } from '../../../components/shared/ProductCard'
+import { Input } from '@/components/ui/Input'
 import type { Producto, Categoria } from '../../../types'
 
 interface ProductGridProps {
@@ -113,7 +115,7 @@ export function ProductGrid({ onSelectProducto, onSelectCombo, onLongPressProduc
       <div className="flex items-center gap-3 shrink-0">
         <button
           onClick={goBack}
-          className={`w-9 h-9 rounded-xl border border-pos-border bg-white flex items-center justify-center text-lg text-pos-text cursor-pointer transition-all hover:bg-bg-surface-hover active:scale-95 ${navStack.length <= 1 ? 'invisible' : ''}`}
+          className={`size-9 rounded-xl border border-pos-border bg-white flex items-center justify-center text-lg text-pos-text cursor-pointer transition-all hover:bg-bg-surface-hover active:scale-95 ${navStack.length <= 1 ? 'invisible' : ''}`}
         >
           ←
         </button>
@@ -144,15 +146,15 @@ export function ProductGrid({ onSelectProducto, onSelectCombo, onLongPressProduc
       {/* Search */}
       {(showProductLevel || isCombosView) && (
         <div className="flex items-center gap-2 bg-bg-surface rounded-[14px] px-3 py-2 border border-transparent focus-within:border-pos-accent focus-within:bg-white transition-all shrink-0">
-          <svg className="w-4 h-4 text-pos-text-muted shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="size-4 text-pos-text-muted shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
-          <input
+          <Input
             type="text"
             placeholder={isCombosView ? 'Buscar combos...' : 'Buscar productos...'}
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            className="w-full bg-transparent outline-none text-sm text-pos-text placeholder:text-pos-text-muted"
+            className="border-0 bg-transparent p-0 h-auto shadow-none focus-visible:ring-0 [&>input]:p-0"
           />
         </div>
       )}
@@ -171,8 +173,8 @@ export function ProductGrid({ onSelectProducto, onSelectCombo, onLongPressProduc
                   onClick={navigateToCombos}
                   className="w-full mb-4 bg-white border border-pos-border rounded-[18px] p-4 cursor-pointer flex items-center gap-3 transition-all hover:border-pos-accent hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(198,106,30,0.12)] active:scale-[0.97]"
                 >
-                  <div className="w-11 h-11 rounded-[16px] bg-gradient-to-br from-[#fff8f0] to-[#ffedd5] flex items-center justify-center text-2xl">
-                    💥
+                  <div className="size-11 rounded-[16px] bg-gradient-to-br from-[#fff8f0] to-[#ffedd5] flex items-center justify-center text-2xl">
+                    <Sparkles className="size-6 text-pos-accent" />
                   </div>
                   <div className="text-left">
                     <span className="font-semibold text-sm text-pos-text">Combos</span>
@@ -197,7 +199,7 @@ export function ProductGrid({ onSelectProducto, onSelectCombo, onLongPressProduc
           <>
             {currentCategories.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-1 text-pos-text-muted">
-                <span className="text-3xl mb-1">📂</span>
+                <FolderTree className="size-8 text-pos-text-muted mb-1" />
                 <span className="font-semibold text-sm text-pos-text-muted">Sin subcategorías</span>
               </div>
             ) : (
@@ -209,7 +211,7 @@ export function ProductGrid({ onSelectProducto, onSelectCombo, onLongPressProduc
                     className="group relative bg-white border border-pos-border rounded-[18px] p-4 cursor-pointer flex flex-col items-center text-center gap-2 transition-all hover:border-pos-accent hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(198,106,30,0.12)] active:scale-[0.97]"
                     style={{ animation: `fadeInUp 0.3s ease-out ${i * 0.04}s both` }}
                   >
-                    <div className="w-11 h-11 rounded-[16px] bg-gradient-to-br from-[#fff8f0] to-[#ffedd5] flex items-center justify-center text-2xl transition-transform group-hover:scale-110">
+                    <div className="size-11 rounded-[16px] bg-gradient-to-br from-[#fff8f0] to-[#ffedd5] flex items-center justify-center text-2xl transition-transform group-hover:scale-110">
                       {cat.icono || iconoPorDefecto(cat.nombre)}
                     </div>
                     <span className="font-semibold text-sm text-pos-text leading-tight">{cat.nombre}</span>
@@ -228,7 +230,7 @@ export function ProductGrid({ onSelectProducto, onSelectCombo, onLongPressProduc
           <>
             {filtrados.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-1 text-pos-text-muted">
-                <span className="text-3xl mb-1">📦</span>
+                <Package className="size-8 text-pos-text-muted mb-1" />
                 <span className="font-semibold text-sm text-pos-text-muted">Sin productos</span>
               </div>
             ) : (
@@ -268,7 +270,7 @@ export function ProductGrid({ onSelectProducto, onSelectCombo, onLongPressProduc
                       <span className="font-bold text-pos-text">{combo.nombre}</span>
                       <span className="text-lg font-bold text-pos-accent">${Number(combo.precio).toFixed(2)}</span>
                     </div>
-                    <div className="space-y-1">
+                    <div className="flex flex-col gap-1">
                       {combo.productos.map((cp) => (
                         <div key={cp.producto_id} className="flex items-center gap-2 text-xs text-pos-text-muted">
                           <span className="text-sm">{iconoPorDefecto(cp.nombre)}</span>

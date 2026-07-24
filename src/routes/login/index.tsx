@@ -1,11 +1,14 @@
 import { useState, useMemo, type FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { Eye, EyeOff } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { queryDefaults } from '../../config/queries'
 import { getEmpresas, login, loginPin } from './api'
 import type { SucursalOption } from './api'
 import { useAuthStore } from '../../store/authStore'
 import { NumericKeypad } from '../../components/shared/NumericKeypad'
+import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -26,7 +29,6 @@ export default function LoginPage() {
   })
 
   const empresas = data?.tenants ?? []
-  const todasSucursales = data?.sucursales ?? []
 
   const [empresaId, setEmpresaId] = useState('')
   const defaultEmpresaId = empresas?.[0]?.id ?? ''
@@ -34,8 +36,8 @@ export default function LoginPage() {
   const selectedEmpresa = empresas?.find((e) => e.id === effectiveEmpresaId)
 
   const sucursales = useMemo(() =>
-    todasSucursales.filter((s: SucursalOption) => s.tenant_id === effectiveEmpresaId),
-    [todasSucursales, effectiveEmpresaId]
+    (data?.sucursales ?? []).filter((s: SucursalOption) => s.tenant_id === effectiveEmpresaId),
+    [data?.sucursales, effectiveEmpresaId]
   )
 
   const [sucursalId, setLocalSucursalId] = useState('')
@@ -100,19 +102,14 @@ export default function LoginPage() {
           <h1 className="font-display text-2xl text-pos-text tracking-wider">{selectedEmpresa?.nombre || 'AMBER POS'}</h1>
         </div>
 
-        <div className="mb-5 space-y-3">
+        <div className="mb-5 flex flex-col gap-3">
           {empresas.length > 1 && (
-            <div>
-              <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Empresa</label>
-              <select
-                value={effectiveEmpresaId}
-                onChange={(e) => { setEmpresaId(e.target.value); setError('') }}
-                className="login-input w-full appearance-none cursor-pointer"
-                style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%238C8177\' d=\'M6 8L1 3h10z\'/%3E%3C/svg%3E")', backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
-              >
-                {empresas.map((e) => <option key={e.id} value={e.id}>{e.nombre}</option>)}
-              </select>
-            </div>
+            <Select
+              label="Empresa"
+              value={effectiveEmpresaId}
+              onValueChange={(v) => { setEmpresaId(v); setError('') }}
+              options={empresas.map((e) => ({ value: e.id, label: e.nombre }))}
+            />
           )}
 
           {sucursales.length > 1 && (
@@ -142,36 +139,33 @@ export default function LoginPage() {
 
         {mode === 'login' ? (
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="admin@demo.pos"
-                required
-                className="login-input w-full"
-              />
-            </div>
+            <Input
+              label="Email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="admin@demo.pos"
+              required
+            />
             <div className="relative">
-              <label className="block text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5">Contraseña</label>
-              <input
+              <Input
+                label="Contraseña"
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
-                className="login-input w-full pr-10"
+                className="pr-10"
               />
-              <button type="button" onClick={() => setShowPassword(s => !s)} className="absolute right-3 top-[30px] text-text-secondary hover:text-pos-accent transition-colors cursor-pointer text-sm" tabIndex={-1}>
-                {showPassword ? '🙈' : '👁️'}
+              <button type="button" onClick={() => setShowPassword(s => !s)} className="absolute right-3 top-[30px] text-text-secondary hover:text-pos-accent transition-colors cursor-pointer" tabIndex={-1}>
+                {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
               </button>
             </div>
 
             {error && <p className="text-xs text-danger text-center">{error}</p>}
 
             <button type="submit" disabled={loading} className="login-btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed">
-              {loading ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : null}
+              {loading ? <span className="size-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : null}
               Ingresar
             </button>
 

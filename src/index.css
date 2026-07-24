@@ -1,5 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
+@variant dark (&:where(.dark, .dark *));
 
 /* ═══════════════════════════════════════════════
    LAYER 1: Raw CSS variables — LIGHT mode
@@ -88,6 +89,28 @@
   /* Login */
   --login-glass-bg: rgba(250, 246, 241, 0.95);
   --login-input-bg: #FFFFFF;
+
+  /* shadcn/ui */
+  --background: #FAF7F4;
+  --foreground: #2D241C;
+  --card: #FFFFFF;
+  --card-foreground: #2D241C;
+  --popover: #FFFFFF;
+  --popover-foreground: #2D241C;
+  --primary: #C7662E;
+  --primary-foreground: #FFFFFF;
+  --secondary: #F5F0EB;
+  --secondary-foreground: #2D241C;
+  --muted: #F5F0EB;
+  --muted-foreground: #7A6B5D;
+  --accent: #D97A43;
+  --accent-foreground: #FFFFFF;
+  --destructive: #CF5C5C;
+  --destructive-foreground: #FFFFFF;
+  --border: #E6DDD4;
+  --input: #E6DDD4;
+  --ring: #C7662E;
+  --radius: 0.5rem;
 }
 
 /* ═══════════════════════════════════════════════
@@ -144,6 +167,27 @@
 
   --login-glass-bg: rgba(30, 26, 22, 0.95);
   --login-input-bg: #2e2a26;
+
+  /* shadcn/ui */
+  --background: #1a1816;
+  --foreground: #f0ebe5;
+  --card: #24201d;
+  --card-foreground: #f0ebe5;
+  --popover: #24201d;
+  --popover-foreground: #f0ebe5;
+  --primary: #C7662E;
+  --primary-foreground: #FFFFFF;
+  --secondary: #2e2a26;
+  --secondary-foreground: #f0ebe5;
+  --muted: #2e2a26;
+  --muted-foreground: #a89a8c;
+  --accent: #D97A43;
+  --accent-foreground: #FFFFFF;
+  --destructive: #e07070;
+  --destructive-foreground: #FFFFFF;
+  --border: #3d352e;
+  --input: #3d352e;
+  --ring: #C7662E;
 }
 
 /* ═══════════════════════════════════════════════
@@ -235,6 +279,28 @@
 
   --color-login-glass-bg: var(--login-glass-bg);
   --color-login-input-bg: var(--login-input-bg);
+
+  /* shadcn/ui */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius: var(--radius);
 }
 
 /* ═══════════════════════════════════════════════

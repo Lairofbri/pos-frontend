@@ -1,21 +1,13 @@
-import { useEffect } from 'react'
 import type { ReactNode } from 'react'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
 import { Toast } from '../shared/Toast'
-import { useThemeStore } from '../../store/themeStore'
 
 interface AppShellProps {
   children: ReactNode
 }
 
 export function AppShell({ children }: AppShellProps) {
-  const initTheme = useThemeStore((s) => s.init)
-
-  useEffect(() => {
-    initTheme()
-  }, [initTheme])
-
   return (
     <div className="h-svh flex bg-bg-primary">
       <Toast />

@@ -1,14 +1,15 @@
 import { useState, useMemo } from 'react'
+import { DollarSign, ClipboardList, TriangleAlert } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryDefaults } from '../../../config/queries'
 import { abrirCaja, cerrarCaja, registrarMovimiento, getHistorialCajas, getResumenDiario, obtenerCuadre } from './api'
 import { useCajaActiva } from '../../../hooks/useCajaActiva'
 import { SidePanel } from '../../../components/shared/SidePanel'
 import { InlineError } from '../../../components/shared/InlineError'
-import { Input } from '../../../components/ui/Input'
-import { Button } from '../../../components/ui/Button'
-import { Badge } from '../../../components/ui/Badge'
-import { Spinner } from '../../../components/ui/Spinner'
+import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
+import { Spinner } from '@/components/ui/Spinner'
 import { useToastStore } from '../../../store/toastStore'
 import { useCatalogo } from '../../../hooks/useCatalogo'
 import type { CajaTurno, CajaCuadre } from '../../../types'
@@ -89,7 +90,7 @@ export default function CajaPage() {
         ) : cajaError ? (
           <InlineError message={cajaMensaje ?? 'Error al consultar caja'} onRetry={() => cajaRefetch()} />
         ) : cajaActiva?.estado === 'abierta' ? (
-          <div className="space-y-4">
+          <div className="flex flex-col gap-4">
             <div className="bg-bg-surface rounded-xl border border-border p-5">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-display text-lg text-text-primary">Caja abierta</h2>
@@ -114,17 +115,17 @@ export default function CajaPage() {
           </div>
         ) : (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <span className="text-5xl">💰</span>
+            <DollarSign className="size-12 text-pos-accent/60" />
             <h2 className="font-display text-lg text-text-primary">No hay caja abierta</h2>
             <p className="text-text-secondary text-sm font-body">Abre una caja para comenzar a operar</p>
             <Button onClick={() => { setMontoInicial(''); setAbrirPanel(true) }}>Abrir caja</Button>
           </div>
         )
       ) : (
-        <div className="space-y-3">
+        <div className="flex flex-col gap-3">
           {(historial ?? []).length === 0 ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3">
-              <span className="text-4xl">📋</span>
+              <ClipboardList className="size-10 text-text-secondary" />
               <p className="text-text-secondary text-sm font-body">Sin historial</p>
             </div>
           ) : (
@@ -156,13 +157,13 @@ export default function CajaPage() {
           {loadingResumen ? (
             <div className="flex justify-center py-8"><Spinner size="md" /></div>
           ) : resumen ? (
-            <div className="bg-bg-primary rounded-xl border border-border p-4 space-y-2">
+            <div className="bg-bg-primary rounded-xl border border-border p-4 flex flex-col gap-2">
               <p className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2">Resumen del día</p>
               <div className="flex justify-between text-sm">
                 <span className="text-text-secondary font-body">Total órdenes</span>
                 <span className="font-mono text-text-primary">{resumen.total_ordenes}</span>
               </div>
-              <div className="border-t border-border/50 pt-2 space-y-1">
+              <div className="border-t border-border/50 pt-2 flex flex-col gap-1">
                 {resumen.metodos.map((m) => (
                   <div key={m.metodo} className="flex justify-between text-sm">
                     <span className="text-text-secondary font-body capitalize">{m.metodo} ({m.cantidad_ordenes})</span>
@@ -182,7 +183,7 @@ export default function CajaPage() {
           {hayDiferencia && (
             <div className={`rounded-xl border-2 px-4 py-3 text-center ${diferencia < 0 ? 'bg-danger/10 border-danger/30' : 'bg-accent/10 border-accent/30'}`}>
               <p className={`text-sm font-body font-semibold ${diferencia < 0 ? 'text-danger' : 'text-accent'}`}>
-                {diferencia < 0 ? `⚠️ Faltan $${Math.abs(diferencia).toFixed(2)}` : `⚠️ Sobran $${diferencia.toFixed(2)}`}
+                {diferencia < 0 ? <><TriangleAlert className="size-4 inline" aria-hidden /> Faltan ${Math.abs(diferencia).toFixed(2)}</> : <><TriangleAlert className="size-4 inline" aria-hidden /> Sobran ${diferencia.toFixed(2)}</>}
               </p>
             </div>
           )}
@@ -245,7 +246,7 @@ export default function CajaPage() {
               )}
             </div>
 
-            <div className="bg-bg-primary rounded-xl border border-border p-4 space-y-2">
+            <div className="bg-bg-primary rounded-xl border border-border p-4 flex flex-col gap-2">
               <div className="flex justify-between text-sm">
                 <span className="text-text-secondary font-body">Inicial</span>
                 <span className="font-mono text-text-primary">${cajaDetalle.monto_inicial.toFixed(2)}</span>
@@ -256,8 +257,8 @@ export default function CajaPage() {
               </div>
 
               {(cajaDetalle.metodos ?? []).length > 0 && (
-                <div className="border-t border-border/50 pt-2 space-y-1">
-                  {cajaDetalle.metodos?.map((m) => (
+                  <div className="border-t border-border/50 pt-2 flex flex-col gap-1">
+                    {cajaDetalle.metodos?.map((m) => (
                     <div key={m.metodo} className="flex justify-between text-sm pl-3">
                       <span className="text-text-secondary font-body capitalize">
                         {m.metodo} ({m.cantidad_ordenes})
@@ -268,7 +269,7 @@ export default function CajaPage() {
                 </div>
               )}
 
-              <div className="border-t border-border/50 pt-2 space-y-1">
+              <div className="border-t border-border/50 pt-2 flex flex-col gap-1">
                 <div className="flex justify-between text-sm">
                   <span className="text-text-secondary font-body">Retiros</span>
                   <span className="font-mono text-text-primary">${cajaDetalle.total_retiros.toFixed(2)}</span>
@@ -279,7 +280,7 @@ export default function CajaPage() {
                 </div>
               </div>
 
-              <div className="border-t border-border pt-2 space-y-1">
+              <div className="border-t border-border pt-2 flex flex-col gap-1">
                 <div className="flex justify-between text-sm">
                   <span className="text-text-secondary font-body">Esperado</span>
                   <span className="font-mono text-text-primary">${cajaDetalle.total_esperado.toFixed(2)}</span>

@@ -6,11 +6,11 @@ import { listarSucursales, crearSucursal, actualizarSucursal } from './api'
 import type { Sucursal } from './api'
 import { SidePanel } from '../../../components/shared/SidePanel'
 import { LoadingOverlay } from '../../../components/shared/LoadingOverlay'
-import { Input } from '../../../components/ui/Input'
-import { Button } from '../../../components/ui/Button'
-import { Badge } from '../../../components/ui/Badge'
+import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
 import { InlineError } from '../../../components/shared/InlineError'
-import { Spinner } from '../../../components/ui/Spinner'
+import { Spinner } from '@/components/ui/Spinner'
 
 const FORM_INICIAL = { nombre: '', direccion: '', telefono: '' }
 

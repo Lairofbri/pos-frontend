@@ -81,7 +81,7 @@ function CajaCard({ estado }: { estado?: string | null }) {
           {abierta ? 'Abierta' : 'Cerrada'}
         </span>
       </div>
-      <div className={`w-12 h-12 rounded-[14px] flex items-center justify-center overflow-hidden ${abierta ? 'bg-pos-libre-bg' : 'bg-pos-ocupada-bg'}`}>
+      <div className={`size-12 rounded-[14px] flex items-center justify-center overflow-hidden ${abierta ? 'bg-pos-libre-bg' : 'bg-pos-ocupada-bg'}`}>
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={abierta ? '#3A9150' : '#8C8177'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
           <rect x="2" y="4" width="20" height="16" rx="2" />
           <path d="M12 9v4" />

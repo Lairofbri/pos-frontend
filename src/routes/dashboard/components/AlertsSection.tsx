@@ -12,7 +12,7 @@ export function AlertsSection({ alertas }: AlertsSectionProps) {
 
   return (
     <DashboardCard title="Alertas">
-      <div className="space-y-2">
+      <div className="flex flex-col gap-2">
         {alertas.length === 0 ? (
           <div className="flex flex-col items-center py-6 text-text-secondary">
             <span className="text-2xl mb-1">✅</span>

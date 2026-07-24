@@ -1,5 +1,5 @@
 import api from '../../api/client'
-import type { Mesa } from '../../types'
+import type { Mesa, CajaTurno } from '../../types'
 
 export interface DashboardMetrics {
   ventas_hoy: number
@@ -99,6 +99,6 @@ export function getAlertas(): DashboardAlerta[] {
 }
 
 export function getCajaActiva() {
-  return api.get<{ ok: boolean; data: any }>('/caja/activa')
+  return api.get<{ ok: boolean; data: CajaTurno | null }>('/caja/activa')
     .then(r => r.data.data)
 }

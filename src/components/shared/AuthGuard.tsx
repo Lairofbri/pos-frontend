@@ -12,21 +12,39 @@ interface AuthGuardProps {
 
 export function AuthGuard({ children }: AuthGuardProps) {
   const token = useAuthStore((s) => s.token)
+  const usuario = useAuthStore((s) => s.usuario)
   const setToken = useAuthStore((s) => s.setToken)
+  const restaurarSesion = useAuthStore((s) => s.restaurarSesion)
   const [checking, setChecking] = useState(!token)
 
   useEffect(() => {
-    if (token) {
-      setChecking(false)
-      return
-    }
+    if (token) return
     axios.post(`${BASE_URL}/auth/refresh`, {}, { withCredentials: true })
-      .then((r) => {
-        if (r.data?.data?.access_token) setToken(r.data.data.access_token)
+      .then(async (r) => {
+        const accessToken = r.data?.data?.access_token
+        if (accessToken) {
+          setToken(accessToken)
+          // Restaurar datos del usuario desde /auth/me
+          try {
+            const me = await axios.get(`${BASE_URL}/auth/me`, {
+              headers: { Authorization: `Bearer ${accessToken}` }
+            })
+            const u = me.data?.data
+            if (u) {
+              restaurarSesion(
+                u,
+                u.tenant_id || '',
+                u.sucursal_id || ''
+              )
+            }
+          } catch {
+            // Si /me falla, el usuario navegará al login
+          }
+        }
       })
       .catch(() => {})
       .finally(() => setChecking(false))
-  }, [token, setToken])
+  }, [token, setToken, restaurarSesion])
 
   if (checking) {
     return (
@@ -36,6 +54,6 @@ export function AuthGuard({ children }: AuthGuardProps) {
     )
   }
 
-  if (!token) return <Navigate to="/login" replace />
+  if (!token || !usuario) return <Navigate to="/login" replace />
   return <>{children}</>
 }

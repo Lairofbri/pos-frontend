@@ -56,7 +56,7 @@ export default function DashboardPage() {
         subtitle="Resumen operativo del día"
       />
 
-      <div className="space-y-4">
+      <div className="flex flex-col gap-4">
         <MetricsSection
           ventas_hoy={metrics?.ventas_hoy ?? 0}
           ticket_promedio={metrics?.ticket_promedio ?? 0}

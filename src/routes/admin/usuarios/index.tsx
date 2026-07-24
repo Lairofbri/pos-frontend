@@ -5,10 +5,10 @@ import { listarUsuarios, crearUsuario, actualizarUsuario, resetearPin } from './
 import { listarSucursales } from '../sucursales/api'
 import { DataTable, type Column } from '../../../components/shared/DataTable'
 import { SidePanel } from '../../../components/shared/SidePanel'
-import { Input } from '../../../components/ui/Input'
-import { Select } from '../../../components/ui/Select'
-import { Button } from '../../../components/ui/Button'
-import { Badge } from '../../../components/ui/Badge'
+import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
 import { useToastStore } from '../../../store/toastStore'
 import { useCatalogo } from '../../../hooks/useCatalogo'
 import type { Usuario } from '../../../types'
@@ -134,13 +134,13 @@ export default function UsuariosPage() {
             label="Rol"
             options={(roles ?? []).map((r) => ({ value: r.valor, label: r.label }))}
             value={form.rol}
-            onChange={(e) => setForm({ ...form, rol: e.target.value })}
+            onValueChange={(v) => setForm({ ...form, rol: v })}
           />
           <Select
             label="Sucursal"
             options={[{ value: '', label: 'Todas (sin asignar)' }, ...(sucursales ?? []).filter(s => s.activo).map((s) => ({ value: s.id, label: s.nombre }))]}
             value={form.sucursal_id}
-            onChange={(e) => setForm({ ...form, sucursal_id: e.target.value })}
+            onValueChange={(v) => setForm({ ...form, sucursal_id: v })}
           />
 
           {!editando && (

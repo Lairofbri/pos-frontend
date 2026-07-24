@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { SidePanel } from '../../../../components/shared/SidePanel'
-import { Button } from '../../../../components/ui/Button'
+import { Button } from '@/components/ui/Button'
 import { useCatalogo } from '../../../../hooks/useCatalogo'
 import type { Orden } from '../../../../types'
 import { PaymentSummary } from './PaymentSummary'
@@ -18,23 +18,24 @@ interface PaymentPanelProps {
 }
 
 export function PaymentPanel({ open, onClose, orden, onConfirmar, loading }: PaymentPanelProps) {
-  if (!orden) return null
-
   const [metodo, setMetodo] = useState('efectivo')
   const [campos, setCampos] = useState<Record<string, string>>({})
   const { data: metodosData } = useCatalogo('metodos_pago')
 
-  const totalAPagar = orden.total + orden.propina_monto
-  const config = METODOS_CONFIG[metodo]
-
   const totalPagado = useMemo(() => {
+    if (!orden) return 0
     if (metodo === 'mixto') {
       const ef = parseFloat(campos.monto_efectivo || '0')
       const tj = parseFloat(campos.monto_tarjeta || '0')
       return ef + tj
     }
     return parseFloat(campos.monto || '0')
-  }, [metodo, campos])
+  }, [metodo, campos, orden])
+
+  if (!orden) return null
+
+  const totalAPagar = orden.total + orden.propina_monto
+  const config = METODOS_CONFIG[metodo]
 
   const cambio = (config?.permiteCambio ?? false)
     ? Math.max(0, totalPagado - totalAPagar)

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { Gift, Printer, X } from 'lucide-react'
 import type { ItemCocina } from '../api'
 
 interface CocinaCardProps {
@@ -23,13 +24,14 @@ const ESTADO_CONFIG: Record<string, { label: string; color: string; bg: string; 
 }
 
 function TimerDisplay({ baseMinutes, done }: { baseMinutes: number; done?: boolean }) {
-  const [elapsed, setElapsed] = useState(baseMinutes)
+  const [tick, setTick] = useState(0)
 
   useEffect(() => {
-    setElapsed(baseMinutes)
-    const interval = setInterval(() => setElapsed(prev => prev + 1), 60000)
+    const interval = setInterval(() => setTick(prev => prev + 1), 60000)
     return () => clearInterval(interval)
-  }, [baseMinutes])
+  }, [])
+
+  const elapsed = done ? baseMinutes : baseMinutes + tick
 
   const minutes = elapsed
   const isOverdue = minutes > 20
@@ -65,7 +67,7 @@ function ItemRow({ item, ordenId, onMarcarListo, esCombo }: {
 
   return (
     <div className={`flex items-center gap-2 py-1.5 ${esCombo ? 'pl-5' : ''}`}>
-      <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${cfg.dot}`} />
+      <span className={`size-1.5 rounded-full shrink-0 ${cfg.dot}`} />
       <span className="font-mono text-sm font-bold text-text-primary tabular-nums w-8 shrink-0 text-right">
         {item.cantidad}x
       </span>
@@ -83,7 +85,7 @@ function ItemRow({ item, ordenId, onMarcarListo, esCombo }: {
             : 'border-accent/40 text-accent hover:bg-accent hover:text-white'
         }`}
       >
-        {item.estado === 'listo' ? 'Hecho' : item.estado === 'cancelado' ? '✕' : 'Listo'}
+        {item.estado === 'listo' ? 'Hecho' : item.estado === 'cancelado' ? <X className="size-3" /> : 'Listo'}
       </button>
     </div>
   )
@@ -112,8 +114,14 @@ export function CocinaCard({ item, onMarcarListo, onCompletada, onImprimir }: Co
   const allDone = ordenLista || (itemsPendientes.length === 0 && itemsEnProceso.length === 0)
   const total = item.items.length
 
+  const [now, setNow] = useState(Date.now)
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 60000)
+    return () => clearInterval(interval)
+  }, [])
+
   const tiempoBase = item.items.length > 0
-    ? Math.floor((Date.now() - new Date(item.items[0].enviado_en).getTime()) / 60000)
+    ? Math.floor((now - new Date(item.items[0].enviado_en).getTime()) / 60000)
     : 0
 
   return (
@@ -135,7 +143,7 @@ export function CocinaCard({ item, onMarcarListo, onCompletada, onImprimir }: Co
           )}
         </div>
         <div className="flex items-center gap-3 shrink-0">
-          <TimerDisplay baseMinutes={tiempoBase} done={allDone} />
+          <TimerDisplay key={tiempoBase} baseMinutes={tiempoBase} done={allDone} />
         </div>
       </div>
 
@@ -143,7 +151,7 @@ export function CocinaCard({ item, onMarcarListo, onCompletada, onImprimir }: Co
         {grouped.combos.map((combo) => (
           <div key={combo.nombre} className="py-1">
             <div className="flex items-center gap-1.5 px-1 py-1 mb-0.5">
-              <span className="text-xs">🎁</span>
+              <Gift className="size-3.5 text-pos-accent" />
               <span className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider">{combo.nombre}</span>
             </div>
             {combo.items.map((i) => (
@@ -183,7 +191,7 @@ export function CocinaCard({ item, onMarcarListo, onCompletada, onImprimir }: Co
             className="text-xs px-2 py-1.5 rounded-lg border border-border text-text-secondary hover:text-text-primary hover:border-accent/50 transition-all cursor-pointer"
             title="Imprimir ticket"
           >
-            🖨️
+            <Printer className="size-4" />
           </button>
           {!ordenLista && (
             <button

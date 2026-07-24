@@ -1,16 +1,17 @@
 import { useState, useMemo } from 'react'
+import { ClipboardList } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryDefaults } from '../../../config/queries'
 import { listarRoles } from '../roles/api'
 import { listarMenus, crearMenu, actualizarMenu, eliminarMenu, flattenTree } from './api'
 import { SidePanel } from '../../../components/shared/SidePanel'
-import { Input } from '../../../components/ui/Input'
-import { Select } from '../../../components/ui/Select'
-import { Button } from '../../../components/ui/Button'
-import { Badge } from '../../../components/ui/Badge'
+import { Input } from '@/components/ui/Input'
+import { Select } from '@/components/ui/Select'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
 import { Toggle } from '../../../components/ui/Toggle'
 import { ConfirmDialog } from '../../../components/shared/ConfirmDialog'
-import { Spinner } from '../../../components/ui/Spinner'
+import { Spinner } from '@/components/ui/Spinner'
 import { IconSelect } from '../../../components/shared/IconSelect'
 import { useToastStore } from '../../../store/toastStore'
 import { Icon } from '../../../components/shared/Icon'
@@ -149,7 +150,7 @@ export default function MenusPage() {
 
         {itemsPlanos.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 gap-3">
-            <span className="text-4xl">📋</span>
+            <ClipboardList className="size-10 text-text-secondary" />
             <p className="text-text-secondary text-sm font-body">Sin items de menú</p>
           </div>
         ) : (
@@ -170,7 +171,7 @@ export default function MenusPage() {
                   {tieneHijos ? (
                     <button
                       onClick={(e) => { e.stopPropagation(); toggleExpand(item.id) }}
-                      className="w-5 h-5 flex items-center justify-center text-text-secondary hover:text-text-primary cursor-pointer shrink-0 text-xs"
+                      className="size-5 flex items-center justify-center text-text-secondary hover:text-text-primary cursor-pointer shrink-0 text-xs"
                     >
                       {estaExpandido ? '▼' : '▶'}
                     </button>
@@ -178,8 +179,8 @@ export default function MenusPage() {
                     <span className="w-5 shrink-0" />
                   )}
 
-                  <span className="w-5 h-5 flex items-center justify-center shrink-0">
-                    <Icon name={item.icono ?? ''} className="w-4 h-4" />
+                  <span className="size-5 flex items-center justify-center shrink-0">
+                    <Icon name={item.icono ?? ''} className="size-4" />
                   </span>
 
                   <div className="flex-1 min-w-0">
@@ -203,14 +204,14 @@ export default function MenusPage() {
                   <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                     <button
                       onClick={() => cambiarOrden(item, 'up')}
-                      className="w-10 h-10 sm:w-6 sm:h-6 rounded bg-bg-primary text-text-secondary hover:text-text-primary hover:border-accent border border-border cursor-pointer text-xs flex items-center justify-center"
+                      className="size-10 sm:size-6 rounded bg-bg-primary text-text-secondary hover:text-text-primary hover:border-accent border border-border cursor-pointer text-xs flex items-center justify-center"
                       title="Subir"
                     >
                       ▲
                     </button>
                     <button
                       onClick={() => cambiarOrden(item, 'down')}
-                      className="w-10 h-10 sm:w-6 sm:h-6 rounded bg-bg-primary text-text-secondary hover:text-text-primary hover:border-accent border border-border cursor-pointer text-xs flex items-center justify-center"
+                      className="size-10 sm:size-6 rounded bg-bg-primary text-text-secondary hover:text-text-primary hover:border-accent border border-border cursor-pointer text-xs flex items-center justify-center"
                       title="Bajar"
                     >
                       ▼
@@ -239,7 +240,7 @@ export default function MenusPage() {
             label="Padre"
             options={raicesOptions}
             value={form.parent_id}
-            onChange={(e) => setForm({ ...form, parent_id: e.target.value })}
+            onValueChange={(v) => setForm({ ...form, parent_id: v })}
             placeholder="Raíz (sin padre)"
           />
 
@@ -249,7 +250,7 @@ export default function MenusPage() {
             label="Visibilidad por rol"
             options={rolesOptions}
             value={form.permiso_codigo}
-            onChange={(e) => setForm({ ...form, permiso_codigo: e.target.value })}
+            onValueChange={(v) => setForm({ ...form, permiso_codigo: v })}
             placeholder="Todos los roles"
           />
 

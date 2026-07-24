@@ -4,9 +4,9 @@ import { queryDefaults } from '../../../config/queries'
 import { listarCategorias, crearCategoria, actualizarCategoria, eliminarCategoria } from './api'
 import { DataTable, type Column } from '../../../components/shared/DataTable'
 import { SidePanel } from '../../../components/shared/SidePanel'
-import { Input } from '../../../components/ui/Input'
-import { Button } from '../../../components/ui/Button'
-import { Badge } from '../../../components/ui/Badge'
+import { Input } from '@/components/ui/Input'
+import { Button } from '@/components/ui/Button'
+import { Badge } from '@/components/ui/Badge'
 import { ConfirmDialog } from '../../../components/shared/ConfirmDialog'
 import { useToastStore } from '../../../store/toastStore'
 import type { Categoria } from '../../../types'
@@ -18,7 +18,7 @@ const columns: Column<Categoria>[] = [
     header: 'Color',
     render: (c) => c.color ? (
       <div className="flex items-center gap-2">
-        <span className="w-4 h-4 rounded-full border border-border" style={{ backgroundColor: c.color }} />
+        <span className="size-4 rounded-full border border-border" style={{ backgroundColor: c.color }} />
         <span className="text-xs font-mono text-text-secondary">{c.color}</span>
       </div>
     ) : <span className="text-text-secondary">—</span>,

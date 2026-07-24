@@ -1,4 +1,5 @@
 import { Component, type ReactNode } from 'react'
+import { TriangleAlert } from 'lucide-react'
 import { Button } from '../ui/Button'
 
 interface Props {
@@ -28,7 +29,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
       return (
         <div className="flex flex-col items-center justify-center min-h-screen px-6 text-center">
-          <span className="text-5xl mb-4">⚠️</span>
+          <TriangleAlert className="size-14 text-danger mb-4" />
           <h1 className="font-display text-xl text-text-primary mb-2">Algo salió mal</h1>
           <p className="text-sm text-text-secondary font-body mb-6 max-w-md">
             {this.state.error?.message || 'Ocurrió un error inesperado en la aplicación.'}
