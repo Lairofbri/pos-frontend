@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { queryDefaults } from '../../config/queries'
 import { getDashboardMetrics, getMesas, getTopProductos, getVentasPorHora, getAlertas } from './api'
+import type { DashboardAlerta } from './api'
+import { obtenerResumen } from '../admin/inventario/api'
 import { useCajaActiva } from '../../hooks/useCajaActiva'
 import { MetricsSection } from './components/MetricsSection'
 import { OperationalStatus } from './components/OperationalStatus'
@@ -39,7 +41,25 @@ export default function DashboardPage() {
     ...queryDefaults('dashboard-ventas-hora'),
   })
 
-  const alertas = getAlertas()
+  const { data: inventario } = useQuery({
+    queryKey: ['inventario-resumen'],
+    queryFn: obtenerResumen,
+    ...queryDefaults('inventario-resumen'),
+  })
+
+  const alertas: DashboardAlerta[] = [
+    ...(inventario?.alertas_count && inventario.alertas_count > 0
+      ? [{
+          id: 'stock-bajo',
+          severity: 'critical' as const,
+          icon: '📦',
+          titulo: 'Stock bajo de ingredientes',
+          descripcion: `${inventario.alertas_count} productos tienen stock por debajo del mínimo. Revisa inventario.`,
+          accion: { label: 'Ver inventario', ruta: '/admin/inventario' },
+        }]
+      : []),
+    ...getAlertas().slice(1),
+  ]
 
   if (mLoading || pLoading || vLoading) {
     return (

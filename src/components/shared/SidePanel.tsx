@@ -6,9 +6,10 @@ interface SidePanelProps {
   onClose: () => void
   title: string
   children: ReactNode
+  className?: string
 }
 
-export function SidePanel({ open, onClose, title, children }: SidePanelProps) {
+export function SidePanel({ open, onClose, title, children, className = '' }: SidePanelProps) {
   useEffect(() => {
     if (open) {
       document.body.style.overflow = 'hidden'
@@ -28,7 +29,7 @@ export function SidePanel({ open, onClose, title, children }: SidePanelProps) {
       />
 
       <div
-        className={`fixed top-0 right-0 h-full z-50 bg-bg-surface border-l border-border shadow-elevated transition-transform duration-300 ease-out w-full sm:max-w-md ${
+        className={`fixed top-0 right-0 h-full z-50 bg-bg-surface border-l border-border shadow-elevated transition-transform duration-300 ease-out w-full sm:max-w-md ${className} ${
           open ? 'translate-x-0' : 'translate-x-full'
         }`}
       >

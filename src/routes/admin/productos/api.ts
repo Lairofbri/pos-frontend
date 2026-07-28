@@ -6,6 +6,9 @@ export interface ProductoFiltros {
   busqueda?: string
   pagina?: number
   limite?: number
+  tiene_stock?: boolean
+  se_vende?: boolean
+  tiene_receta?: boolean
 }
 
 interface ProductoRaw {
@@ -21,8 +24,11 @@ interface ProductoRaw {
   categoria_nombre: string | null
   categoria_color: string | null
   tiene_stock: boolean
+  tiene_receta: boolean
+  se_vende: boolean
   stock_actual: number
   stock_minimo: number
+  unidad_medida_id: string | null
 }
 
 function parseProducto(raw: ProductoRaw): Producto {
@@ -39,8 +45,11 @@ function parseProducto(raw: ProductoRaw): Producto {
     categoria_nombre: raw.categoria_nombre ?? undefined,
     categoria_color: raw.categoria_color ?? undefined,
     tiene_stock: raw.tiene_stock,
+    tiene_receta: raw.tiene_receta,
+    se_vende: raw.se_vende,
     stock_actual: raw.stock_actual,
     stock_minimo: raw.stock_minimo,
+    unidad_medida_id: raw.unidad_medida_id ?? undefined,
   }
 }
 

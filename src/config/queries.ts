@@ -27,6 +27,11 @@ export const QUERY_CONFIG: Record<string, QueryDefaults> = {
   'caja-movimientos': {},
   'configuraciones-menus': { staleTime: 30_000 },
   sucursales: { staleTime: 60_000 },
+  'inventario-resumen': { staleTime: 30_000 },
+  'inventario-movimientos': { staleTime: 30_000 },
+  'productos-stock': { staleTime: 60_000 },
+  recetas: { staleTime: 60_000 },
+  'productos-menu': { staleTime: 60_000 },
 }
 
 export function queryDefaults(key: string): QueryDefaults {

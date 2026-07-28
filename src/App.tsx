@@ -19,6 +19,8 @@ const ClientesPage = lazy(() => import('./routes/admin/clientes/index'))
 const CajaPage = lazy(() => import('./routes/admin/caja/index'))
 const MenusPage = lazy(() => import('./routes/configuraciones/menus/index'))
 const ImpresorasPage = lazy(() => import('./routes/admin/impresoras/index'))
+const InventarioPage = lazy(() => import('./routes/admin/inventario/index'))
+const RecetasPage = lazy(() => import('./routes/admin/recetas/index'))
 const SucursalesPage = lazy(() => import('./routes/admin/sucursales/index'))
 const ReportesPage = lazy(() => import('./routes/admin/reportes/index'))
 const VentasReportePage = lazy(() => import('./routes/admin/reportes/ventas/index'))
@@ -53,6 +55,8 @@ const router = createBrowserRouter([
   { path: '/admin/caja', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><CajaPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '/configuraciones/menus', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><MenusPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '/admin/impresoras', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><ImpresorasPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+  { path: '/admin/inventario', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><InventarioPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+  { path: '/admin/recetas', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><RecetasPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '/admin/sucursales', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><SucursalesPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '/admin/reportes', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><ReportesPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '/admin/reportes/ventas', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><VentasReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },

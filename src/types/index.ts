@@ -67,8 +67,11 @@ export interface Producto {
   imagen_url?: string
   codigo?: string
   tiene_stock: boolean
+  tiene_receta: boolean
+  se_vende: boolean
   stock_actual: number
   stock_minimo: number
+  unidad_medida_id?: string
   orden: number
   activo: boolean
 }

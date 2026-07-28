@@ -45,7 +45,8 @@ function parseProducto(r: ProductoRaw): Producto {
     categoria_id: r.categoria_id ?? undefined,
     categoria_nombre: r.categoria_nombre ?? undefined,
     categoria_color: r.categoria_color ?? undefined,
-    tiene_stock: r.tiene_stock, stock_actual: r.stock_actual, stock_minimo: r.stock_minimo,
+    tiene_stock: r.tiene_stock, tiene_receta: false, se_vende: true,
+    stock_actual: r.stock_actual, stock_minimo: r.stock_minimo,
   }
 }
 
