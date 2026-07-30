@@ -1,13 +1,12 @@
-import { useState, useEffect } from 'react'
-import { Package, TriangleAlert, TrendingDown, Plus } from 'lucide-react'
+import { useState } from 'react'
+import { Package, TriangleAlert, TrendingDown, Plus, Calendar } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryDefaults } from '../../../config/queries'
 import { obtenerResumen, listarMovimientos, crearMovimiento, listarUnidades } from './api'
-import type { MovimientoInventario } from './api'
 import { listarProductos, crearProducto, actualizarProducto } from '../productos/api'
+import { listarCategorias } from '../../../api/categorias'
 import { CategoryNavigator } from '../../../components/shared/CategoryNavigator'
 import { CategoryPanel } from '../../../components/shared/CategoryPanel'
-import { DataTable, type Column } from '../../../components/shared/DataTable'
 import { SidePanel } from '../../../components/shared/SidePanel'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
@@ -51,62 +50,6 @@ const TIPOS_REGISTRO = [
   { value: 'devolucion', label: 'Devolución' },
 ]
 
-const columns: Column<MovimientoInventario>[] = [
-  {
-    key: 'creado_en',
-    header: 'Fecha',
-    sortable: true,
-    width: '140px',
-    render: (m) => {
-      const d = new Date(m.creado_en)
-      return <span className="text-xs tabular-nums whitespace-nowrap">{d.toLocaleDateString('es-SV')} {d.toLocaleTimeString('es-SV', { hour: '2-digit', minute: '2-digit' })}</span>
-    },
-  },
-  { key: 'producto_nombre', header: 'Producto', sortable: true },
-  {
-    key: 'tipo_movimiento',
-    header: 'Tipo',
-    render: (m) => <Badge variant={badgeVariant[m.tipo_movimiento] ?? 'default'}>{tipoLabels[m.tipo_movimiento] ?? m.tipo_movimiento}</Badge>,
-  },
-  {
-    key: 'cantidad',
-    header: 'Cantidad',
-    width: '100px',
-    render: (m) => {
-      const esPositivo = ['compra', 'devolucion'].includes(m.tipo_movimiento)
-      return (
-        <span className={`font-mono tabular-nums text-sm ${esPositivo ? 'text-success' : 'text-danger'}`}>
-          {esPositivo ? '+' : '-'}{m.cantidad} {m.unidad_abrev ?? ''}
-        </span>
-      )
-    },
-  },
-  {
-    key: 'stock_posterior',
-    header: 'Stock',
-    width: '80px',
-    render: (m) => {
-      const negativo = m.stock_posterior < 0
-      return (
-        <span className={`font-mono tabular-nums text-sm ${negativo ? 'text-danger' : 'text-text-primary'}`}>
-          {m.stock_posterior}
-          {negativo && <Badge variant="danger" className="ml-1">!</Badge>}
-        </span>
-      )
-    },
-  },
-  {
-    key: 'motivo',
-    header: 'Motivo',
-    render: (m) => <span className="text-xs text-text-secondary truncate max-w-[120px] block">{m.motivo ?? '—'}</span>,
-  },
-  {
-    key: 'creado_por_nombre',
-    header: 'Usuario',
-    render: (m) => <span className="text-xs text-text-secondary">{m.creado_por_nombre ?? '—'}</span>,
-  },
-]
-
 export default function InventarioPage() {
   const queryClient = useQueryClient()
   const showToast = useToastStore((s) => s.show)
@@ -141,6 +84,12 @@ export default function InventarioPage() {
     queryKey: ['unidades-medida'],
     queryFn: listarUnidades,
     ...queryDefaults('unidades-medida'),
+  })
+
+  const { data: categoriasData } = useQuery({
+    queryKey: ['categorias'],
+    queryFn: () => listarCategorias(),
+    ...queryDefaults('categorias'),
   })
 
   const { data: resumen } = useQuery({
@@ -242,24 +191,16 @@ export default function InventarioPage() {
   }
 
   const abrirMovimiento = (producto?: Producto) => {
+    const defaultUnidad = unidades?.find(u => u.categoria === 'unidad') ?? unidades?.[0]
     setMovForm({
       producto_id: producto?.id ?? '',
       tipo: 'compra',
       cantidad: '',
-      unidad_medida_id: producto?.unidad_medida_id ?? '',
+      unidad_medida_id: producto?.unidad_medida_id ?? defaultUnidad?.id ?? '',
       motivo: '',
     })
     setMovPanelOpen(true)
   }
-
-  useEffect(() => {
-    if (unidades?.length && !movForm.unidad_medida_id) {
-      const defaultUnidad = unidades.find(u => u.categoria === 'unidad') ?? unidades[0]
-      if (defaultUnidad) {
-        setMovForm(prev => ({ ...prev, unidad_medida_id: defaultUnidad.id }))
-      }
-    }
-  }, [unidades])
 
   const cards = [
     { icon: Package, label: 'Productos con stock', value: resumen?.productos_con_stock ?? 0, variant: 'default' as const },
@@ -384,16 +325,80 @@ export default function InventarioPage() {
               </Button>
             </div>
 
-            <div className="overflow-x-auto">
-              <DataTable
-                data={listado?.movimientos ?? []}
-                columns={columns}
-                isLoading={lLoading}
-                error={error as Error | null}
-                onRetry={() => refetch()}
-                keyExtractor={(m) => m.id}
-              />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+              {(listado?.movimientos ?? []).map((m, i) => {
+                const d = new Date(m.creado_en)
+                const esPositivo = ['compra', 'devolucion'].includes(m.tipo_movimiento)
+                const negativo = m.stock_posterior < 0
+                return (
+                  <div
+                    key={m.id}
+                    className="bg-white border border-border rounded-xl p-4 transition-all hover:border-accent/30 hover:shadow-sm"
+                    style={{ animation: `fadeInUp 0.3s ease-out ${i * 0.03}s both` }}
+                  >
+                    <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <Calendar className="size-3.5 text-text-secondary shrink-0" />
+                        <span className="text-xs text-text-secondary tabular-nums whitespace-nowrap">
+                          {d.toLocaleDateString('es-SV')} {d.toLocaleTimeString('es-SV', { hour: '2-digit', minute: '2-digit' })}
+                        </span>
+                      </div>
+                      <Badge variant={badgeVariant[m.tipo_movimiento] ?? 'default'} className="text-[10px] shrink-0">
+                        {tipoLabels[m.tipo_movimiento] ?? m.tipo_movimiento}
+                      </Badge>
+                    </div>
+                    <p className="font-semibold text-sm text-text-primary truncate mb-3">{m.producto_nombre}</p>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className={`font-mono font-bold text-lg ${esPositivo ? 'text-success' : 'text-danger'}`}>
+                          {esPositivo ? '+' : '-'}{m.cantidad} {m.unidad_abrev ?? ''}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className={`font-mono text-sm font-semibold ${negativo ? 'text-danger' : 'text-text-primary'}`}>
+                          {m.stock_posterior}
+                        </span>
+                        <span className="text-[10px] text-text-secondary ml-1">stock</span>
+                      </div>
+                    </div>
+                    {(m.motivo || m.creado_por_nombre) && (
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-border">
+                        {m.motivo ? (
+                          <span className="text-xs text-text-secondary truncate max-w-[70%]">{m.motivo}</span>
+                        ) : <span />}
+                        {m.creado_por_nombre && (
+                          <span className="text-[10px] text-text-secondary">{m.creado_por_nombre}</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
+
+            {listado && listado.movimientos && listado.movimientos.length > 0 && (
+              <div className="flex justify-center gap-2 mt-4">
+                <Button size="sm" variant="ghost" disabled={pagina <= 1} onClick={() => setPagina(p => Math.max(1, p - 1))}>Anterior</Button>
+                <span className="text-xs text-text-secondary self-center">Pág {pagina}</span>
+                <Button size="sm" variant="ghost" disabled={(listado?.movimientos ?? []).length < 20} onClick={() => setPagina(p => p + 1)}>Siguiente</Button>
+              </div>
+            )}
+
+            {lLoading && <div className="flex justify-center py-16"><Spinner size="lg" /></div>}
+            {error && (
+              <div className="flex flex-col items-center justify-center py-16 gap-3">
+                <Icon name="alert" className="size-8 text-danger" />
+                <p className="text-danger text-sm">Error al cargar movimientos</p>
+                <Button size="sm" onClick={() => refetch()}>Reintentar</Button>
+              </div>
+            )}
+            {!lLoading && !error && (listado?.movimientos ?? []).length === 0 && (
+              <div className="flex flex-col items-center justify-center py-16 gap-1 text-text-secondary mt-4">
+                <Package className="size-8 mb-1" />
+                <span className="font-semibold text-sm text-text-primary">Sin movimientos</span>
+                <span className="text-xs">Registra el primer movimiento</span>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -401,136 +406,56 @@ export default function InventarioPage() {
       {/* Category Panel */}
       <CategoryPanel open={catPanelOpen} onClose={() => setCatPanelOpen(false)} />
 
-      {/* Item Panel */}
+      {/* Item SidePanel */}
       <SidePanel
         open={itemPanelOpen}
         onClose={cerrarItemPanel}
         title={editandoItem ? 'Editar insumo' : 'Nuevo insumo'}
       >
         <div className="flex flex-col gap-4 p-4">
-          <Input
-            label="Nombre"
-            value={itemForm.nombre}
-            onChange={(e) => setItemForm({ ...itemForm, nombre: e.target.value })}
-            required
-          />
-          <Input
-            label="Stock inicial"
-            type="number"
-            step="0.01"
-            min="0"
-            value={itemForm.stock_actual}
-            onChange={(e) => setItemForm({ ...itemForm, stock_actual: e.target.value })}
-            disabled={!!editandoItem}
-          />
-          <Input
-            label="Stock mínimo"
-            type="number"
-            step="0.01"
-            min="0"
-            value={itemForm.stock_minimo}
-            onChange={(e) => setItemForm({ ...itemForm, stock_minimo: e.target.value })}
-          />
-          <Select
-            label="Unidad de medida"
-            value={itemForm.unidad_medida_id}
-            onValueChange={(v) => setItemForm({ ...itemForm, unidad_medida_id: v })}
-            options={[
-              { value: '', label: 'Seleccionar unidad...' },
-              ...(unidades?.map((u) => ({ value: u.id, label: `${u.nombre} (${u.abreviatura})` })) ?? []),
-            ]}
-          />
-          <Button
-            onClick={() => editandoItem ? editarItemMutation.mutate() : crearItemMutation.mutate()}
-            loading={crearItemMutation.isPending || editarItemMutation.isPending}
-            disabled={!itemForm.nombre}
-            className="w-full"
-          >
+          <Input label="Nombre" value={itemForm.nombre} onChange={(e) => setItemForm({ ...itemForm, nombre: e.target.value })} required />
+          <Select label="Categoría" value={itemForm.categoria_id} onValueChange={(v) => setItemForm({ ...itemForm, categoria_id: v })}
+            options={[{ value: '', label: 'Sin categoría' }, ...(categoriasData?.filter(c => c.activo !== false).map((c) => ({ value: c.id, label: c.nombre })) ?? [])]} />
+          <Input label="Stock inicial" type="number" step="0.01" min="0" value={itemForm.stock_actual} onChange={(e) => setItemForm({ ...itemForm, stock_actual: e.target.value })} disabled={!!editandoItem} />
+          <Input label="Stock mínimo" type="number" step="0.01" min="0" value={itemForm.stock_minimo} onChange={(e) => setItemForm({ ...itemForm, stock_minimo: e.target.value })} />
+          <Select label="Unidad de medida" value={itemForm.unidad_medida_id} onValueChange={(v) => setItemForm({ ...itemForm, unidad_medida_id: v })}
+            options={[{ value: '', label: 'Seleccionar unidad...' }, ...(unidades?.map((u) => ({ value: u.id, label: `${u.nombre} (${u.abreviatura})` })) ?? [])]} />
+          <Button onClick={() => editandoItem ? editarItemMutation.mutate() : crearItemMutation.mutate()} loading={crearItemMutation.isPending || editarItemMutation.isPending} disabled={!itemForm.nombre} className="w-full">
             {editandoItem ? 'Guardar cambios' : 'Crear insumo'}
           </Button>
         </div>
       </SidePanel>
 
-      {/* Movement Panel */}
+      {/* Movement SidePanel */}
       <SidePanel
         open={movPanelOpen}
         onClose={() => { setMovPanelOpen(false); setMovForm({ producto_id: '', tipo: 'compra', cantidad: '', unidad_medida_id: '', motivo: '' }) }}
         title="Registrar movimiento"
       >
         <div className="flex flex-col gap-4 p-4">
-          <Select
-            label="Producto"
-            value={movForm.producto_id}
-            onValueChange={(v) => setMovForm({ ...movForm, producto_id: v })}
-            options={[
-              { value: '', label: 'Seleccionar producto...' },
-              ...(productosStock?.map((p) => ({
-                value: p.id,
-                label: `${p.nombre} (stock: ${p.stock_actual})`,
-              })) ?? []),
-            ]}
-          />
-
+          <Select label="Producto" value={movForm.producto_id} onValueChange={(v) => setMovForm({ ...movForm, producto_id: v })}
+            options={[{ value: '', label: 'Seleccionar producto...' }, ...(productosStock?.map((p) => ({ value: p.id, label: `${p.nombre} (stock: ${p.stock_actual})` })) ?? [])]} />
           <div>
             <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2 block">Tipo de movimiento</label>
             <div className="flex gap-2 flex-wrap">
               {TIPOS_REGISTRO.map((t) => (
-                <button
-                  key={t.value}
-                  onClick={() => setMovForm({ ...movForm, tipo: t.value as typeof movForm.tipo })}
-                  className={`flex-1 min-w-[60px] px-3 py-2 text-xs rounded-lg border transition-colors cursor-pointer ${
-                    movForm.tipo === t.value
-                      ? 'bg-accent text-white border-accent font-semibold'
-                      : 'bg-bg-surface text-text-secondary border-border hover:border-accent/40'
-                  }`}
-                >
+                <button key={t.value} onClick={() => setMovForm({ ...movForm, tipo: t.value as typeof movForm.tipo })}
+                  className={`flex-1 min-w-[60px] px-3 py-2 text-xs rounded-lg border transition-colors cursor-pointer ${movForm.tipo === t.value ? 'bg-accent text-white border-accent font-semibold' : 'bg-bg-surface text-text-secondary border-border hover:border-accent/40'}`}>
                   {t.label}
                 </button>
               ))}
             </div>
           </div>
-
-          <Input
-            label="Cantidad"
-            type="number"
-            step="0.01"
-            min="0.01"
-            value={movForm.cantidad}
-            onChange={(e) => setMovForm({ ...movForm, cantidad: e.target.value })}
-            placeholder="Ej: 10"
-            required
-          />
-
-          <Select
-            label="Unidad de medida"
-            value={movForm.unidad_medida_id}
-            onValueChange={(v) => setMovForm({ ...movForm, unidad_medida_id: v })}
-            options={[
-              { value: '', label: 'Seleccionar unidad...' },
-              ...(unidades?.map((u) => ({ value: u.id, label: `${u.nombre} (${u.abreviatura})` })) ?? []),
-            ]}
-          />
-
+          <Input label="Cantidad" type="number" step="0.01" min="0.01" value={movForm.cantidad} onChange={(e) => setMovForm({ ...movForm, cantidad: e.target.value })} placeholder="Ej: 10" required />
+          <Select label="Unidad de medida" value={movForm.unidad_medida_id} onValueChange={(v) => setMovForm({ ...movForm, unidad_medida_id: v })}
+            options={[{ value: '', label: 'Seleccionar unidad...' }, ...(unidades?.map((u) => ({ value: u.id, label: `${u.nombre} (${u.abreviatura})` })) ?? [])]} />
           <div>
             <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2 block">Motivo (opcional)</label>
-            <textarea
-              value={movForm.motivo}
-              onChange={(e) => setMovForm({ ...movForm, motivo: e.target.value })}
-              placeholder="Ej: Reposición de inventario"
-              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-            />
+            <textarea value={movForm.motivo} onChange={(e) => setMovForm({ ...movForm, motivo: e.target.value })} placeholder="Ej: Reposición de inventario"
+              className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm" />
           </div>
-
-          {crearMovMutation.isError && (
-            <p className="text-xs text-danger text-center">Error al registrar movimiento</p>
-          )}
-
-          <Button
-            onClick={() => crearMovMutation.mutate()}
-            loading={crearMovMutation.isPending}
-            disabled={!movForm.producto_id || !movForm.cantidad || parseFloat(movForm.cantidad) < 0.01}
-            className="w-full"
-          >
+          {crearMovMutation.isError && <p className="text-xs text-danger text-center">Error al registrar movimiento</p>}
+          <Button onClick={() => crearMovMutation.mutate()} loading={crearMovMutation.isPending} disabled={!movForm.producto_id || !movForm.cantidad || parseFloat(movForm.cantidad) < 0.01} className="w-full">
             Registrar
           </Button>
         </div>

@@ -5,6 +5,7 @@ import { queryDefaults } from '../../../config/queries'
 import { listarRecetas, crearReceta, actualizarReceta, eliminarReceta } from './api'
 import type { Receta } from './api'
 import { listarProductos } from '../productos/api'
+import api from '../../../api/client'
 import { CategoryNavigator } from '../../../components/shared/CategoryNavigator'
 import { CategoryPanel } from '../../../components/shared/CategoryPanel'
 import { SidePanel } from '../../../components/shared/SidePanel'
@@ -33,6 +34,18 @@ interface IngredienteForm {
   preparacion: string
 }
 
+interface UnidadMedida {
+  id: string
+  nombre: string
+  abreviatura: string
+  categoria: string
+  factor: number
+}
+
+interface CatalogoData {
+  unidades_medida: UnidadMedida[]
+}
+
 export default function RecetasPage() {
   const queryClient = useQueryClient()
   const showToast = useToastStore((s) => s.show)
@@ -59,15 +72,13 @@ export default function RecetasPage() {
     ...queryDefaults('productos-menu'),
   })
 
-  const { data: catalogos } = useQuery({
+  const { data: catalogos } = useQuery<CatalogoData>({
     queryKey: ['catalogos'],
-    queryFn: () => queryClient.getQueryData(['catalogos']) as Promise<any> ?? (
-      fetch('/api/catalogos').then(r => r.json()).then(d => d.data)
-    ),
+    queryFn: () => api.get('/catalogos').then(r => r.data.data),
     ...queryDefaults('catalogos'),
   })
 
-  const unidades = (catalogos as any)?.unidades_medida ?? []
+  const unidades: UnidadMedida[] = catalogos?.unidades_medida ?? []
 
   const productosConStock = productosDisponibles?.filter((p) => p.tiene_stock && p.activo) ?? []
   const categoriasOptions = productosDisponibles
@@ -271,10 +282,7 @@ export default function RecetasPage() {
                 label="Categoría"
                 value={productoForm.categoria_id}
                 onValueChange={(v) => setProductoForm({ ...productoForm, categoria_id: v })}
-                options={[
-                  { value: '', label: 'Sin categoría' },
-                  ...categoriasOptions,
-                ]}
+                options={[{ value: '', label: 'Sin categoría' }, ...categoriasOptions]}
               />
               <Input label="URL de imagen (opcional)" value={productoForm.imagen_url} onChange={(e) => setProductoForm({ ...productoForm, imagen_url: e.target.value })} />
             </div>
@@ -297,44 +305,17 @@ export default function RecetasPage() {
                     <Select
                       value={ing.ingrediente_id}
                       onValueChange={(v) => actualizarIng(idx, 'ingrediente_id', v)}
-                      options={[
-                        { value: '', label: 'Seleccionar ingrediente...' },
-                        ...productosConStock.map((p) => ({ value: p.id, label: `${p.nombre} (stock: ${p.stock_actual})` })),
-                      ]}
+                      options={[{ value: '', label: 'Seleccionar ingrediente...' }, ...productosConStock.map((p) => ({ value: p.id, label: `${p.nombre} (stock: ${p.stock_actual})` }))]}
                     />
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <Input
-                        label="Cantidad"
-                        type="number"
-                        step="0.01"
-                        min="0.01"
-                        value={ing.cantidad}
-                        onChange={(e) => actualizarIng(idx, 'cantidad', e.target.value)}
-                        placeholder="0.00"
-                      />
-                      <Select
-                        label="Unidad"
-                        value={ing.unidad_medida_id}
-                        onValueChange={(v) => actualizarIng(idx, 'unidad_medida_id', v)}
-                        options={[
-                          { value: '', label: 'Unidad...' },
-                          ...unidades.map((u: any) => ({ value: u.id, label: u.abreviatura })),
-                        ]}
-                      />
+                      <Input label="Cantidad" type="number" step="0.01" min="0.01" value={ing.cantidad} onChange={(e) => actualizarIng(idx, 'cantidad', e.target.value)} placeholder="0.00" />
+                      <Select label="Unidad" value={ing.unidad_medida_id} onValueChange={(v) => actualizarIng(idx, 'unidad_medida_id', v)} options={[{ value: '', label: 'Unidad...' }, ...unidades.map(u => ({ value: u.id, label: u.abreviatura }))]} />
                     </div>
-                    <Input
-                      label="Preparación (opcional)"
-                      value={ing.preparacion}
-                      onChange={(e) => actualizarIng(idx, 'preparacion', e.target.value)}
-                      placeholder="Ej: picado, en julianas"
-                    />
+                    <Input label="Preparación (opcional)" value={ing.preparacion} onChange={(e) => actualizarIng(idx, 'preparacion', e.target.value)} placeholder="Ej: picado, en julianas" />
                   </div>
                 </div>
               ))}
-              <button
-                onClick={agregarIngrediente}
-                className="flex items-center justify-center gap-1 py-2 text-xs text-accent border border-dashed border-accent/30 rounded-lg hover:bg-accent/5 cursor-pointer"
-              >
+              <button onClick={agregarIngrediente} className="flex items-center justify-center gap-1 py-2 text-xs text-accent border border-dashed border-accent/30 rounded-lg hover:bg-accent/5 cursor-pointer">
                 <Plus className="size-4" /> Agregar ingrediente
               </button>
             </div>
@@ -345,12 +326,7 @@ export default function RecetasPage() {
             <Input label="Rendimiento (porciones)" type="number" min="1" value={rendimiento} onChange={(e) => setRendimiento(e.target.value)} />
             <div className="mt-3">
               <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1 block">Instrucciones (opcional)</label>
-              <textarea
-                value={instrucciones}
-                onChange={(e) => setInstrucciones(e.target.value)}
-                placeholder="Ej: Saltear el arroz..."
-                className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm"
-              />
+              <textarea value={instrucciones} onChange={(e) => setInstrucciones(e.target.value)} placeholder="Ej: Saltear el arroz..." className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm" />
             </div>
           </div>
 

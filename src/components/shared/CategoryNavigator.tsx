@@ -61,13 +61,15 @@ export function CategoryNavigator({
 
   const navigateTo = (cat: Categoria) => {
     setNavStack(prev => [...prev, cat.id])
-    onSelect?.(null)
+    onSelect?.(cat.id)
   }
 
   const goBack = () => {
     if (navStack.length <= 1) return
-    setNavStack(prev => prev.slice(0, -1))
-    onSelect?.(null)
+    const newStack = navStack.slice(0, -1)
+    const parentId = newStack[newStack.length - 1]
+    setNavStack(newStack)
+    onSelect?.(parentId)
   }
 
   const goHome = () => {

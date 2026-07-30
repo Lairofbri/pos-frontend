@@ -54,6 +54,8 @@ export default function ProductosPage() {
 
   const [prodModalOpen, setProdModalOpen] = useState(false)
   const [prodEditando, setProdEditando] = useState<Producto | null>(null)
+  const [origen, setOrigen] = useState<'nuevo' | 'inventario'>('nuevo')
+  const [inventarioItemId, setInventarioItemId] = useState('')
   const [prodForm, setProdForm] = useState({
     nombre: '', descripcion: '', precio: 0, categoria_id: '',
     codigo: '', imagen_url: '', orden: 0, activo: true,
@@ -98,6 +100,12 @@ export default function ProductosPage() {
       tiene_receta: false,
     }),
     enabled: showProductLevel,
+    ...queryDefaults('productos'),
+  })
+
+  const { data: inventarioDisponible } = useQuery({
+    queryKey: ['productos-inventario-disponible'],
+    queryFn: () => listarProductos({ tiene_stock: true, se_vende: false }),
     ...queryDefaults('productos'),
   })
 
@@ -253,22 +261,38 @@ export default function ProductosPage() {
   }
 
   const crearProdMutation = useMutation({
-    mutationFn: () => crearProducto({
-      nombre: prodForm.nombre,
-      descripcion: prodForm.descripcion || undefined,
-      precio: prodForm.precio,
-      categoria_id: prodForm.categoria_id || undefined,
-      codigo: prodForm.codigo || undefined,
-      imagen_url: prodForm.imagen_url || undefined,
-      tiene_stock: prodForm.tiene_stock,
-      stock_minimo: prodForm.stock_minimo,
-      se_vende: true,
-      tiene_receta: false,
-    }),
+    mutationFn: () => {
+      if (origen === 'inventario' && inventarioItemId) {
+        return actualizarProducto(inventarioItemId, {
+          nombre: prodForm.nombre,
+          descripcion: prodForm.descripcion || undefined,
+          precio: prodForm.precio,
+          categoria_id: prodForm.categoria_id || undefined,
+          codigo: prodForm.codigo || undefined,
+          imagen_url: prodForm.imagen_url || undefined,
+          stock_minimo: prodForm.stock_minimo,
+          se_vende: true,
+          tiene_receta: false,
+        })
+      }
+      return crearProducto({
+        nombre: prodForm.nombre,
+        descripcion: prodForm.descripcion || undefined,
+        precio: prodForm.precio,
+        categoria_id: prodForm.categoria_id || undefined,
+        codigo: prodForm.codigo || undefined,
+        imagen_url: prodForm.imagen_url || undefined,
+        tiene_stock: prodForm.tiene_stock,
+        stock_minimo: prodForm.stock_minimo,
+        se_vende: true,
+        tiene_receta: false,
+      })
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['productos'] })
+      queryClient.invalidateQueries({ queryKey: ['productos-inventario-disponible'] })
       cerrarProdModal()
-      showToast({ type: 'success', message: 'Producto creado' })
+      showToast({ type: 'success', message: origen === 'inventario' ? 'Producto activado desde inventario' : 'Producto creado' })
     },
   })
 
@@ -304,6 +328,8 @@ export default function ProductosPage() {
 
   const abrirNuevoProd = () => {
     setProdEditando(null)
+    setOrigen('nuevo')
+    setInventarioItemId('')
     setProdForm({
       nombre: '', descripcion: '', precio: 0, categoria_id: catActivaId ?? '',
       codigo: '', imagen_url: '', orden: 0, activo: true,
@@ -556,77 +582,123 @@ export default function ProductosPage() {
         confirmLabel="Desactivar" onConfirm={() => eliminarCatMutation.mutate()}
         onCancel={() => setConfirmDelete(null)} loading={eliminarCatMutation.isPending} />
 
-      {/* Product Modal */}
-      {prodModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/40" onClick={cerrarProdModal} />
-          <div className="relative bg-white rounded-xl shadow-xl overflow-hidden w-[95vw] sm:max-w-md mx-4 max-h-[90vh] overflow-y-auto">
-            <div className="h-9 bg-gradient-to-r from-accent-dark to-accent flex items-center px-4 shrink-0">
-              <span className="text-white text-sm font-semibold">{prodEditando ? 'Editar Producto' : 'Nuevo Producto'}</span>
+      {/* Product SidePanel */}
+      <SidePanel
+        open={prodModalOpen}
+        onClose={cerrarProdModal}
+        title={prodEditando ? 'Editar Producto' : 'Nuevo Producto'}
+        direction="right"
+      >
+        <div className="flex flex-col gap-4">
+          {!prodEditando && (
+            <div>
+              <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2 block">Origen</label>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => { setOrigen('nuevo'); setInventarioItemId(''); setProdForm(f => ({ ...f, nombre: '', tiene_stock: false })) }}
+                  className={`flex-1 px-3 py-2 text-xs rounded-lg border transition-colors cursor-pointer ${origen === 'nuevo' ? 'bg-accent text-white border-accent font-semibold' : 'bg-bg-surface text-text-secondary border-border hover:border-accent/40'}`}
+                >
+                  Crear nuevo
+                </button>
+                <button
+                  onClick={() => setOrigen('inventario')}
+                  className={`flex-1 px-3 py-2 text-xs rounded-lg border transition-colors cursor-pointer ${origen === 'inventario' ? 'bg-accent text-white border-accent font-semibold' : 'bg-bg-surface text-text-secondary border-border hover:border-accent/40'}`}
+                >
+                  Desde inventario
+                </button>
+              </div>
             </div>
-            <div className="p-5 flex flex-col gap-4">
-              <Input label="Nombre" value={prodForm.nombre} onChange={(e) => setProdForm({ ...prodForm, nombre: e.target.value })} required />
-              <Input label="Descripción" value={prodForm.descripcion} onChange={(e) => setProdForm({ ...prodForm, descripcion: e.target.value })} />
-              <Input label="Precio" type="number" step="0.01" value={prodForm.precio} onChange={(e) => setProdForm({ ...prodForm, precio: parseFloat(e.target.value || '0') })} />
-              <Select label="Categoría" options={categoriasOptions} value={prodForm.categoria_id}
-                onValueChange={(v) => setProdForm({ ...prodForm, categoria_id: v })} placeholder="Sin categoría" />
-              <Input label="Código de barras" value={prodForm.codigo} onChange={(e) => setProdForm({ ...prodForm, codigo: e.target.value })} placeholder="Opcional" />
+          )}
 
-              {/* Image */}
-              <div className="flex flex-col gap-2">
-                <label className="text-xs font-medium text-text-secondary">Imagen</label>
-                {prodForm.imagen_url && (
-                  <div className="relative w-full h-28 rounded-lg overflow-hidden border border-border mb-1">
-                    <img src={imgAbs(prodForm.imagen_url)} alt="Preview" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
-                  </div>
-                )}
-                <div className="flex gap-2">
-                  {prodEditando && (
-                    <>
-                      <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} className="hidden" />
-                      <button type="button" onClick={() => fileInputRef.current?.click()} disabled={subiendoImg}
-                        className="flex-1 h-8 text-xs font-medium rounded-full border border-accent text-accent bg-transparent hover:bg-accent hover:text-white transition-colors cursor-pointer disabled:opacity-50">
-                        {subiendoImg ? 'Subiendo...' : prodForm.imagen_url ? 'Cambiar imagen' : 'Subir imagen'}
-                      </button>
-                    </>
-                  )}
-                  {prodForm.imagen_url && prodEditando && (
-                    <button type="button" onClick={() => eliminarImgMutation.mutate()} disabled={eliminarImgMutation.isPending}
-                      className="h-8 px-4 text-xs font-medium rounded-full border border-danger text-danger bg-transparent hover:bg-danger hover:text-white transition-colors cursor-pointer disabled:opacity-50">
-                      {eliminarImgMutation.isPending ? '...' : 'Eliminar'}
-                    </button>
-                  )}
-                </div>
-                <input type="text" placeholder="O pega una URL..." value={prodForm.imagen_url}
-                  onChange={(e) => setProdForm({ ...prodForm, imagen_url: e.target.value })}
-                  className="w-full h-7 px-3 rounded-lg border border-border text-xs text-text-primary placeholder:text-text-secondary outline-none focus:border-accent transition-colors" />
+          {!prodEditando && origen === 'inventario' && (
+            <Select
+              label="Seleccionar insumo"
+              value={inventarioItemId}
+              onValueChange={(v) => {
+                setInventarioItemId(v)
+                const item = inventarioDisponible?.find(p => p.id === v)
+                if (item) {
+                  setProdForm({
+                    ...prodForm,
+                    nombre: item.nombre,
+                    categoria_id: item.categoria_id ?? '',
+                    imagen_url: item.imagen_url ?? '',
+                    tiene_stock: true,
+                    stock_minimo: item.stock_minimo ?? 0,
+                  })
+                }
+              }}
+              options={[
+                { value: '', label: 'Seleccionar insumo...' },
+                ...(inventarioDisponible?.filter(p => p.activo !== false).map((p) => ({
+                  value: p.id,
+                  label: `${p.nombre} (stock: ${p.stock_actual})`,
+                })) ?? []),
+              ]}
+              placeholder="Buscar insumo..."
+            />
+          )}
+
+          <Input label="Nombre" value={prodForm.nombre} onChange={(e) => setProdForm({ ...prodForm, nombre: e.target.value })} required />
+          <Input label="Descripción" value={prodForm.descripcion} onChange={(e) => setProdForm({ ...prodForm, descripcion: e.target.value })} />
+          <Input label="Precio" type="number" step="0.01" value={prodForm.precio} onChange={(e) => setProdForm({ ...prodForm, precio: parseFloat(e.target.value || '0') })} />
+          <Select label="Categoría" options={categoriasOptions} value={prodForm.categoria_id}
+            onValueChange={(v) => setProdForm({ ...prodForm, categoria_id: v })} placeholder="Sin categoría" />
+          <Input label="Código de barras" value={prodForm.codigo} onChange={(e) => setProdForm({ ...prodForm, codigo: e.target.value })} placeholder="Opcional" />
+
+          {/* Image */}
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-medium text-text-secondary">Imagen</label>
+            {prodForm.imagen_url && (
+              <div className="relative w-full h-28 rounded-lg overflow-hidden border border-border mb-1">
+                <img src={imgAbs(prodForm.imagen_url)} alt="Preview" className="w-full h-full object-cover" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }} />
               </div>
-
-              {/* Stock section */}
-              <div className="border-t border-border pt-3">
-                <h4 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">Control de stock</h4>
-                <Toggle checked={prodForm.tiene_stock} onChange={(v) => setProdForm({ ...prodForm, tiene_stock: v })} label="Tiene control de stock" />
-                {prodForm.tiene_stock && (
-                  <div className="mt-3">
-                    <Input label="Stock mínimo" type="number" min="0" value={prodForm.stock_minimo}
-                      onChange={(e) => setProdForm({ ...prodForm, stock_minimo: parseInt(e.target.value || '0') })} />
-                  </div>
-                )}
-              </div>
-
+            )}
+            <div className="flex gap-2">
               {prodEditando && (
-                <Toggle checked={prodForm.activo} onChange={(v) => setProdForm({ ...prodForm, activo: v })} label="Producto activo" />
+                <>
+                  <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFileChange} className="hidden" />
+                  <button type="button" onClick={() => fileInputRef.current?.click()} disabled={subiendoImg}
+                    className="flex-1 h-8 text-xs font-medium rounded-full border border-accent text-accent bg-transparent hover:bg-accent hover:text-white transition-colors cursor-pointer disabled:opacity-50">
+                    {subiendoImg ? 'Subiendo...' : prodForm.imagen_url ? 'Cambiar imagen' : 'Subir imagen'}
+                  </button>
+                </>
               )}
-
-              <button onClick={guardarProd}
-                disabled={!prodForm.nombre || crearProdMutation.isPending || editarProdMutation.isPending}
-                className="w-full h-9 bg-gradient-to-r from-accent-dark to-accent text-white text-sm font-semibold rounded-full shadow cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-opacity hover:opacity-90">
-                {crearProdMutation.isPending || editarProdMutation.isPending ? 'Guardando...' : prodEditando ? 'Guardar cambios' : 'Crear producto'}
-              </button>
+              {prodForm.imagen_url && prodEditando && (
+                <button type="button" onClick={() => eliminarImgMutation.mutate()} disabled={eliminarImgMutation.isPending}
+                  className="h-8 px-4 text-xs font-medium rounded-full border border-danger text-danger bg-transparent hover:bg-danger hover:text-white transition-colors cursor-pointer disabled:opacity-50">
+                  {eliminarImgMutation.isPending ? '...' : 'Eliminar'}
+                </button>
+              )}
             </div>
+            <input type="text" placeholder="O pega una URL..." value={prodForm.imagen_url}
+              onChange={(e) => setProdForm({ ...prodForm, imagen_url: e.target.value })}
+              className="w-full h-7 px-3 rounded-lg border border-border text-xs text-text-primary placeholder:text-text-secondary outline-none focus:border-accent transition-colors" />
           </div>
+
+          {/* Stock section */}
+          <div className="border-t border-border pt-3">
+            <h4 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">Control de stock</h4>
+            <Toggle checked={prodForm.tiene_stock} onChange={(v) => setProdForm({ ...prodForm, tiene_stock: v })} label="Tiene control de stock" />
+            {prodForm.tiene_stock && (
+              <div className="mt-3">
+                <Input label="Stock mínimo" type="number" min="0" value={prodForm.stock_minimo}
+                  onChange={(e) => setProdForm({ ...prodForm, stock_minimo: parseInt(e.target.value || '0') })} />
+              </div>
+            )}
+          </div>
+
+          {prodEditando && (
+            <Toggle checked={prodForm.activo} onChange={(v) => setProdForm({ ...prodForm, activo: v })} label="Producto activo" />
+          )}
+
+          <button onClick={guardarProd}
+            disabled={!prodForm.nombre || crearProdMutation.isPending || editarProdMutation.isPending}
+            className="w-full h-9 bg-gradient-to-r from-accent-dark to-accent text-white text-sm font-semibold rounded-full shadow cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-opacity hover:opacity-90">
+            {crearProdMutation.isPending || editarProdMutation.isPending ? 'Guardando...' : prodEditando ? 'Guardar cambios' : origen === 'inventario' && inventarioItemId ? 'Activar como producto' : 'Crear producto'}
+          </button>
         </div>
-      )}
+      </SidePanel>
     </div>
   )
 }

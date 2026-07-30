@@ -26,9 +26,10 @@ interface CategoryPanelProps {
   open: boolean
   onClose: () => void
   module?: string
+  variant?: 'sidepanel' | 'modal'
 }
 
-export function CategoryPanel({ open, onClose, module }: CategoryPanelProps) {
+export function CategoryPanel({ open, onClose, module, variant = 'sidepanel' }: CategoryPanelProps) {
   const queryClient = useQueryClient()
   const showToast = useToastStore((s) => s.show)
 
@@ -124,50 +125,61 @@ export function CategoryPanel({ open, onClose, module }: CategoryPanelProps) {
     }, 200)
   }
 
+  const formContent = (
+    <div className="flex flex-col gap-4">
+      <Input label="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} required autoFocus />
+      <div className="flex flex-col gap-3">
+        <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Categoría padre</label>
+        <Select
+          label="Nivel 1"
+          options={catOptionsNivel1}
+          value={nivel1}
+          onValueChange={(v) => { setNivel1(v); setNivel2('') }}
+          placeholder="— Raíz —"
+        />
+        {nivel1 && (
+          <Select
+            label="Nivel 2"
+            options={catOptionsNivel2}
+            value={nivel2}
+            onValueChange={(v) => setNivel2(v)}
+            placeholder="— Ninguna —"
+          />
+        )}
+      </div>
+      <IconSelect label="Icono" value={form.icono} onChange={(v) => setForm({ ...form, icono: v })} />
+      <div className="flex gap-2 pt-2">
+        <Button className="flex-1" onClick={guardar} loading={crearMutation.isPending || editarMutation.isPending}>
+          {editando ? 'Guardar cambios' : 'Crear categoría'}
+        </Button>
+        {editando && (
+          <Button variant="danger" onClick={() => setConfirmDelete(editando)}>
+            Eliminar
+          </Button>
+        )}
+      </div>
+    </div>
+  )
+
   return (
     <>
-      <SidePanel open={open} onClose={cerrarInterno} title={editando ? 'Editar Categoría' : 'Nueva Categoría'}>
-        <div className="flex flex-col gap-4">
-          <Input label="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} required autoFocus />
-
-          <div className="flex flex-col gap-3">
-            <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Categoría padre</label>
-            <Select
-              label="Nivel 1"
-              options={catOptionsNivel1}
-              value={nivel1}
-              onValueChange={(v) => { setNivel1(v); setNivel2('') }}
-              placeholder="— Raíz —"
-            />
-            {nivel1 && (
-              <Select
-                label="Nivel 2"
-                options={catOptionsNivel2}
-                value={nivel2}
-                onValueChange={(v) => setNivel2(v)}
-                placeholder="— Ninguna —"
-              />
-            )}
-          </div>
-
-          <IconSelect
-            label="Icono"
-            value={form.icono}
-            onChange={(v) => setForm({ ...form, icono: v })}
-          />
-
-          <div className="flex gap-2 pt-2">
-            <Button className="flex-1" onClick={guardar} loading={crearMutation.isPending || editarMutation.isPending}>
-              {editando ? 'Guardar cambios' : 'Crear categoría'}
-            </Button>
-            {editando && (
-              <Button variant="danger" onClick={() => setConfirmDelete(editando)}>
-                Eliminar
-              </Button>
-            )}
+      {variant === 'modal' && open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="absolute inset-0 bg-black/40" onClick={cerrarInterno} />
+          <div className="relative bg-white rounded-xl shadow-xl overflow-hidden w-[95vw] sm:max-w-md mx-4 max-h-[90vh] overflow-y-auto animate-fadeInUp">
+            <div className="h-9 bg-gradient-to-r from-accent-dark to-accent flex items-center px-4 shrink-0">
+              <span className="text-white text-sm font-semibold">{editando ? 'Editar Categoría' : 'Nueva Categoría'}</span>
+            </div>
+            <div className="p-5">{formContent}</div>
           </div>
         </div>
-      </SidePanel>
+      )}
+
+      {variant === 'sidepanel' && (
+        <SidePanel open={open} onClose={cerrarInterno} title={editando ? 'Editar Categoría' : 'Nueva Categoría'}>
+          {formContent}
+        </SidePanel>
+      )}
 
       <ConfirmDialog
         open={!!confirmDelete}

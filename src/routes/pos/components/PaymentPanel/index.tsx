@@ -56,7 +56,7 @@ export function PaymentPanel({ open, onClose, orden, onConfirmar, loading }: Pay
   }
 
   return (
-    <SidePanel open={open} onClose={onClose} title="Pago">
+    <SidePanel open={open} onClose={onClose} title="Pago" direction="bottom">
       <div className="flex flex-col gap-5">
         <PaymentSummary
           totalAPagar={totalAPagar}

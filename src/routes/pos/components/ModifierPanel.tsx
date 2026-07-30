@@ -17,7 +17,7 @@ export function ModifierPanel({ open, onClose, producto, onConfirm }: ModifierPa
   if (!producto) return null
 
   return (
-    <SidePanel open={open} onClose={onClose} title={producto.nombre}>
+    <SidePanel open={open} onClose={onClose} title={producto.nombre} direction="bottom">
       <div className="flex flex-col gap-5">
         <div>
           <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1.5 block">

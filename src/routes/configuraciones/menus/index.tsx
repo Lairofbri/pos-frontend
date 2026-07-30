@@ -224,7 +224,7 @@ export default function MenusPage() {
         )}
       </div>
 
-      <SidePanel open={panelOpen} onClose={cerrarPanel} title={editando ? 'Editar Menú' : 'Nuevo Item'}>
+      <SidePanel open={panelOpen} onClose={cerrarPanel} title={editando ? 'Editar Menú' : 'Nuevo Item'} direction="left">
         <div className="flex flex-col gap-4">
           <Input label="Título" value={form.titulo} onChange={(e) => setForm({ ...form, titulo: e.target.value })} required />
 
