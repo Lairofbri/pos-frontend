@@ -24,6 +24,7 @@ interface RecetaRow {
   id: string; producto_id: string; producto_nombre: string; precio: number
   imagen_url: string | null; categoria_id: string | null; categoria_nombre: string | null
   rendimiento: number; instrucciones: string | null; num_ingredientes: number; creado_en: string
+  version: number
 }
 
 interface IngredienteForm {
@@ -93,7 +94,7 @@ export default function RecetasPage() {
         categoria_id: productoForm.categoria_id || null,
         imagen_url: productoForm.imagen_url || null,
       },
-      rendimiento: parseInt(rendimiento),
+      rendimiento: parseFloat(rendimiento),
       instrucciones: instrucciones || undefined,
       ingredientes: ingredientes.map((i) => ({
         ingrediente_id: i.ingrediente_id,
@@ -121,7 +122,7 @@ export default function RecetasPage() {
           categoria_id: productoForm.categoria_id || null,
           imagen_url: productoForm.imagen_url || null,
         },
-        rendimiento: parseInt(rendimiento),
+        rendimiento: parseFloat(rendimiento),
         instrucciones: instrucciones || undefined,
         ingredientes: ingredientes.map((i) => ({
           ingrediente_id: i.ingrediente_id,
@@ -213,6 +214,7 @@ export default function RecetasPage() {
 
       <div className="px-4 pb-4 flex-1 overflow-y-auto">
         <CategoryNavigator
+          module="receta"
           onSelect={(catId) => setCategoriaActiva(catId)}
           onNewCategory={() => setCatPanelOpen(true)}
           onEditCategory={() => setCatPanelOpen(true)}
@@ -254,7 +256,8 @@ export default function RecetasPage() {
                     <div className="flex gap-2 mt-2 flex-wrap">
                       <Badge variant="info" className="text-[10px]">{row.num_ingredientes} ing.</Badge>
                       {row.categoria_nombre && <Badge variant="default" className="text-[10px]">{row.categoria_nombre}</Badge>}
-                      <Badge variant="warning" className="text-[10px]">{row.rendimiento} porc.</Badge>
+                      <Badge variant="warning" className="text-[10px]">{row.rendimiento} porciones</Badge>
+                      {row.version > 1 && <Badge variant="default" className="text-[10px]">v{row.version}</Badge>}
                     </div>
                   </div>
                 </div>
@@ -264,7 +267,7 @@ export default function RecetasPage() {
         )}
       </div>
 
-      <CategoryPanel open={catPanelOpen} onClose={() => setCatPanelOpen(false)} />
+      <CategoryPanel open={catPanelOpen} onClose={() => setCatPanelOpen(false)} module="receta" />
 
       <SidePanel
         open={panelOpen}
@@ -323,7 +326,7 @@ export default function RecetasPage() {
 
           <div className="border-t border-border pt-3">
             <h3 className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-3">Configuración</h3>
-            <Input label="Rendimiento (porciones)" type="number" min="1" value={rendimiento} onChange={(e) => setRendimiento(e.target.value)} />
+            <Input label="Rendimiento (porciones)" type="number" step="0.01" min="0.01" value={rendimiento} onChange={(e) => setRendimiento(e.target.value)} />
             <div className="mt-3">
               <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-1 block">Instrucciones (opcional)</label>
               <textarea value={instrucciones} onChange={(e) => setInstrucciones(e.target.value)} placeholder="Ej: Saltear el arroz..." className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm" />

@@ -4,7 +4,7 @@ import { printOrden } from '../../../components/shared/PrintTicket'
 import { DTEQR } from './DTEQR'
 import { Textarea } from '@/components/ui/Textarea'
 import { Input } from '@/components/ui/Input'
-import type { Orden } from '../../../types'
+import type { Orden, OrdenItem } from '../../../types'
 
 interface TicketPanelProps {
   orden: Orden
@@ -13,6 +13,7 @@ interface TicketPanelProps {
   onPagar: () => void
   onDescuento?: (pct: number) => void
   onGuardarNotas?: (notas: string) => void
+  onModificarItem?: (item: OrdenItem) => void
   onSolicitarAutorizacion?: (itemId: string) => void
   onLiberarMesa?: () => void
   onImprimirPreCuenta?: () => void
@@ -43,6 +44,7 @@ export function TicketPanel({
   onPagar,
   onDescuento,
   onGuardarNotas,
+  onModificarItem,
   onSolicitarAutorizacion,
   onLiberarMesa,
   onImprimirPreCuenta,
@@ -115,7 +117,9 @@ export function TicketPanel({
     const locked = item.estado !== 'pendiente'
 
     return (
-      <div key={item.id} className={`flex items-center gap-2 py-1.5 lg:py-2 min-h-0 ${esCombo ? 'pl-4' : ''}`}>
+      <div key={item.id}
+        className={`flex items-center gap-2 py-1.5 lg:py-2 min-h-0 ${esCombo ? 'pl-4' : ''} ${onModificarItem && !item.combo_id ? 'cursor-pointer hover:bg-accent/5 rounded px-1 -mx-1' : ''}`}
+        onClick={() => { if (!item.combo_id && !locked) onModificarItem?.(item) }}>
         <span className="text-xs font-mono text-text-secondary font-semibold w-5 shrink-0 text-right tabular-nums">
           {item.cantidad}
         </span>

@@ -23,6 +23,7 @@ const InventarioPage = lazy(() => import('./routes/admin/inventario/index'))
 const RecetasPage = lazy(() => import('./routes/admin/recetas/index'))
 const SucursalesPage = lazy(() => import('./routes/admin/sucursales/index'))
 const ReportesPage = lazy(() => import('./routes/admin/reportes/index'))
+const RentabilidadDashboardPage = lazy(() => import('./routes/admin/rentabilidad/index'))
 const VentasReportePage = lazy(() => import('./routes/admin/reportes/ventas/index'))
 const ProductosReportePage = lazy(() => import('./routes/admin/reportes/productos/index'))
 const OrdenesReportePage = lazy(() => import('./routes/admin/reportes/ordenes/index'))
@@ -33,6 +34,7 @@ const SucursalesReportePage = lazy(() => import('./routes/admin/reportes/sucursa
 const StaffReportePage = lazy(() => import('./routes/admin/reportes/staff/index'))
 const DteReportePage = lazy(() => import('./routes/admin/reportes/dte/index'))
 const ConsolidadosReportePage = lazy(() => import('./routes/admin/reportes/consolidados/index'))
+const CostosReportePage = lazy(() => import('./routes/admin/reportes/costos/index'))
 const DashboardPage = lazy(() => import('./routes/dashboard/index'))
 import { AuthGuard } from './components/shared/AuthGuard'
 import { RouteGuard } from './components/shared/RouteGuard'
@@ -59,6 +61,7 @@ const router = createBrowserRouter([
   { path: '/admin/recetas', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><RecetasPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '/admin/sucursales', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><SucursalesPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '/admin/reportes', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><ReportesPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+  { path: '/admin/rentabilidad', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><RentabilidadDashboardPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '/admin/reportes/ventas', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><VentasReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '/admin/reportes/productos', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><ProductosReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '/admin/reportes/ordenes', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><OrdenesReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
@@ -69,6 +72,7 @@ const router = createBrowserRouter([
   { path: '/admin/reportes/staff', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><StaffReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '/admin/reportes/dte', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><DteReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '/admin/reportes/consolidados', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><ConsolidadosReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+  { path: '/admin/reportes/costos', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><CostosReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '*', element: <Navigate to="/pos" replace /> },
 ])
 

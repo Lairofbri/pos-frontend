@@ -61,6 +61,7 @@ export interface Producto {
   nombre: string
   descripcion?: string
   precio: number
+  precio_costo: number
   categoria_id?: string
   categoria_nombre?: string
   categoria_color?: string
@@ -72,6 +73,7 @@ export interface Producto {
   stock_actual: number
   stock_minimo: number
   unidad_medida_id?: string
+  categoria_extras_id?: string
   orden: number
   activo: boolean
 }
@@ -86,6 +88,7 @@ export interface Categoria {
   orden: number
   activo: boolean
   hijos?: Categoria[]
+  modulo?: string
 }
 
 export interface ComboProducto {
@@ -195,6 +198,12 @@ export interface OrdenItem {
   enviado_en?: string
   combo_id?: string
   combo_nombre?: string
+  modificaciones?: {
+    sin?: string[]
+    extra?: Array<{ producto_id: string; cantidad: number; precio: number }>
+    notas_extra?: string
+  }
+  categoria_extras_id?: string
 }
 
 export interface Cliente {

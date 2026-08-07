@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { SidePanel } from './SidePanel'
 import { ConfirmDialog } from './ConfirmDialog'
 import { Input } from '@/components/ui/Input'
@@ -10,6 +10,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { listarCategorias, crearCategoria, actualizarCategoria, eliminarCategoria } from '../../api/categorias'
 import { useToastStore } from '../../store/toastStore'
 import type { Categoria } from '../../types'
+import { MAX_NIVEL_CATEGORIAS } from '../../config/constants'
 
 function flattenAllCategories(items: Categoria[]): Categoria[] {
   const result: Categoria[] = []
@@ -22,14 +23,27 @@ function flattenAllCategories(items: Categoria[]): Categoria[] {
   return result
 }
 
+function buildChain(items: Categoria[], targetId: string | null): Categoria[] {
+  if (!targetId) return []
+  for (const c of items) {
+    if (c.id === targetId) return [c]
+    if (c.hijos?.length) {
+      const found = buildChain(c.hijos, targetId)
+      if (found.length) return [c, ...found]
+    }
+  }
+  return []
+}
+
 interface CategoryPanelProps {
   open: boolean
   onClose: () => void
   module?: string
   variant?: 'sidepanel' | 'modal'
+  editing?: Categoria | null
 }
 
-export function CategoryPanel({ open, onClose, module, variant = 'sidepanel' }: CategoryPanelProps) {
+export function CategoryPanel({ open, onClose, module, variant = 'sidepanel', editing }: CategoryPanelProps) {
   const queryClient = useQueryClient()
   const showToast = useToastStore((s) => s.show)
 
@@ -40,10 +54,28 @@ export function CategoryPanel({ open, onClose, module, variant = 'sidepanel' }: 
   const [confirmDelete, setConfirmDelete] = useState<Categoria | null>(null)
 
   const { data: categoriasData } = useQuery({
-    queryKey: ['categorias-arbol'],
-    queryFn: () => listarCategorias({ arbol: true }),
+    queryKey: ['categorias-arbol', module],
+    queryFn: () => listarCategorias({ arbol: true, modulo: module }),
     enabled: open,
   })
+
+  useEffect(() => {
+    if (open) {
+      if (editing) {
+        setEditando(editing)
+        setForm({ nombre: editing.nombre, icono: editing.icono ?? '' })
+        const chain = categoriasData ? buildChain(categoriasData, editing.parent_id) : []
+        setNivel1(chain[0]?.id ?? '')
+        setNivel2(chain[1]?.id ?? '')
+      } else {
+        setEditando(null)
+        setForm({ nombre: '', icono: '' })
+        setNivel1('')
+        setNivel2('')
+        setConfirmDelete(null)
+      }
+    }
+  }, [open, editing])
 
   const allCategoriesPlanas = categoriasData ? flattenAllCategories(categoriasData) : []
 
@@ -75,6 +107,7 @@ export function CategoryPanel({ open, onClose, module, variant = 'sidepanel' }: 
           nombre: form.nombre,
           parent_id: catParentId,
           icono: form.icono || undefined,
+          modulo: module,
         })
       : Promise.reject(),
     onSuccess: () => {
@@ -105,8 +138,8 @@ export function CategoryPanel({ open, onClose, module, variant = 'sidepanel' }: 
   const guardar = () => {
     if (catParentId) {
       const parentLevel = getLevel(catParentId) + 1
-      if (parentLevel >= 3) {
-        showToast({ type: 'error', message: 'Máximo 3 niveles de categorías.' })
+      if (parentLevel > MAX_NIVEL_CATEGORIAS) {
+        showToast({ type: 'error', message: `Máximo ${MAX_NIVEL_CATEGORIAS + 1} niveles de categorías.` })
         return
       }
     }

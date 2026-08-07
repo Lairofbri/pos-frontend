@@ -1,9 +1,10 @@
 import { useState, useMemo, useCallback, useRef } from 'react'
-import { FolderTree, Package } from 'lucide-react'
+import { FolderTree, Package, TrendingUp } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryDefaults } from '../../../config/queries'
-import { listarProductos, crearProducto, actualizarProducto, subirImagen, eliminarImagenProducto } from './api'
-import { listarCategorias, crearCategoria, actualizarCategoria, eliminarCategoria } from '../../../api/categorias'
+import { listarProductos, crearProducto, actualizarProducto, subirImagen, eliminarImagenProducto, listarRentabilidad, type RentabilidadFiltros } from './api'
+import { listarCategorias } from '../../../api/categorias'
+import { CategoryPanel } from '../../../components/shared/CategoryPanel'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Button } from '@/components/ui/Button'
@@ -11,8 +12,6 @@ import { Toggle } from '../../../components/ui/Toggle'
 import { Spinner } from '@/components/ui/Spinner'
 import { SidePanel } from '../../../components/shared/SidePanel'
 import { Badge } from '@/components/ui/Badge'
-import { ConfirmDialog } from '../../../components/shared/ConfirmDialog'
-import { IconSelect } from '../../../components/shared/IconSelect'
 import { useToastStore } from '../../../store/toastStore'
 import { Icon } from '../../../components/shared/Icon'
 import type { Producto, Categoria } from '../../../types'
@@ -46,10 +45,6 @@ export default function ProductosPage() {
 
   const [catPanelOpen, setCatPanelOpen] = useState(false)
   const [catEditando, setCatEditando] = useState<Categoria | null>(null)
-  const [catForm, setCatForm] = useState({ nombre: '', icono: '' })
-  const [catNivel1, setCatNivel1] = useState('')
-  const [catNivel2, setCatNivel2] = useState('')
-  const [confirmDelete, setConfirmDelete] = useState<Categoria | null>(null)
   const [busqueda, setBusqueda] = useState('')
 
   const [prodModalOpen, setProdModalOpen] = useState(false)
@@ -57,14 +52,14 @@ export default function ProductosPage() {
   const [origen, setOrigen] = useState<'nuevo' | 'inventario'>('nuevo')
   const [inventarioItemId, setInventarioItemId] = useState('')
   const [prodForm, setProdForm] = useState({
-    nombre: '', descripcion: '', precio: 0, categoria_id: '',
+    nombre: '', descripcion: '', precio: 0, precio_costo: 0, categoria_id: '',
     codigo: '', imagen_url: '', orden: 0, activo: true,
     tiene_stock: false, stock_minimo: 0, se_vende: true,
   })
 
   const { data: categoriasData, isLoading: catLoading } = useQuery({
-    queryKey: ['categorias-arbol'],
-    queryFn: () => listarCategorias({ arbol: true }),
+    queryKey: ['categorias-arbol', 'producto'],
+    queryFn: () => listarCategorias({ arbol: true, modulo: 'producto' }),
     ...queryDefaults('categorias'),
   })
 
@@ -92,6 +87,17 @@ export default function ProductosPage() {
   const isLeaf = currentCategories.length === 0
   const showProductLevel = (isLeaf && catActivaId !== null) || showAllProducts
 
+  const [tab, setTab] = useState<'productos' | 'rentabilidad'>('productos')
+  const [rentaOrden, setRentaOrden] = useState<RentabilidadFiltros['orden']>('margen_desc')
+  const [rentaCategoria, setRentaCategoria] = useState('')
+
+  const { data: rentabilidad, isLoading: rentaLoading } = useQuery({
+    queryKey: ['rentabilidad', rentaOrden, rentaCategoria],
+    queryFn: () => listarRentabilidad({ orden: rentaOrden, categoria_id: rentaCategoria || undefined }),
+    enabled: tab === 'rentabilidad',
+    ...queryDefaults('rentabilidad'),
+  })
+
   const { data: productos, isLoading: prodLoading, error, refetch } = useQuery({
     queryKey: ['productos', catActivaId],
     queryFn: () => listarProductos({
@@ -108,127 +114,6 @@ export default function ProductosPage() {
     queryFn: () => listarProductos({ tiene_stock: true, se_vende: false }),
     ...queryDefaults('productos'),
   })
-
-  const catOptionsNivel1 = allCategoriesPlanas.filter(c => !c.parent_id && c.activo).map(c => ({ value: c.id, label: c.nombre }))
-  const catOptionsNivel2 = allCategoriesPlanas
-    .filter(c => c.parent_id === catNivel1 && c.activo)
-    .map(c => ({ value: c.id, label: c.nombre }))
-
-  const catParentId = catNivel2 || catNivel1 || undefined
-
-  const crearCatMutation = useMutation({
-    mutationFn: () => crearCategoria({
-      nombre: catForm.nombre,
-      parent_id: catParentId,
-      icono: catForm.icono || undefined,
-    }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categorias'] })
-      queryClient.invalidateQueries({ queryKey: ['categorias-arbol'] })
-      cerrarPanelCat()
-      showToast({ type: 'success', message: 'Categoría creada' })
-    },
-  })
-
-  const editarCatMutation = useMutation({
-    mutationFn: () => catEditando
-      ? actualizarCategoria(catEditando.id, {
-          nombre: catForm.nombre,
-          parent_id: catParentId,
-          icono: catForm.icono || undefined,
-        })
-      : Promise.reject(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categorias'] })
-      queryClient.invalidateQueries({ queryKey: ['categorias-arbol'] })
-      cerrarPanelCat()
-      showToast({ type: 'success', message: 'Categoría actualizada' })
-    },
-  })
-
-  const eliminarCatMutation = useMutation({
-    mutationFn: () => confirmDelete ? eliminarCategoria(confirmDelete.id) : Promise.reject(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categorias'] })
-      queryClient.invalidateQueries({ queryKey: ['categorias-arbol'] })
-      setConfirmDelete(null)
-      cerrarPanelCat()
-      showToast({ type: 'success', message: 'Categoría eliminada' })
-    },
-  })
-
-  const getLevel = (id: string, lvl = 0): number => {
-    const c = allCategoriesPlanas.find(x => x.id === id)
-    if (!c?.parent_id) return lvl
-    return getLevel(c.parent_id, lvl + 1)
-  }
-
-  const abrirNuevaCat = (parentId?: string) => {
-    if (parentId && categoriasData) {
-      const buildChain = (items: Categoria[], targetId: string): Categoria[] => {
-        for (const c of items) {
-          if (c.id === targetId) return [c]
-          if (c.hijos?.length) {
-            const found = buildChain(c.hijos, targetId)
-            if (found.length) return [c, ...found]
-          }
-        }
-        return []
-      }
-      const chainResult = buildChain(categoriasData, parentId)
-      setCatNivel1(chainResult[0]?.id ?? '')
-      setCatNivel2(chainResult[1]?.id ?? '')
-    } else {
-      setCatNivel1('')
-      setCatNivel2('')
-    }
-    setCatEditando(null)
-    setCatForm({ nombre: '', icono: '' })
-    setCatPanelOpen(true)
-  }
-
-  const abrirEditarCat = (item: Categoria) => {
-    const chain = categoriasData ? (() => {
-      const buildChain = (items: Categoria[], targetId: string | null): Categoria[] => {
-        if (!targetId) return []
-        for (const c of items) {
-          if (c.id === targetId) return [c]
-          if (c.hijos?.length) {
-            const found = buildChain(c.hijos, targetId)
-            if (found.length) return [c, ...found]
-          }
-        }
-        return []
-      }
-      return buildChain(categoriasData, item.parent_id)
-    })() : []
-    setCatNivel1(chain[0]?.id ?? '')
-    setCatNivel2(chain[1]?.id ?? '')
-    setCatEditando(item)
-    setCatForm({ nombre: item.nombre, icono: item.icono ?? '' })
-    setCatPanelOpen(true)
-  }
-
-  const cerrarPanelCat = () => {
-    setCatPanelOpen(false)
-    setCatEditando(null)
-    setCatForm({ nombre: '', icono: '' })
-    setCatNivel1('')
-    setCatNivel2('')
-    setConfirmDelete(null)
-  }
-
-  const guardarCat = () => {
-    if (catParentId) {
-      const parentLevel = getLevel(catParentId) + 1
-      if (parentLevel >= 3) {
-        showToast({ type: 'error', message: 'Máximo 3 niveles de categorías.' })
-        return
-      }
-    }
-    if (catEditando) editarCatMutation.mutate()
-    else crearCatMutation.mutate()
-  }
 
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [subiendoImg, setSubiendoImg] = useState(false)
@@ -267,6 +152,7 @@ export default function ProductosPage() {
           nombre: prodForm.nombre,
           descripcion: prodForm.descripcion || undefined,
           precio: prodForm.precio,
+          precio_costo: prodForm.precio_costo,
           categoria_id: prodForm.categoria_id || undefined,
           codigo: prodForm.codigo || undefined,
           imagen_url: prodForm.imagen_url || undefined,
@@ -279,6 +165,7 @@ export default function ProductosPage() {
         nombre: prodForm.nombre,
         descripcion: prodForm.descripcion || undefined,
         precio: prodForm.precio,
+        precio_costo: prodForm.precio_costo,
         categoria_id: prodForm.categoria_id || undefined,
         codigo: prodForm.codigo || undefined,
         imagen_url: prodForm.imagen_url || undefined,
@@ -302,6 +189,7 @@ export default function ProductosPage() {
           nombre: prodForm.nombre,
           descripcion: prodForm.descripcion || undefined,
           precio: prodForm.precio,
+          precio_costo: prodForm.precio_costo,
           categoria_id: prodForm.categoria_id || undefined,
           codigo: prodForm.codigo || undefined,
           imagen_url: prodForm.imagen_url || undefined,
@@ -331,7 +219,7 @@ export default function ProductosPage() {
     setOrigen('nuevo')
     setInventarioItemId('')
     setProdForm({
-      nombre: '', descripcion: '', precio: 0, categoria_id: catActivaId ?? '',
+      nombre: '', descripcion: '', precio: 0, precio_costo: 0, categoria_id: catActivaId ?? '',
       codigo: '', imagen_url: '', orden: 0, activo: true,
       tiene_stock: false, stock_minimo: 0, se_vende: true,
     })
@@ -341,7 +229,7 @@ export default function ProductosPage() {
   const abrirEditarProd = (p: Producto) => {
     setProdEditando(p)
     setProdForm({
-      nombre: p.nombre, descripcion: p.descripcion ?? '', precio: p.precio,
+      nombre: p.nombre, descripcion: p.descripcion ?? '', precio: p.precio, precio_costo: p.precio_costo,
       categoria_id: p.categoria_id ?? '', codigo: p.codigo ?? '',
       imagen_url: p.imagen_url ?? '', orden: p.orden ?? 0, activo: p.activo,
       tiene_stock: p.tiene_stock, stock_minimo: p.stock_minimo,
@@ -408,6 +296,33 @@ export default function ProductosPage() {
         })}
       </div>
 
+      {/* Tabs */}
+      <div className="flex gap-1 px-4 mb-3 shrink-0">
+        <button
+          onClick={() => setTab('productos')}
+          className={`px-4 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+            tab === 'productos'
+              ? 'bg-accent text-white shadow-sm'
+              : 'bg-bg-surface text-text-secondary hover:text-text-primary'
+          }`}
+        >
+          Productos
+        </button>
+        <button
+          onClick={() => setTab('rentabilidad')}
+          className={`px-4 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
+            tab === 'rentabilidad'
+              ? 'bg-accent text-white shadow-sm'
+              : 'bg-bg-surface text-text-secondary hover:text-text-primary'
+          }`}
+        >
+          Rentabilidad
+        </button>
+      </div>
+
+      {/* Productos tab */}
+      {tab === 'productos' && (<>
+
       {/* Search (product level only) */}
       {showProductLevel && (
         <div className="px-4 mb-3 shrink-0">
@@ -444,13 +359,15 @@ export default function ProductosPage() {
                     className="group relative bg-white border border-border rounded-xl p-4 cursor-pointer flex flex-col items-center text-center gap-2 transition-all hover:border-accent hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(198,106,30,0.12)] active:scale-[0.97]"
                     style={{ animation: `fadeInUp 0.3s ease-out ${i * 0.04}s both` }}
                   >
-                    <button
-                      onClick={(e) => { e.stopPropagation(); abrirEditarCat(cat) }}
+                    <div
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.stopPropagation(); setCatEditando(cat); setCatPanelOpen(true) } }}
+                      onClick={(e) => { e.stopPropagation(); setCatEditando(cat); setCatPanelOpen(true) }}
                       className="absolute top-2 right-2 size-6 rounded-full bg-white/80 border border-border flex items-center justify-center text-text-secondary opacity-0 group-hover:opacity-100 hover:text-accent hover:border-accent transition-all cursor-pointer"
-                      title="Editar categoría"
                     >
                       <Icon name="edit" className="size-3.5" />
-                    </button>
+                    </div>
                     <div className="size-11 rounded-xl bg-gradient-to-br from-accent/10 to-accent/5 flex items-center justify-center transition-transform group-hover:scale-110">
                       {cat.icono ? <Icon name={cat.icono} className="size-6" /> : <FolderTree className="size-6 text-accent" />}
                     </div>
@@ -465,7 +382,7 @@ export default function ProductosPage() {
 
             <div className="flex justify-center mt-5">
               <button
-                onClick={() => abrirNuevaCat(catActivaId ?? undefined)}
+                onClick={() => { setCatEditando(null); setCatPanelOpen(true) }}
                 className="flex items-center gap-2 px-6 py-2.5 rounded-full bg-gradient-to-r from-accent-dark to-accent text-white text-sm font-semibold cursor-pointer transition-all hover:-translate-y-0.5 hover:shadow-[0_6px_20px_rgba(184,97,25,0.4)] active:scale-[0.97] shadow-[0_4px_12px_rgba(184,97,25,0.3)]"
               >
                 + Nueva Categoría
@@ -554,33 +471,14 @@ export default function ProductosPage() {
         )}
       </div>
 
-      {/* Category SidePanel */}
-      <SidePanel open={catPanelOpen} onClose={cerrarPanelCat} title={catEditando ? 'Editar Categoría' : 'Nueva Categoría'}>
-        <div className="flex flex-col gap-4">
-          <Input label="Nombre" value={catForm.nombre} onChange={(e) => setCatForm({ ...catForm, nombre: e.target.value })} required autoFocus />
-          <div className="flex flex-col gap-3">
-            <label className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Categoría padre</label>
-            <Select label="Nivel 1" options={catOptionsNivel1} value={catNivel1}
-              onValueChange={(v) => { setCatNivel1(v); setCatNivel2('') }} placeholder="— Raíz —" />
-            {catNivel1 && (
-              <Select label="Nivel 2" options={catOptionsNivel2} value={catNivel2}
-                onValueChange={(v) => setCatNivel2(v)} placeholder="— Ninguna —" />
-            )}
-          </div>
-          <IconSelect label="Icono" value={catForm.icono} onChange={(v) => setCatForm({ ...catForm, icono: v })} />
-          <div className="flex gap-2 pt-2">
-            <Button className="flex-1" onClick={guardarCat} loading={crearCatMutation.isPending || editarCatMutation.isPending}>
-              {catEditando ? 'Guardar cambios' : 'Crear categoría'}
-            </Button>
-            {catEditando && <Button variant="danger" onClick={() => setConfirmDelete(catEditando)}>Eliminar</Button>}
-          </div>
-        </div>
-      </SidePanel>
-
-      <ConfirmDialog open={!!confirmDelete} title="Eliminar categoría"
-        message={`¿Desactivar "${confirmDelete?.nombre}"? Los productos asociados pasarán a sin categoría.`}
-        confirmLabel="Desactivar" onConfirm={() => eliminarCatMutation.mutate()}
-        onCancel={() => setConfirmDelete(null)} loading={eliminarCatMutation.isPending} />
+      {/* Category Panel */}
+      <CategoryPanel
+        module="producto"
+        variant="modal"
+        open={catPanelOpen}
+        onClose={() => { setCatPanelOpen(false); setCatEditando(null) }}
+        editing={catEditando}
+      />
 
       {/* Product SidePanel */}
       <SidePanel
@@ -642,6 +540,7 @@ export default function ProductosPage() {
           <Input label="Nombre" value={prodForm.nombre} onChange={(e) => setProdForm({ ...prodForm, nombre: e.target.value })} required />
           <Input label="Descripción" value={prodForm.descripcion} onChange={(e) => setProdForm({ ...prodForm, descripcion: e.target.value })} />
           <Input label="Precio" type="number" step="0.01" value={prodForm.precio} onChange={(e) => setProdForm({ ...prodForm, precio: parseFloat(e.target.value || '0') })} />
+          <Input label="Costo ($)" type="number" step="0.01" min="0" value={prodForm.precio_costo} onChange={(e) => setProdForm({ ...prodForm, precio_costo: parseFloat(e.target.value || '0') })} />
           <Select label="Categoría" options={categoriasOptions} value={prodForm.categoria_id}
             onValueChange={(v) => setProdForm({ ...prodForm, categoria_id: v })} placeholder="Sin categoría" />
           <Input label="Código de barras" value={prodForm.codigo} onChange={(e) => setProdForm({ ...prodForm, codigo: e.target.value })} placeholder="Opcional" />
@@ -699,6 +598,153 @@ export default function ProductosPage() {
           </button>
         </div>
       </SidePanel>
+      </>)}
+      {/* Rentabilidad tab */}
+      {tab === 'rentabilidad' && (
+        <div className="flex-1 overflow-y-auto pb-4 px-4">
+          {rentaLoading ? (
+            <div className="flex items-center justify-center py-20"><Spinner size="lg" /></div>
+          ) : (
+            <>
+              {/* Filters */}
+              <div className="flex items-center gap-3 mb-4">
+                <Select
+                  label="Orden"
+                  value={rentaOrden}
+                  onValueChange={(v) => setRentaOrden(v as RentabilidadFiltros['orden'])}
+                  options={[
+                    { value: 'margen_desc', label: 'Mayor margen $' },
+                    { value: 'margen_asc', label: 'Menor margen $' },
+                    { value: 'precio_desc', label: 'Mayor precio' },
+                    { value: 'precio_asc', label: 'Menor precio' },
+                    { value: 'nombre', label: 'Nombre A-Z' },
+                  ]}
+                  className="w-44"
+                />
+                <Select
+                  label="Categoría"
+                  value={rentaCategoria}
+                  onValueChange={(v) => setRentaCategoria(v)}
+                  options={[
+                    { value: '', label: 'Todas' },
+                    ...allCategoriesPlanas.filter(c => c.activo).map(c => ({ value: c.id, label: c.nombre })),
+                  ]}
+                  className="w-44"
+                />
+              </div>
+
+              {/* KPI Cards */}
+              {rentabilidad && (
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="bg-white border border-border rounded-xl p-3">
+                    <div className="text-[10px] font-semibold text-text-secondary uppercase tracking-wider mb-1">
+                      Margen bruto total
+                    </div>
+                    <div className={`text-lg font-bold ${rentabilidad.resumen.margen_bruto_total >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                      ${rentabilidad.resumen.margen_bruto_total.toLocaleString('es-SV', { minimumFractionDigits: 2 })}
+                    </div>
+                  </div>
+                  <div className="bg-white border border-border rounded-xl p-3">
+                    <div className="text-[10px] font-semibold text-text-secondary uppercase tracking-wider mb-1">
+                      Food cost promedio
+                    </div>
+                    <div className={`text-lg font-bold ${rentabilidad.resumen.food_cost_pct <= 40 ? 'text-emerald-600' : rentabilidad.resumen.food_cost_pct <= 60 ? 'text-amber-500' : 'text-red-500'}`}>
+                      {rentabilidad.resumen.food_cost_pct}%
+                    </div>
+                  </div>
+                  <div className="bg-white border border-border rounded-xl p-3">
+                    <div className="text-[10px] font-semibold text-text-secondary uppercase tracking-wider mb-1">
+                      Sin costo
+                    </div>
+                    <div className={`text-lg font-bold ${rentabilidad.resumen.sin_costo_count === 0 ? 'text-emerald-600' : 'text-amber-500'}`}>
+                      {rentabilidad.resumen.sin_costo_count}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Rentabilidad Table */}
+              {rentabilidad && rentabilidad.productos.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 gap-1 text-text-secondary">
+                  <TrendingUp className="size-8 mb-1" />
+                  <span className="font-semibold text-sm text-text-primary">Sin datos de rentabilidad</span>
+                  <span className="text-xs">Registra compras con costo unitario para ver márgenes</span>
+                </div>
+              ) : rentabilidad ? (
+                <div className="bg-white border border-border rounded-xl overflow-hidden">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="border-b border-border bg-bg-surface">
+                        <th className="text-left px-3 py-2.5 font-semibold text-text-secondary uppercase tracking-wider">Producto</th>
+                        <th className="text-left px-3 py-2.5 font-semibold text-text-secondary uppercase tracking-wider hidden sm:table-cell">Categoría</th>
+                        <th className="text-right px-3 py-2.5 font-semibold text-text-secondary uppercase tracking-wider">Precio</th>
+                        <th className="text-right px-3 py-2.5 font-semibold text-text-secondary uppercase tracking-wider">Costo</th>
+                        <th className="text-right px-3 py-2.5 font-semibold text-text-secondary uppercase tracking-wider">Margen $</th>
+                        <th className="text-right px-3 py-2.5 font-semibold text-text-secondary uppercase tracking-wider w-28">Margen %</th>
+                        <th className="text-center px-3 py-2.5 font-semibold text-text-secondary uppercase tracking-wider w-24">Estado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rentabilidad.productos.map((p, i) => {
+                        const barColor = p.alerta === 'sin_datos' ? 'bg-slate-300'
+                          : p.margen_pct >= 40 ? 'bg-emerald-500'
+                          : p.margen_pct >= 20 ? 'bg-amber-500'
+                          : 'bg-red-500'
+                        const badgeColor = p.alerta === 'ganancia' ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                          : p.alerta === 'equilibrio' ? 'bg-amber-50 text-amber-700 border-amber-200'
+                          : p.alerta === 'perdida' ? 'bg-red-50 text-red-700 border-red-200'
+                          : 'bg-slate-50 text-slate-500 border-slate-200'
+                        const badgeLabel = p.alerta === 'ganancia' ? 'Ganancia'
+                          : p.alerta === 'equilibrio' ? 'Equilibrio'
+                          : p.alerta === 'perdida' ? 'Pérdida'
+                          : 'Sin datos'
+                        return (
+                          <tr key={p.id} className={`border-b border-border hover:bg-bg-surface/50 transition-colors ${i % 2 === 0 ? 'bg-white' : 'bg-bg-surface/30'}`}>
+                            <td className="px-3 py-2.5 font-medium text-text-primary">
+                              <span className="flex items-center gap-1.5">
+                                {p.nombre}
+                                {p.tiene_receta && <span className="text-[10px] bg-accent/10 text-accent px-1.5 py-0.5 rounded font-medium">Receta</span>}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2.5 text-text-secondary hidden sm:table-cell">{p.categoria_nombre || '—'}</td>
+                            <td className="px-3 py-2.5 text-right font-medium">${p.precio_venta.toFixed(2)}</td>
+                            <td className={`px-3 py-2.5 text-right ${p.costo_promedio === 0 ? 'text-text-secondary' : ''}`}>
+                              {p.costo_promedio === 0 ? '—' : `$${p.costo_promedio.toFixed(2)}`}
+                            </td>
+                            <td className={`px-3 py-2.5 text-right font-semibold ${p.margen_bruto < 0 ? 'text-red-500' : 'text-emerald-600'}`}>
+                              {p.alerta === 'sin_datos' ? '—' : `${p.margen_bruto < 0 ? '-' : ''}$${Math.abs(p.margen_bruto).toFixed(2)}`}
+                            </td>
+                            <td className="px-3 py-2.5">
+                              {p.alerta === 'sin_datos' ? (
+                                <span className="text-text-secondary text-xs">—</span>
+                              ) : (
+                                <div className="flex items-center gap-2">
+                                  <div className="flex-1 h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                                    <div
+                                      className={`h-full rounded-full transition-all ${barColor}`}
+                                      style={{ width: `${Math.min(Math.abs(p.margen_pct), 100)}%` }}
+                                    />
+                                  </div>
+                                  <span className="text-xs font-medium w-10 text-right">{p.margen_pct}%</span>
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-3 py-2.5 text-center">
+                              <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full border ${badgeColor}`}>
+                                {badgeLabel}
+                              </span>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : null}
+            </>
+          )}
+        </div>
+      )}
     </div>
   )
 }

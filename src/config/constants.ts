@@ -5,3 +5,5 @@ export const STORAGE_KEYS = {
   USUARIO_DATA: 'usuario_data',
   SUCURSAL_ID: 'sucursal_id',
 } as const
+
+export const MAX_NIVEL_CATEGORIAS = 2

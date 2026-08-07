@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import axios from 'axios'
 import { useAuthStore } from '../../store/authStore'
@@ -16,15 +16,18 @@ export function AuthGuard({ children }: AuthGuardProps) {
   const setToken = useAuthStore((s) => s.setToken)
   const restaurarSesion = useAuthStore((s) => s.restaurarSesion)
   const [checking, setChecking] = useState(!token)
+  const attempted = useRef(false)
 
   useEffect(() => {
     if (token) return
+    if (attempted.current) return
+    attempted.current = true
+
     axios.post(`${BASE_URL}/auth/refresh`, {}, { withCredentials: true })
       .then(async (r) => {
         const accessToken = r.data?.data?.access_token
         if (accessToken) {
           setToken(accessToken)
-          // Restaurar datos del usuario desde /auth/me
           try {
             const me = await axios.get(`${BASE_URL}/auth/me`, {
               headers: { Authorization: `Bearer ${accessToken}` }
@@ -42,7 +45,10 @@ export function AuthGuard({ children }: AuthGuardProps) {
           }
         }
       })
-      .catch(() => {})
+      .catch((err: unknown) => {
+        const e = err as { response?: { status?: number; data?: { mensaje?: string } } }
+        console.warn('[AuthGuard] Refresh fallido:', e?.response?.status, e?.response?.data?.mensaje || '')
+      })
       .finally(() => setChecking(false))
   }, [token, setToken, restaurarSesion])
 

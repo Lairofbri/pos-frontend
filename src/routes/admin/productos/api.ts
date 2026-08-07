@@ -16,6 +16,7 @@ interface ProductoRaw {
   nombre: string
   descripcion: string | null
   precio: string
+  precio_costo: string
   imagen_url: string | null
   codigo: string | null
   activo: boolean
@@ -37,6 +38,7 @@ function parseProducto(raw: ProductoRaw): Producto {
     nombre: raw.nombre,
     descripcion: raw.descripcion ?? undefined,
     precio: parseFloat(raw.precio),
+    precio_costo: parseFloat(raw.precio_costo),
     imagen_url: raw.imagen_url ?? undefined,
     codigo: raw.codigo ?? undefined,
     activo: raw.activo,
@@ -90,3 +92,53 @@ export const eliminarImagenProducto = (id: string) =>
   api
     .delete<{ ok: boolean; data: { producto: ProductoRaw } }>(`/productos/${id}/imagen`)
     .then((r) => parseProducto(r.data.data.producto))
+
+export interface RentabilidadProducto {
+  id: string
+  nombre: string
+  precio_venta: number
+  costo_promedio: number
+  margen_bruto: number
+  margen_pct: number
+  categoria_nombre: string
+  tiene_receta: boolean
+  stock_actual: number
+  alerta: 'ganancia' | 'equilibrio' | 'perdida' | 'sin_datos'
+}
+
+export interface RentabilidadResponse {
+  productos: RentabilidadProducto[]
+  resumen: {
+    margen_bruto_total: number
+    food_cost_pct: number
+    sin_costo_count: number
+  }
+}
+
+export interface RentabilidadFiltros {
+  orden?: 'margen_desc' | 'margen_asc' | 'precio_desc' | 'precio_asc' | 'nombre'
+  categoria_id?: string
+}
+
+export const listarRentabilidad = (filtros?: RentabilidadFiltros) =>
+  api
+    .get<{ ok: boolean; data: RentabilidadResponse }>('/productos/rentabilidad', {
+      params: filtros,
+    })
+    .then((r) => r.data.data)
+
+export interface EvolucionRow {
+  fecha: string
+  ingresos: number
+  costo: number
+  margen_bruto: number
+  margen_pct: number
+  ordenes: number
+}
+
+export const listarEvolucionRentabilidad = (filtros?: { desde?: string; hasta?: string }) =>
+  api
+    .get<{ ok: boolean; data: EvolucionRow[] }>('/productos/rentabilidad/evolucion', {
+      params: filtros,
+    })
+    .then((r) => r.data.data)

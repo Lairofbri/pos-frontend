@@ -7,6 +7,7 @@ import { TicketPanel } from './components/TicketPanel'
 import { RestaurantSummary } from './components/RestaurantSummary'
 import { PaymentPanel } from './components/PaymentPanel'
 import { ModifierPanel } from './components/ModifierPanel'
+import { ItemCustomizer } from './components/ItemCustomizer'
 import { GerentePinModal } from '../../components/shared/GerentePinModal'
 import { SwitchUserModal } from '../../components/shared/SwitchUserModal'
 import { ConfirmDialog } from '../../components/shared/ConfirmDialog'
@@ -33,6 +34,7 @@ export default function POSPage() {
   const [confirmarLiberar, setConfirmarLiberar] = useState(false)
   const [mostrarSwitchUser, setMostrarSwitchUser] = useState(false)
   const [mobileTab, setMobileTab] = useState<'productos' | 'ticket'>('productos')
+  const [customizingItem, setCustomizingItem] = useState<OrdenItem | null>(null)
   useCocinaSocket(tenantId ?? '')
 
   const { data: ordenes } = useQuery({
@@ -155,13 +157,24 @@ export default function POSPage() {
   })
 
   const pagarMutation = useMutation({
-    mutationFn: (pdata: Record<string, unknown>) =>
-      pagarOrden(ordenSeleccionadaId!, pdata),
+    mutationFn: (pdata: Record<string, unknown>) => {
+      const idempotencyKey = crypto.randomUUID()
+      return pagarOrden(ordenSeleccionadaId!, pdata, idempotencyKey)
+    },
     onSuccess: () => {
       const id = ordenSeleccionadaId
       if (id) printMutation.mutate({ ordenId: id, tipo: 'ticket-consumo' })
       limpiarOrden(id)
       showToast({ type: 'success', message: 'Pago completado' })
+    },
+  })
+
+  const modificarItemMutation = useMutation({
+    mutationFn: ({ itemId, modificaciones, notas }: { itemId: string; modificaciones: { sin?: string[]; extra?: Array<{ producto_id: string; cantidad: number; precio: number }>; notas_extra?: string }; notas: string }) =>
+      actualizarItem(ordenSeleccionadaId!, itemId, { modificaciones, notas }),
+    onSuccess: () => {
+      invalidarOrden()
+      setCustomizingItem(null)
     },
   })
 
@@ -454,6 +467,7 @@ export default function POSPage() {
                 key={ordenActiva.id}
                 orden={ordenActiva}
                 onEliminarItem={handleEliminarItem}
+                onModificarItem={(item) => setCustomizingItem(item)}
                 onEnviarCocina={() => ordenActiva && cocinaMutation.mutate(ordenActiva.id)}
                 onPagar={() => setMostrarPayment(true)}
                 onDescuento={(pct) => ordenActiva && descuentoMutation.mutate(pct)}
@@ -519,6 +533,17 @@ export default function POSPage() {
         onClose={() => setModifierProducto(null)}
         producto={modifierProducto}
         onConfirm={handleModifierConfirm}
+      />
+
+      <ItemCustomizer
+        open={!!customizingItem}
+        onClose={() => setCustomizingItem(null)}
+        item={customizingItem}
+        onSave={(modificaciones, notas) => {
+          if (customizingItem) {
+            modificarItemMutation.mutate({ itemId: customizingItem.id, modificaciones, notas })
+          }
+        }}
       />
 
       <GerentePinModal

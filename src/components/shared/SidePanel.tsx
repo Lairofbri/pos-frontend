@@ -35,17 +35,22 @@ export function SidePanel({
 }: SidePanelProps) {
   const isSide = direction === 'right' || direction === 'left'
 
+  const handleClose = () => {
+    (document.activeElement as HTMLElement)?.blur()
+    onClose()
+  }
+
   return (
     <Drawer
       open={open}
-      onOpenChange={(v) => { if (!v) onClose() }}
+      onOpenChange={(v) => { if (!v) handleClose() }}
       direction={direction}
       shouldScaleBackground={false}
     >
       <DrawerContent
         className={`${dirClass} ${className}`}
         onPointerDownOutside={onClose}
-        onEscapeKeyDown={onClose}
+        onEscapeKeyDown={handleClose}
       >
         {direction === 'bottom' && (
           <div className="mx-auto mt-3 h-1.5 w-12 rounded-full bg-border shrink-0" />

@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { BarChart, Package, Receipt, DollarSign, ChefHat, Store, Users, FileSpreadsheet, GitCompare } from 'lucide-react'
+import { BarChart, Package, Receipt, DollarSign, ChefHat, Store, Users, FileSpreadsheet, GitCompare, Coins } from 'lucide-react'
 import { PageHeader } from '../../../components/shared/PageHeader'
 import { DashboardCard } from '../../../components/shared/DashboardCard'
 import type { ReactNode } from 'react'
@@ -15,6 +15,7 @@ const iconMap: Record<string, ReactNode> = {
   staff: <Users className="size-7 text-pos-accent" />,
   dte: <FileSpreadsheet className="size-7 text-pos-accent" />,
   consolidados: <GitCompare className="size-7 text-pos-accent" />,
+  costos: <Coins className="size-7 text-pos-accent" />,
 }
 
 const categorias = [
@@ -28,6 +29,7 @@ const categorias = [
   { ruta: 'staff',        nombre: 'Staff',        desc: 'Desempeño por mesero',                               cantidad: 1, prioridad: 'P2' },
   { ruta: 'dte',          nombre: 'DTE',           desc: 'Emisiones, establecimientos, anulaciones, contingencias', cantidad: 12, prioridad: 'P0' },
   { ruta: 'consolidados', nombre: 'Consolidados', desc: 'Conciliación POS vs DTE, ingresos vs facturado',      cantidad: 2, prioridad: 'P1' },
+  { ruta: 'costos', nombre: 'Costos', desc: 'Costo por producto, food cost, evolución, inventario', cantidad: 4, prioridad: 'P0' },
 ]
 
 export default function ReportesPage() {

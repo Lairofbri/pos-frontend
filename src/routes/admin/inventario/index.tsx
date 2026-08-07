@@ -1,12 +1,14 @@
 import { useState } from 'react'
-import { Package, TriangleAlert, TrendingDown, Plus, Calendar } from 'lucide-react'
+import { Package, TriangleAlert, TrendingDown, Plus, Calendar, CheckCircle, BookOpen, ArrowUpRight, ArrowDownRight, Minus } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryDefaults } from '../../../config/queries'
-import { obtenerResumen, listarMovimientos, crearMovimiento, listarUnidades } from './api'
+import { obtenerResumen, listarMovimientos, crearMovimiento, revertirMovimiento, reconciliarStock, listarUnidades, obtenerKardex } from './api'
+import type { KardexMovimiento } from './api'
 import { listarProductos, crearProducto, actualizarProducto } from '../productos/api'
 import { listarCategorias } from '../../../api/categorias'
 import { CategoryNavigator } from '../../../components/shared/CategoryNavigator'
 import { CategoryPanel } from '../../../components/shared/CategoryPanel'
+import { cn } from '@/lib/utils'
 import { SidePanel } from '../../../components/shared/SidePanel'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
@@ -16,6 +18,7 @@ import { Spinner } from '@/components/ui/Spinner'
 import { PageHeader } from '../../../components/shared/PageHeader'
 import { Icon } from '../../../components/shared/Icon'
 import { useToastStore } from '../../../store/toastStore'
+import SesionesTab from './SesionesTab'
 import type { Producto } from '../../../types'
 
 const badgeVariant: Record<string, 'success' | 'info' | 'warning' | 'danger' | 'default'> = {
@@ -55,7 +58,7 @@ export default function InventarioPage() {
   const showToast = useToastStore((s) => s.show)
 
   const [catPanelOpen, setCatPanelOpen] = useState(false)
-  const [view, setView] = useState<'resumen' | 'items' | 'movimientos'>('resumen')
+  const [view, setView] = useState<'resumen' | 'items' | 'movimientos' | 'sesiones'>('resumen')
   const [categoriaActiva, setCategoriaActiva] = useState<string | null>(null)
 
   const [movPanelOpen, setMovPanelOpen] = useState(false)
@@ -69,6 +72,7 @@ export default function InventarioPage() {
     tipo: 'compra' as 'compra' | 'ajuste' | 'merma' | 'devolucion',
     cantidad: '',
     unidad_medida_id: '',
+    costo_unitario: '',
     motivo: '',
   })
 
@@ -78,6 +82,7 @@ export default function InventarioPage() {
     stock_actual: '',
     stock_minimo: '',
     unidad_medida_id: '',
+    precio_costo: '',
   })
 
   const { data: unidades } = useQuery({
@@ -110,23 +115,53 @@ export default function InventarioPage() {
     ...queryDefaults('inventario-movimientos'),
   })
 
+  const [showReconciliar, setShowReconciliar] = useState(false)
+  const [kardexProducto, setKardexProducto] = useState<Producto | null>(null)
+  const [kardexPagina, setKardexPagina] = useState(1)
+
+  const { data: kardexData, isLoading: kardexLoading } = useQuery({
+    queryKey: ['kardex', kardexProducto?.id, kardexPagina],
+    queryFn: () => kardexProducto ? obtenerKardex(kardexProducto.id, { pagina: kardexPagina, limite: 30 }) : Promise.resolve(null),
+    enabled: !!kardexProducto,
+    ...queryDefaults('kardex'),
+  })
+
+  const reconciliarQuery = useQuery({
+    queryKey: ['inventario-reconciliar'],
+    queryFn: reconciliarStock,
+    enabled: false,
+    ...queryDefaults('inventario-reconciliar'),
+  })
+
   const crearMovMutation = useMutation({
-    mutationFn: () => crearMovimiento({
-      producto_id: movForm.producto_id,
-      tipo: movForm.tipo,
-      cantidad: parseFloat(movForm.cantidad),
-      unidad_medida_id: movForm.unidad_medida_id || undefined,
-      motivo: movForm.motivo || undefined,
-    }),
+      mutationFn: () => crearMovimiento({
+        producto_id: movForm.producto_id,
+        tipo: movForm.tipo,
+        cantidad: parseFloat(movForm.cantidad),
+        unidad_medida_id: movForm.unidad_medida_id || undefined,
+        motivo: movForm.motivo || undefined,
+        costo_unitario: movForm.costo_unitario ? parseFloat(movForm.costo_unitario) : undefined,
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventario-resumen'] })
       queryClient.invalidateQueries({ queryKey: ['inventario-movimientos'] })
       queryClient.invalidateQueries({ queryKey: ['productos-stock'] })
       setMovPanelOpen(false)
-      setMovForm({ producto_id: '', tipo: 'compra', cantidad: '', unidad_medida_id: '', motivo: '' })
+      setMovForm({ producto_id: '', tipo: 'compra', cantidad: '', unidad_medida_id: '', costo_unitario: '', motivo: '' })
       showToast({ type: 'success', message: 'Movimiento registrado' })
     },
     onError: () => showToast({ type: 'error', message: 'Error al registrar movimiento' }),
+  })
+
+  const revertirMutation = useMutation({
+    mutationFn: (id: string) => revertirMovimiento(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['inventario-resumen'] })
+      queryClient.invalidateQueries({ queryKey: ['inventario-movimientos'] })
+      queryClient.invalidateQueries({ queryKey: ['productos-stock'] })
+      showToast({ type: 'success', message: 'Movimiento revertido' })
+    },
+    onError: () => showToast({ type: 'error', message: 'Error al revertir movimiento' }),
   })
 
   const crearItemMutation = useMutation({
@@ -139,6 +174,7 @@ export default function InventarioPage() {
       stock_actual: parseFloat(itemForm.stock_actual || '0'),
       stock_minimo: parseFloat(itemForm.stock_minimo || '0'),
       unidad_medida_id: itemForm.unidad_medida_id || undefined,
+      precio_costo: parseFloat(itemForm.precio_costo || '0'),
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['productos-stock'] })
@@ -156,6 +192,7 @@ export default function InventarioPage() {
           categoria_id: itemForm.categoria_id || undefined,
           stock_minimo: parseFloat(itemForm.stock_minimo || '0'),
           unidad_medida_id: itemForm.unidad_medida_id || undefined,
+          precio_costo: parseFloat(itemForm.precio_costo || '0'),
         })
       : Promise.reject(),
     onSuccess: () => {
@@ -169,7 +206,7 @@ export default function InventarioPage() {
 
   const abrirNuevoItem = () => {
     setEditandoItem(null)
-    setItemForm({ nombre: '', categoria_id: categoriaActiva ?? '', stock_actual: '', stock_minimo: '', unidad_medida_id: '' })
+    setItemForm({ nombre: '', categoria_id: categoriaActiva ?? '', stock_actual: '', stock_minimo: '', unidad_medida_id: '', precio_costo: '' })
     setItemPanelOpen(true)
   }
 
@@ -181,6 +218,7 @@ export default function InventarioPage() {
       stock_actual: String(p.stock_actual),
       stock_minimo: String(p.stock_minimo),
       unidad_medida_id: p.unidad_medida_id ?? '',
+      precio_costo: String(p.precio_costo ?? 0),
     })
     setItemPanelOpen(true)
   }
@@ -197,6 +235,7 @@ export default function InventarioPage() {
       tipo: 'compra',
       cantidad: '',
       unidad_medida_id: producto?.unidad_medida_id ?? defaultUnidad?.id ?? '',
+      costo_unitario: '',
       motivo: '',
     })
     setMovPanelOpen(true)
@@ -244,6 +283,7 @@ export default function InventarioPage() {
           {[
             { key: 'items' as const, label: 'Insumos', icon: 'package' },
             { key: 'movimientos' as const, label: 'Movimientos', icon: 'list' },
+            { key: 'sesiones' as const, label: 'Sesiones', icon: 'clipboard' },
           ].map((tab) => (
             <button
               key={tab.key}
@@ -264,6 +304,7 @@ export default function InventarioPage() {
         {view === 'items' && (
           <>
             <CategoryNavigator
+              module="inventario"
               onSelect={(catId) => setCategoriaActiva(catId)}
               onNewCategory={() => setCatPanelOpen(true)}
               onEditCategory={() => setCatPanelOpen(true)}
@@ -297,6 +338,12 @@ export default function InventarioPage() {
                     <div className="flex gap-1 mt-2">
                       <Badge variant="info" className="text-[10px]">Stock: {p.stock_actual}</Badge>
                     </div>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setKardexProducto(p); setKardexPagina(1) }}
+                      className="mt-2 w-full text-[10px] font-medium text-accent hover:text-accent-hover flex items-center justify-center gap-1 py-1 rounded-md hover:bg-accent/5 transition-colors"
+                    >
+                      <BookOpen className="size-3" /> Kardex
+                    </button>
                   </div>
                 ))}
               </div>
@@ -320,10 +367,57 @@ export default function InventarioPage() {
                 options={TIPOS_FILTRO}
               />
               <div className="flex-1" />
+              <Button size="sm" variant="ghost" onClick={() => { setShowReconciliar(true); reconciliarQuery.refetch() }} loading={reconciliarQuery.isFetching}>
+                Conciliar stock
+              </Button>
               <Button size="sm" onClick={() => abrirMovimiento()}>
                 <Plus className="size-4 mr-1" /> Registrar movimiento
               </Button>
             </div>
+
+            {showReconciliar && reconciliarQuery.data && (
+              <div className={cn(
+                'p-4 rounded-xl mb-4',
+                reconciliarQuery.data.conciliado ? 'bg-success/10 border border-success/20' : 'bg-warning/10 border border-warning/20',
+              )}>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="font-semibold text-sm flex items-center gap-1.5">
+                    {reconciliarQuery.data.conciliado ? (
+                      <><CheckCircle className="size-4 text-success" /> Stock conciliado — sin divergencias</>
+                    ) : (
+                      <><TriangleAlert className="size-4 text-warning" /> {reconciliarQuery.data.total_divergencias} divergencias encontradas</>
+                    )}
+                  </span>
+                  <button onClick={() => setShowReconciliar(false)} className="text-xs text-text-secondary hover:text-text-primary">Cerrar</button>
+                </div>
+                {!reconciliarQuery.data.conciliado && (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs">
+                      <thead>
+                        <tr className="text-text-secondary text-left border-b border-border">
+                          <th className="pb-1 pr-2">Producto</th>
+                          <th className="pb-1 pr-2 text-right">Stock actual</th>
+                          <th className="pb-1 pr-2 text-right">Saldo movs.</th>
+                          <th className="pb-1 text-right">Diferencia</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {reconciliarQuery.data.divergencias.map(d => (
+                          <tr key={d.id} className="border-b border-border/30">
+                            <td className="py-1 pr-2 max-w-[120px] truncate">{d.nombre}</td>
+                            <td className="py-1 pr-2 text-right font-mono">{d.stock_actual}</td>
+                            <td className="py-1 pr-2 text-right font-mono">{d.saldo_movimientos}</td>
+                            <td className={`py-1 text-right font-mono font-semibold ${d.diferencia > 0 ? 'text-success' : 'text-danger'}`}>
+                              {d.diferencia > 0 ? '+' : ''}{d.diferencia}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
               {(listado?.movimientos ?? []).map((m, i) => {
@@ -346,6 +440,9 @@ export default function InventarioPage() {
                       <Badge variant={badgeVariant[m.tipo_movimiento] ?? 'default'} className="text-[10px] shrink-0">
                         {tipoLabels[m.tipo_movimiento] ?? m.tipo_movimiento}
                       </Badge>
+                      {m.movimiento_revertido_id && (
+                        <Badge variant="warning" className="text-[10px] shrink-0">Revertido</Badge>
+                      )}
                     </div>
                     <p className="font-semibold text-sm text-text-primary truncate mb-3">{m.producto_nombre}</p>
                     <div className="flex items-center justify-between">
@@ -361,6 +458,17 @@ export default function InventarioPage() {
                         <span className="text-[10px] text-text-secondary ml-1">stock</span>
                       </div>
                     </div>
+                    {['compra', 'devolucion', 'merma'].includes(m.tipo_movimiento) && !m.movimiento_revertido_id && (
+                      <div className="mt-2 pt-2 border-t border-border">
+                        <button
+                          onClick={() => { if (confirm('¿Revertir este movimiento?')) revertirMutation.mutate(m.id) }}
+                          disabled={revertirMutation.isPending}
+                          className="text-[10px] text-accent hover:text-accent-hover font-semibold disabled:opacity-50"
+                        >
+                          Revertir
+                        </button>
+                      </div>
+                    )}
                     {(m.motivo || m.creado_por_nombre) && (
                       <div className="flex items-center justify-between mt-2 pt-2 border-t border-border">
                         {m.motivo ? (
@@ -401,10 +509,13 @@ export default function InventarioPage() {
             )}
           </>
         )}
+
+        {/* Sesiones View */}
+        {view === 'sesiones' && <SesionesTab />}
       </div>
 
       {/* Category Panel */}
-      <CategoryPanel open={catPanelOpen} onClose={() => setCatPanelOpen(false)} />
+      <CategoryPanel open={catPanelOpen} onClose={() => setCatPanelOpen(false)} module="inventario" />
 
       {/* Item SidePanel */}
       <SidePanel
@@ -418,6 +529,7 @@ export default function InventarioPage() {
             options={[{ value: '', label: 'Sin categoría' }, ...(categoriasData?.filter(c => c.activo !== false).map((c) => ({ value: c.id, label: c.nombre })) ?? [])]} />
           <Input label="Stock inicial" type="number" step="0.01" min="0" value={itemForm.stock_actual} onChange={(e) => setItemForm({ ...itemForm, stock_actual: e.target.value })} disabled={!!editandoItem} />
           <Input label="Stock mínimo" type="number" step="0.01" min="0" value={itemForm.stock_minimo} onChange={(e) => setItemForm({ ...itemForm, stock_minimo: e.target.value })} />
+          <Input label="Costo ($)" type="number" step="0.01" min="0" value={itemForm.precio_costo} onChange={(e) => setItemForm({ ...itemForm, precio_costo: e.target.value })} placeholder="Ej: 2.50" />
           <Select label="Unidad de medida" value={itemForm.unidad_medida_id} onValueChange={(v) => setItemForm({ ...itemForm, unidad_medida_id: v })}
             options={[{ value: '', label: 'Seleccionar unidad...' }, ...(unidades?.map((u) => ({ value: u.id, label: `${u.nombre} (${u.abreviatura})` })) ?? [])]} />
           <Button onClick={() => editandoItem ? editarItemMutation.mutate() : crearItemMutation.mutate()} loading={crearItemMutation.isPending || editarItemMutation.isPending} disabled={!itemForm.nombre} className="w-full">
@@ -429,7 +541,7 @@ export default function InventarioPage() {
       {/* Movement SidePanel */}
       <SidePanel
         open={movPanelOpen}
-        onClose={() => { setMovPanelOpen(false); setMovForm({ producto_id: '', tipo: 'compra', cantidad: '', unidad_medida_id: '', motivo: '' }) }}
+        onClose={() => { setMovPanelOpen(false); setMovForm({ producto_id: '', tipo: 'compra', cantidad: '', unidad_medida_id: '', costo_unitario: '', motivo: '' }) }}
         title="Registrar movimiento"
       >
         <div className="flex flex-col gap-4 p-4">
@@ -447,6 +559,9 @@ export default function InventarioPage() {
             </div>
           </div>
           <Input label="Cantidad" type="number" step="0.01" min="0.01" value={movForm.cantidad} onChange={(e) => setMovForm({ ...movForm, cantidad: e.target.value })} placeholder="Ej: 10" required />
+          {movForm.tipo === 'compra' && (
+            <Input label="Costo unitario ($)" type="number" step="0.01" min="0" value={movForm.costo_unitario} onChange={(e) => setMovForm({ ...movForm, costo_unitario: e.target.value })} placeholder="Ej: 2.50" />
+          )}
           <Select label="Unidad de medida" value={movForm.unidad_medida_id} onValueChange={(v) => setMovForm({ ...movForm, unidad_medida_id: v })}
             options={[{ value: '', label: 'Seleccionar unidad...' }, ...(unidades?.map((u) => ({ value: u.id, label: `${u.nombre} (${u.abreviatura})` })) ?? [])]} />
           <div>
@@ -459,6 +574,101 @@ export default function InventarioPage() {
             Registrar
           </Button>
         </div>
+      </SidePanel>
+
+      {/* Kardex SidePanel */}
+      <SidePanel
+        open={!!kardexProducto}
+        onClose={() => setKardexProducto(null)}
+        title={`Kardex — ${kardexProducto?.nombre ?? ''}`}
+        className="max-w-2xl"
+      >
+        {kardexLoading ? (
+          <div className="flex justify-center py-16"><Spinner size="lg" /></div>
+        ) : kardexData ? (
+          <div className="flex flex-col h-full">
+            <div className="px-4 py-3 border-b border-border bg-bg-surface/50">
+              <div className="grid grid-cols-3 gap-3">
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-text-secondary uppercase tracking-wider">Stock actual</span>
+                  <span className="text-sm font-mono font-semibold text-text-primary">{kardexData.producto.stock_actual} {kardexData.producto.unidad}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-text-secondary uppercase tracking-wider">Costo promedio</span>
+                  <span className="text-sm font-mono font-semibold text-accent">${kardexData.producto.costo_promedio.toFixed(2)}</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[10px] text-text-secondary uppercase tracking-wider">Total movimientos</span>
+                  <span className="text-sm font-mono font-semibold text-text-primary">{kardexData.paginacion.total}</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto px-4 py-2">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-text-secondary text-left border-b border-border sticky top-0 bg-bg-surface">
+                    <th className="pb-2 pr-2 font-medium w-[120px]">Fecha</th>
+                    <th className="pb-2 pr-2 font-medium w-[70px]">Tipo</th>
+                    <th className="pb-2 pr-2 font-medium text-right w-[60px]">Cant.</th>
+                    <th className="pb-2 pr-2 font-medium text-right w-[70px]">Costo Un.</th>
+                    <th className="pb-2 pr-2 font-medium text-right w-[70px]">Costo Tot.</th>
+                    <th className="pb-2 font-medium text-right w-[60px]">Stock</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {kardexData.movimientos.map((m: KardexMovimiento) => {
+                    const d = new Date(m.fecha)
+                    const esEntrada = ['Compra', 'Ajuste', 'Devolución'].includes(m.tipo)
+                    const esSalida = ['Merma', 'Consumo'].includes(m.tipo)
+                    return (
+                      <tr key={m.id} className={`border-b border-border/30 ${m.revertido ? 'opacity-50' : ''}`}>
+                        <td className="py-1.5 pr-2 whitespace-nowrap text-text-secondary">
+                          {d.toLocaleDateString('es-SV', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                        </td>
+                        <td className="py-1.5 pr-2">
+                          <span className={`inline-flex items-center gap-0.5 ${
+                            esEntrada ? 'text-success' : esSalida ? 'text-danger' : 'text-text-secondary'
+                          }`}>
+                            {esEntrada ? <ArrowUpRight className="size-3" /> : esSalida ? <ArrowDownRight className="size-3" /> : <Minus className="size-3" />}
+                            {m.tipo}
+                          </span>
+                        </td>
+                        <td className={`py-1.5 pr-2 text-right font-mono font-medium ${
+                          esEntrada ? 'text-success' : esSalida ? 'text-danger' : 'text-text-primary'
+                        }`}>
+                          {esEntrada ? '+' : '-'}{m.cantidad}
+                        </td>
+                        <td className="py-1.5 pr-2 text-right font-mono text-text-secondary">
+                          {m.costo_unitario != null ? `$${m.costo_unitario.toFixed(2)}` : '—'}
+                        </td>
+                        <td className="py-1.5 pr-2 text-right font-mono text-text-secondary">
+                          {m.costo_total != null ? `$${m.costo_total.toFixed(2)}` : '—'}
+                        </td>
+                        <td className="py-1.5 text-right font-mono text-text-primary">
+                          <span className={`${m.stock_posterior < 0 ? 'text-danger' : ''}`}>
+                            {m.stock_posterior}
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {kardexData.paginacion.paginas > 1 && (
+              <div className="flex justify-center gap-2 p-3 border-t border-border">
+                <Button size="sm" variant="ghost" disabled={kardexPagina <= 1} onClick={() => setKardexPagina(p => Math.max(1, p - 1))}>Anterior</Button>
+                <span className="text-xs text-text-secondary self-center">Pág {kardexPagina} / {kardexData.paginacion.paginas}</span>
+                <Button size="sm" variant="ghost" disabled={kardexPagina >= kardexData.paginacion.paginas} onClick={() => setKardexPagina(p => p + 1)}>Siguiente</Button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-16 gap-1 text-text-secondary">
+            <BookOpen className="size-8 mb-1" />
+            <span className="text-sm">Sin datos</span>
+          </div>
+        )}
       </SidePanel>
     </div>
   )

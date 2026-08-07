@@ -32,8 +32,8 @@ export const listarCategorias = (params?: { arbol?: boolean; modulo?: string }) 
   api.get<{ ok: boolean; data: { categorias: CategoriaRaw[] } }>('/categorias', { params: { ...params, arbol: params?.arbol ?? false } })
     .then(r => r.data.data.categorias.map(parseCategoria))
 
-export const listarArbolCategorias = () =>
-  api.get<{ ok: boolean; data: { categorias: CategoriaRaw[] } }>('/categorias', { params: { arbol: true } })
+export const listarArbolCategorias = (modulo?: string) =>
+  api.get<{ ok: boolean; data: { categorias: CategoriaRaw[] } }>('/categorias', { params: { arbol: true, modulo } })
     .then(r => r.data.data.categorias.map(parseCategoria))
 
 export const crearCategoria = (data: { nombre: string; parent_id?: string | null; icono?: string; modulo?: string }) =>

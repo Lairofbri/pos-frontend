@@ -11,6 +11,7 @@ interface CategoryNavigatorProps {
   emptyIcon?: React.ReactNode
   emptyTitle?: string
   emptySubtitle?: string
+  module?: string
   onSelect?: (categoriaId: string | null) => void
   onNewCategory?: (parentId?: string) => void
   onEditCategory?: (cat: Categoria) => void
@@ -31,13 +32,14 @@ export function CategoryNavigator({
   emptyIcon,
   emptyTitle = 'Sin categorías',
   emptySubtitle = 'Crea una categoría para organizar',
+  module,
   onSelect,
   onNewCategory,
   onEditCategory,
 }: CategoryNavigatorProps) {
   const { data: categoriasData, isLoading: catLoading, error } = useQuery({
-    queryKey: ['categorias-arbol'],
-    queryFn: () => listarArbolCategorias(),
+    queryKey: ['categorias-arbol', module],
+    queryFn: () => listarArbolCategorias(module),
     ...queryDefaults('categorias'),
   })
 
@@ -141,9 +143,12 @@ export function CategoryNavigator({
       {currentCategories.length > 0 && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-3">
           {currentCategories.map((cat, i) => (
-            <button
+            <div
               key={cat.id}
               onClick={() => navigateTo(cat)}
+              onKeyDown={(e) => { if (e.key === 'Enter') navigateTo(cat) }}
+              role="button"
+              tabIndex={0}
               className="group relative bg-white border border-border rounded-xl p-4 cursor-pointer flex flex-col items-center text-center gap-2 transition-all hover:border-accent hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(198,106,30,0.12)] active:scale-[0.97]"
               style={{ animation: `fadeInUp 0.3s ease-out ${i * 0.04}s both` }}
             >
@@ -163,7 +168,7 @@ export function CategoryNavigator({
               <span className="text-xs font-medium text-text-secondary bg-bg-surface px-2 py-0.5 rounded-full">
                 {cat.hijos ? cat.hijos.filter(c => c.activo !== false).length : 0} subcategorías
               </span>
-            </button>
+            </div>
           ))}
         </div>
       )}

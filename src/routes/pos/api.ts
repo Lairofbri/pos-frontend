@@ -3,7 +3,7 @@ import type { Producto, Orden, OrdenItem, Categoria, Mesa, Pago } from '../../ty
 
 interface ProductoRaw {
   id: string; nombre: string; descripcion: string | null
-  precio: string; imagen_url: string | null; codigo: string | null
+  precio: string; precio_costo: string; imagen_url: string | null; codigo: string | null
   activo: boolean; orden: number; categoria_id: string | null
   categoria_nombre: string | null; categoria_color: string | null
   tiene_stock: boolean; stock_actual: number; stock_minimo: number
@@ -40,7 +40,7 @@ interface PagoRaw {
 function parseProducto(r: ProductoRaw): Producto {
   return {
     id: r.id, nombre: r.nombre, descripcion: r.descripcion ?? undefined,
-    precio: parseFloat(r.precio), imagen_url: r.imagen_url ?? undefined,
+    precio: parseFloat(r.precio), precio_costo: parseFloat(r.precio_costo), imagen_url: r.imagen_url ?? undefined,
     codigo: r.codigo ?? undefined, activo: r.activo, orden: r.orden,
     categoria_id: r.categoria_id ?? undefined,
     categoria_nombre: r.categoria_nombre ?? undefined,
@@ -111,7 +111,7 @@ export const getProductos = (categoriaId?: string) =>
 
 export const getCategorias = (arbol?: boolean) =>
   api.get<{ ok: boolean; data: { categorias: Categoria[] } }>('/categorias', {
-    params: arbol ? { arbol: true } : {},
+    params: arbol ? { arbol: true, modulo: 'producto' } : { modulo: 'producto' },
   }).then(r => r.data.data.categorias)
     .catch(() => [])
 
@@ -155,11 +155,13 @@ export const agregarItem = (ordenId: string, data: { producto_id: string; cantid
 export const eliminarItem = (ordenId: string, itemId: string) =>
   api.delete(`/ordenes/${ordenId}/items/${itemId}`).then(r => r.data)
 
-export const actualizarItem = (ordenId: string, itemId: string, data: { cantidad?: number; notas?: string; descuento_porcentaje?: number }) =>
+export const actualizarItem = (ordenId: string, itemId: string, data: { cantidad?: number; notas?: string; descuento_porcentaje?: number; modificaciones?: { sin?: string[]; extra?: Array<{ producto_id: string; cantidad: number; precio: number }>; notas_extra?: string } }) =>
   api.patch(`/ordenes/${ordenId}/items/${itemId}`, data).then(r => r.data.data)
 
-export const pagarOrden = (ordenId: string, pdata: Record<string, unknown>) =>
-  api.post(`/ordenes/${ordenId}/pagar`, pdata).then(r => r.data.data)
+export const pagarOrden = (ordenId: string, pdata: Record<string, unknown>, idempotencyKey?: string) =>
+  api.post(`/ordenes/${ordenId}/pagar`, pdata, {
+    headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
+  }).then(r => r.data.data)
 
 export const enviarCocina = (ordenId: string) =>
   api.patch(`/ordenes/${ordenId}/estado`, { estado: 'en_proceso' }).then(r => r.data.data)
