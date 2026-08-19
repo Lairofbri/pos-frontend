@@ -62,6 +62,7 @@ export function CategoryPanel({ open, onClose, module, variant = 'sidepanel', ed
   useEffect(() => {
     if (open) {
       if (editing) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setEditando(editing)
         setForm({ nombre: editing.nombre, icono: editing.icono ?? '' })
         const chain = categoriasData ? buildChain(categoriasData, editing.parent_id) : []
@@ -75,7 +76,7 @@ export function CategoryPanel({ open, onClose, module, variant = 'sidepanel', ed
         setConfirmDelete(null)
       }
     }
-  }, [open, editing])
+  }, [open, editing, categoriasData])
 
   const allCategoriesPlanas = categoriasData ? flattenAllCategories(categoriasData) : []
 

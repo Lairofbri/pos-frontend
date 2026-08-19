@@ -1,45 +1,81 @@
+import { CountUp } from './CountUp'
 import { DashboardCard } from '../../../components/shared/DashboardCard'
-import { MetricValue } from '../../../components/shared/MetricValue'
 
-interface MetricsSectionProps {
+export interface MetricasReales {
   ventas_hoy: number
-  ticket_promedio: number
+  promedio_persona: number
   ordenes_hoy: number
-  clientes_hoy: number
-  trend_ventas: number
-  trend_ordenes: number
+  personas_hoy: number
+  food_cost_pct: number
+  margen_bruto: number
+  trend_ventas: number | null
+  trend_ordenes: number | null
+  trend_personas: number | null
 }
 
-export function MetricsSection({ ventas_hoy, ticket_promedio, ordenes_hoy, clientes_hoy, trend_ventas, trend_ordenes }: MetricsSectionProps) {
+interface MetricsSectionProps {
+  metrics: MetricasReales
+}
+
+function MetricCard({ value, label, prefix, trend }: {
+  value: number
+  label: string
+  prefix?: string
+  trend?: { pct: number; up: boolean } | null
+}) {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      <DashboardCard>
-        <MetricValue
-          value={`$${ventas_hoy.toFixed(2)}`}
-          label="Ventas hoy"
-          trend={{ value: `${trend_ventas}%`, up: trend_ventas >= 0 }}
-        />
-      </DashboardCard>
-      <DashboardCard>
-        <MetricValue
-          value={`$${ticket_promedio.toFixed(2)}`}
-          label="Ticket promedio"
-          prefix="ø"
-        />
-      </DashboardCard>
-      <DashboardCard>
-        <MetricValue
-          value={ordenes_hoy.toString()}
-          label="Órdenes hoy"
-          trend={{ value: `${trend_ordenes}%`, up: trend_ordenes >= 0 }}
-        />
-      </DashboardCard>
-      <DashboardCard>
-        <MetricValue
-          value={clientes_hoy.toString()}
-          label="Clientes atendidos"
-        />
-      </DashboardCard>
+    <DashboardCard>
+      <div className="flex flex-col gap-0.5">
+        <div className="flex items-baseline gap-1">
+          {prefix && <span className="text-sm font-semibold text-text-secondary">{prefix}</span>}
+          <span className="dashboard-metric-value">
+            <CountUp end={value} prefix={prefix ? '' : '$'} decimals={2} />
+          </span>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-text-secondary font-body">{label}</span>
+          {trend && (
+            <span className={`text-xs font-semibold font-mono ${trend.up ? 'dashboard-trend-up' : 'dashboard-trend-down'}`}>
+              {trend.up ? '\u2191' : '\u2193'} {trend.pct.toFixed(1)}%
+            </span>
+          )}
+        </div>
+      </div>
+    </DashboardCard>
+  )
+}
+
+export function MetricsSection({ metrics }: MetricsSectionProps) {
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+      <MetricCard
+        value={metrics.ventas_hoy}
+        label="Ventas hoy"
+        trend={metrics.trend_ventas != null ? { pct: Math.abs(metrics.trend_ventas), up: metrics.trend_ventas >= 0 } : null}
+      />
+      <MetricCard
+        value={metrics.promedio_persona}
+        label="Promedio / persona"
+      />
+      <MetricCard
+        value={metrics.ordenes_hoy}
+        label="Órdenes hoy"
+        trend={metrics.trend_ordenes != null ? { pct: Math.abs(metrics.trend_ordenes), up: metrics.trend_ordenes >= 0 } : null}
+      />
+      <MetricCard
+        value={metrics.personas_hoy}
+        label="Personas"
+        trend={metrics.trend_personas != null ? { pct: Math.abs(metrics.trend_personas), up: metrics.trend_personas >= 0 } : null}
+      />
+      <MetricCard
+        value={metrics.food_cost_pct}
+        label="Food cost %"
+        prefix=""
+      />
+      <MetricCard
+        value={metrics.margen_bruto}
+        label="Margen bruto"
+      />
     </div>
   )
 }

@@ -1,10 +1,12 @@
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { queryDefaults } from '../../config/queries'
-import { getDashboardMetrics, getMesas, getTopProductos, getVentasPorHora, getAlertas } from './api'
-import type { DashboardAlerta } from './api'
+import { getMesas, getResumenHoy, getRentabilidadTop, getEvolucion7d } from './api'
+import type { EvolucionRow } from './api'
 import { obtenerResumen } from '../admin/inventario/api'
 import { useCajaActiva } from '../../hooks/useCajaActiva'
 import { MetricsSection } from './components/MetricsSection'
+import type { MetricasReales } from './components/MetricsSection'
 import { OperationalStatus } from './components/OperationalStatus'
 import { ProductPerformance } from './components/ProductPerformance'
 import { TrendsSection } from './components/TrendsSection'
@@ -13,14 +15,38 @@ import { PageHeader } from '../../components/shared/PageHeader'
 import { Spinner } from '../../components/ui/Spinner'
 import { useAuthStore } from '../../store/authStore'
 
+function computeTrend(hoy: number, ayer: number): number | null {
+  if (ayer === 0) return null
+  return ((hoy - ayer) / ayer) * 100
+}
+
+function getTodayYesterday(evolucion: EvolucionRow[]) {
+  const sorted = [...evolucion].sort((a, b) => a.fecha.localeCompare(b.fecha))
+  const hoy = sorted[sorted.length - 1]
+  const ayer = sorted[sorted.length - 2]
+  return { hoy, ayer }
+}
+
 export default function DashboardPage() {
   const sucursalId = useAuthStore((s) => s.sucursalId)
   const { caja } = useCajaActiva()
 
-  const { data: metrics, isLoading: mLoading } = useQuery({
-    queryKey: ['dashboard-metrics', sucursalId],
-    queryFn: getDashboardMetrics,
-    ...queryDefaults('dashboard-metrics'),
+  const { data: resumen, isLoading: rLoading } = useQuery({
+    queryKey: ['dashboard-resumen', sucursalId],
+    queryFn: getResumenHoy,
+    ...queryDefaults('dashboard-resumen'),
+  })
+
+  const { data: rentabilidad } = useQuery({
+    queryKey: ['dashboard-rentabilidad'],
+    queryFn: getRentabilidadTop,
+    ...queryDefaults('dashboard-rentabilidad'),
+  })
+
+  const { data: evolucion } = useQuery({
+    queryKey: ['dashboard-evolucion', sucursalId],
+    queryFn: getEvolucion7d,
+    ...queryDefaults('dashboard-evolucion'),
   })
 
   const { data: mesas } = useQuery({
@@ -29,39 +55,53 @@ export default function DashboardPage() {
     ...queryDefaults('mesas'),
   })
 
-  const { data: productos, isLoading: pLoading } = useQuery({
-    queryKey: ['dashboard-top-productos'],
-    queryFn: getTopProductos,
-    ...queryDefaults('dashboard-top-productos'),
-  })
-
-  const { data: ventasPorHora, isLoading: vLoading } = useQuery({
-    queryKey: ['dashboard-ventas-hora', sucursalId],
-    queryFn: getVentasPorHora,
-    ...queryDefaults('dashboard-ventas-hora'),
-  })
-
   const { data: inventario } = useQuery({
     queryKey: ['inventario-resumen'],
     queryFn: obtenerResumen,
     ...queryDefaults('inventario-resumen'),
   })
 
-  const alertas: DashboardAlerta[] = [
-    ...(inventario?.alertas_count && inventario.alertas_count > 0
-      ? [{
-          id: 'stock-bajo',
-          severity: 'critical' as const,
-          icon: '📦',
-          titulo: 'Stock bajo de ingredientes',
-          descripcion: `${inventario.alertas_count} productos tienen stock por debajo del mínimo. Revisa inventario.`,
-          accion: { label: 'Ver inventario', ruta: '/admin/inventario' },
-        }]
-      : []),
-    ...getAlertas().slice(1),
-  ]
+  const metrics = useMemo((): MetricasReales => {
+    const ventasHoy = resumen ? parseFloat(resumen.total_ingresos) : 0
+    const ordenesHoy = resumen?.cantidad_ordenes ?? 0
+    const personasHoy = resumen?.total_personas ?? 0
+    const promedioPersona = personasHoy > 0 ? ventasHoy / personasHoy : 0
 
-  if (mLoading || pLoading || vLoading) {
+    const evo = evolucion ?? []
+    const { hoy: todayEvo, ayer: yesterdayEvo } = getTodayYesterday(evo)
+
+    const foodCostPct = todayEvo && todayEvo.ingresos > 0
+      ? (todayEvo.costo / todayEvo.ingresos) * 100
+      : 0
+    const margenBruto = todayEvo?.margen_bruto ?? 0
+
+    return {
+      ventas_hoy: ventasHoy,
+      promedio_persona: promedioPersona,
+      ordenes_hoy: ordenesHoy,
+      personas_hoy: personasHoy,
+      food_cost_pct: foodCostPct,
+      margen_bruto: margenBruto,
+      trend_ventas: computeTrend(
+        todayEvo?.ingresos ?? 0,
+        yesterdayEvo?.ingresos ?? 0,
+      ),
+      trend_ordenes: computeTrend(
+        todayEvo?.ordenes ?? 0,
+        yesterdayEvo?.ordenes ?? 0,
+      ),
+      trend_personas: null,
+    }
+  }, [resumen, evolucion])
+
+  const productosPerdida = useMemo(
+    () => (rentabilidad ?? []).filter(p => p.alerta === 'perdida'),
+    [rentabilidad],
+  )
+
+  const loading = rLoading
+
+  if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
         <Spinner size="lg" />
@@ -77,14 +117,7 @@ export default function DashboardPage() {
       />
 
       <div className="flex flex-col gap-4">
-        <MetricsSection
-          ventas_hoy={metrics?.ventas_hoy ?? 0}
-          ticket_promedio={metrics?.ticket_promedio ?? 0}
-          ordenes_hoy={metrics?.ordenes_hoy ?? 0}
-          clientes_hoy={metrics?.clientes_hoy ?? 0}
-          trend_ventas={metrics?.trend_ventas ?? 0}
-          trend_ordenes={metrics?.trend_ordenes ?? 0}
-        />
+        <MetricsSection metrics={metrics} />
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <OperationalStatus
@@ -92,12 +125,17 @@ export default function DashboardPage() {
             cajaEstado={caja?.estado ?? 'cerrada'}
             cajaVentas={caja?.total_ventas ?? 0}
           />
-          <ProductPerformance productos={productos ?? []} />
+          <ProductPerformance productos={rentabilidad ?? []} />
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <TrendsSection ventasPorHora={ventasPorHora ?? []} />
-          <AlertsSection alertas={alertas} />
+          <TrendsSection evolucion={evolucion ?? []} />
+          <AlertsSection
+            alertasStock={inventario?.alertas_count ?? 0}
+            productosPerdida={productosPerdida}
+            cajaAbierta={caja?.estado === 'abierta'}
+            evolucion={evolucion ?? []}
+          />
         </div>
       </div>
     </div>

@@ -1,10 +1,11 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
-import { Unlock, ClipboardList, Printer } from 'lucide-react'
+import { Unlock, ClipboardList, Printer, Minus } from 'lucide-react'
 import { printOrden } from '../../../components/shared/PrintTicket'
 import { DTEQR } from './DTEQR'
+import { ClientSelector } from './ClientSelector'
 import { Textarea } from '@/components/ui/Textarea'
 import { Input } from '@/components/ui/Input'
-import type { Orden, OrdenItem } from '../../../types'
+import type { Orden, OrdenItem, Cliente } from '../../../types'
 
 interface TicketPanelProps {
   orden: Orden
@@ -19,6 +20,13 @@ interface TicketPanelProps {
   onImprimirPreCuenta?: () => void
   onActualizarPropina?: (pct: number) => void
   enviando?: boolean
+  ocultarCocina?: boolean
+  separadores: Set<string>
+  onAgregarSeparador: () => void
+  numPersonas: number
+  onCambiarPersonas: (n: number) => void
+  clienteNombre?: string
+  onAsignarCliente?: (cliente: Cliente | null) => void
 }
 
 const ESTADO_LABEL: Record<string, string> = {
@@ -50,6 +58,13 @@ export function TicketPanel({
   onImprimirPreCuenta,
   onActualizarPropina,
   enviando,
+  ocultarCocina,
+  separadores,
+  onAgregarSeparador,
+  numPersonas,
+  onCambiarPersonas,
+  clienteNombre,
+  onAsignarCliente,
 }: TicketPanelProps) {
   const [descuentoInput, setDescuentoInput] = useState('')
   const [notasTexto, setNotasTexto] = useState('')
@@ -179,6 +194,13 @@ export function TicketPanel({
           }`}>
             {ESTADO_LABEL[orden.estado] ?? orden.estado}
           </span>
+          {onAsignarCliente && (
+            <ClientSelector
+              selectedClienteId={orden.cliente_id}
+              selectedClienteNombre={clienteNombre || orden.cliente_nombre || 'Consumidor Final'}
+              onSelect={onAsignarCliente}
+            />
+          )}
         </div>
         <div className="flex items-center gap-2 shrink-0">
           <span className="text-[10px] text-text-secondary/60 font-mono">{totalItems} ítems</span>
@@ -207,8 +229,18 @@ export function TicketPanel({
                 {comboItems.map(item => renderItem(item, true))}
               </div>
             ))}
-            {/* Items normales */}
-            {itemsAgrupados.normales.map(item => renderItem(item))}
+            {/* Items normales con separadores */}
+            {itemsAgrupados.normales.map((item) => {
+              const result = [renderItem(item)]
+              if (separadores.has(item.id)) {
+                result.push(
+                  <div key={`sep-${item.id}`} className="py-1">
+                    <div className="border-t-2 border-dashed border-accent/30" />
+                  </div>,
+                )
+              }
+              return result
+            })}
           </>
         )}
       </div>
@@ -287,13 +319,35 @@ export function TicketPanel({
           </div>
         </div>
 
+        {/* Personas */}
+        {onCambiarPersonas && (
+          <div className="px-3 lg:px-4 pb-1 flex items-center justify-between">
+            <span className="text-[11px] text-text-secondary">Personas</span>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => numPersonas > 1 && onCambiarPersonas(numPersonas - 1)}
+                disabled={numPersonas <= 1}
+                className="size-6 flex items-center justify-center rounded border border-border/50 text-text-secondary hover:border-accent/40 hover:text-accent transition-colors cursor-pointer disabled:opacity-30 text-sm"
+              >&minus;</button>
+              <span className="text-sm font-mono font-semibold text-text-primary tabular-nums w-5 text-center">{numPersonas}</span>
+              <button
+                onClick={() => onCambiarPersonas(numPersonas + 1)}
+                className="size-6 flex items-center justify-center rounded border border-border/50 text-text-secondary hover:border-accent/40 hover:text-accent transition-colors cursor-pointer text-sm"
+              >+</button>
+              <span className="text-[10px] text-text-secondary/60 font-mono ml-1">
+                ${(totalAPagar / numPersonas).toFixed(2)}/pers
+              </span>
+            </div>
+          </div>
+        )}
+
         {/* DTE QR */}
         {orden.estado === 'pagada' && (
           <DTEQR ordenId={orden.id} cerradoEn={orden.cerrado_en} />
         )}
 
         {/* Action buttons — compact row */}
-        <div className="px-3 lg:px-4 pb-2.5 flex items-center gap-2">
+        <div className="px-3 lg:px-4 pb-2.5 flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setMostrarOpciones(!mostrarOpciones)}
             className="h-8 px-2 rounded-lg border border-border/50 text-text-secondary hover:text-text-primary hover:border-border transition-colors cursor-pointer text-xs shrink-0"
@@ -301,16 +355,25 @@ export function TicketPanel({
           >
             ⋯
           </button>
+          {!ocultarCocina && (
+            <button
+              onClick={onEnviarCocina}
+              disabled={!tieneItemsPendientes || enviando}
+              className={`h-8 px-3 rounded-lg text-xs font-semibold transition-colors cursor-pointer shrink-0 ${
+                !tieneItemsPendientes || enviando
+                  ? 'bg-bg-primary text-text-secondary/40 border border-border/50'
+                  : 'bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20'
+              }`}
+            >
+              {enviando ? '...' : 'Cocina'}
+            </button>
+          )}
           <button
-            onClick={onEnviarCocina}
-            disabled={!tieneItemsPendientes || enviando}
-            className={`h-8 px-3 rounded-lg text-xs font-semibold transition-colors cursor-pointer shrink-0 ${
-              !tieneItemsPendientes || enviando
-                ? 'bg-bg-primary text-text-secondary/40 border border-border/50'
-                : 'bg-accent/10 text-accent border border-accent/30 hover:bg-accent/20'
-            }`}
+            onClick={onAgregarSeparador}
+            className="h-8 px-2 rounded-lg border border-border/50 text-text-secondary hover:text-accent hover:border-accent/40 transition-colors cursor-pointer shrink-0"
+            title="Agregar separador visual"
           >
-            {enviando ? '...' : 'Cocina'}
+            <Minus className="size-3.5" />
           </button>
           <div className="flex-1" />
           <button
@@ -331,7 +394,7 @@ export function TicketPanel({
           </button>
           <button
             onClick={onPagar}
-            disabled={orden.items.length === 0 || tieneItemsPendientes}
+            disabled={orden.items.length === 0 || (!ocultarCocina && tieneItemsPendientes)}
             className="h-8 px-4 rounded-lg bg-accent text-white text-xs font-bold transition-colors hover:bg-accent-dark cursor-pointer disabled:opacity-40 shrink-0"
           >
             Pagar

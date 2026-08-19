@@ -17,6 +17,7 @@ interface ProductoRaw {
   descripcion: string | null
   precio: string
   precio_costo: string
+  costo_promedio: string
   imagen_url: string | null
   codigo: string | null
   activo: boolean
@@ -39,6 +40,7 @@ function parseProducto(raw: ProductoRaw): Producto {
     descripcion: raw.descripcion ?? undefined,
     precio: parseFloat(raw.precio),
     precio_costo: parseFloat(raw.precio_costo),
+    costo_promedio: parseFloat(raw.costo_promedio),
     imagen_url: raw.imagen_url ?? undefined,
     codigo: raw.codigo ?? undefined,
     activo: raw.activo,

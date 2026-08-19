@@ -52,7 +52,7 @@ export default function ProductosPage() {
   const [origen, setOrigen] = useState<'nuevo' | 'inventario'>('nuevo')
   const [inventarioItemId, setInventarioItemId] = useState('')
   const [prodForm, setProdForm] = useState({
-    nombre: '', descripcion: '', precio: 0, precio_costo: 0, categoria_id: '',
+    nombre: '', descripcion: '', precio: 0, precio_costo: 0, costo_promedio: 0, categoria_id: '',
     codigo: '', imagen_url: '', orden: 0, activo: true,
     tiene_stock: false, stock_minimo: 0, se_vende: true,
   })
@@ -219,7 +219,7 @@ export default function ProductosPage() {
     setOrigen('nuevo')
     setInventarioItemId('')
     setProdForm({
-      nombre: '', descripcion: '', precio: 0, precio_costo: 0, categoria_id: catActivaId ?? '',
+      nombre: '', descripcion: '', precio: 0, precio_costo: 0, costo_promedio: 0, categoria_id: catActivaId ?? '',
       codigo: '', imagen_url: '', orden: 0, activo: true,
       tiene_stock: false, stock_minimo: 0, se_vende: true,
     })
@@ -230,7 +230,7 @@ export default function ProductosPage() {
     setProdEditando(p)
     setProdForm({
       nombre: p.nombre, descripcion: p.descripcion ?? '', precio: p.precio, precio_costo: p.precio_costo,
-      categoria_id: p.categoria_id ?? '', codigo: p.codigo ?? '',
+      costo_promedio: p.costo_promedio, categoria_id: p.categoria_id ?? '', codigo: p.codigo ?? '',
       imagen_url: p.imagen_url ?? '', orden: p.orden ?? 0, activo: p.activo,
       tiene_stock: p.tiene_stock, stock_minimo: p.stock_minimo,
       se_vende: p.se_vende,
@@ -541,6 +541,9 @@ export default function ProductosPage() {
           <Input label="Descripción" value={prodForm.descripcion} onChange={(e) => setProdForm({ ...prodForm, descripcion: e.target.value })} />
           <Input label="Precio" type="number" step="0.01" value={prodForm.precio} onChange={(e) => setProdForm({ ...prodForm, precio: parseFloat(e.target.value || '0') })} />
           <Input label="Costo ($)" type="number" step="0.01" min="0" value={prodForm.precio_costo} onChange={(e) => setProdForm({ ...prodForm, precio_costo: parseFloat(e.target.value || '0') })} />
+          {prodEditando && prodEditando.costo_promedio > 0 && (
+            <p className="text-xs text-text-secondary -mt-1">Costo promedio en reportes: ${prodEditando.costo_promedio.toFixed(2)}</p>
+          )}
           <Select label="Categoría" options={categoriasOptions} value={prodForm.categoria_id}
             onValueChange={(v) => setProdForm({ ...prodForm, categoria_id: v })} placeholder="Sin categoría" />
           <Input label="Código de barras" value={prodForm.codigo} onChange={(e) => setProdForm({ ...prodForm, codigo: e.target.value })} placeholder="Opcional" />

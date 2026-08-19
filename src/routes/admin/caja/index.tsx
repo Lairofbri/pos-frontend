@@ -1,8 +1,8 @@
-import { useState, useMemo } from 'react'
-import { DollarSign, ClipboardList, TriangleAlert } from 'lucide-react'
+import { useState } from 'react'
+import { DollarSign, ClipboardList, CircleCheck, TriangleAlert, HandCoins } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryDefaults } from '../../../config/queries'
-import { abrirCaja, cerrarCaja, registrarMovimiento, getHistorialCajas, getResumenDiario, obtenerCuadre } from './api'
+import { abrirCaja, cerrarCaja, registrarMovimiento, getHistorialCajas, verificarCuadre, obtenerCuadre } from './api'
 import { useCajaActiva } from '../../../hooks/useCajaActiva'
 import { SidePanel } from '../../../components/shared/SidePanel'
 import { InlineError } from '../../../components/shared/InlineError'
@@ -32,13 +32,8 @@ export default function CajaPage() {
   const [movTipo, setMovTipo] = useState<'retiro' | 'deposito'>('retiro')
   const [movMonto, setMovMonto] = useState('')
   const [movMotivo, setMovMotivo] = useState('')
-
-  const { data: resumen, isLoading: loadingResumen } = useQuery({
-    queryKey: ['resumen-diario'],
-    queryFn: () => getResumenDiario(),
-    enabled: cerrarPanel,
-    ...queryDefaults('resumen-diario'),
-  })
+  const [cuadreResult, setCuadreResult] = useState<{ cuadra: boolean; mensaje: string; diferencia: number; total_esperado: number } | null>(null)
+  const [verificando, setVerificando] = useState(false)
 
   const { data: historial } = useQuery<CajaTurno[]>({
     queryKey: ['caja-historial'],
@@ -53,15 +48,6 @@ export default function CajaPage() {
     ...queryDefaults('caja-movimientos'),
   })
 
-  const totalIngresos = useMemo(() => {
-    if (!resumen) return 0
-    return parseFloat(resumen.total_ingresos || '0')
-  }, [resumen])
-
-  const montoContado = parseFloat(montoFinal || '0')
-  const diferencia = totalIngresos > 0 ? montoContado - totalIngresos : 0
-  const hayDiferencia = Math.abs(diferencia) > 0.01
-
   const abrirMutation = useMutation({
     mutationFn: () => abrirCaja({ monto_inicial: parseFloat(montoInicial || '0') }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['caja-activa'] }); queryClient.invalidateQueries({ queryKey: ['caja-historial'] }); setAbrirPanel(false); setMontoInicial(''); showToast({ type: 'success', message: 'Caja abierta' }) },
@@ -69,8 +55,28 @@ export default function CajaPage() {
 
   const cerrarMutation = useMutation({
     mutationFn: () => cerrarCaja({ monto_final: parseFloat(montoFinal || '0'), notas_cierre: notasCierre || undefined }),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['caja-activa'] }); queryClient.invalidateQueries({ queryKey: ['caja-historial'] }); setCerrarPanel(false); setMontoFinal(''); setNotasCierre(''); showToast({ type: 'success', message: 'Caja cerrada' }) },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['caja-activa'] }); queryClient.invalidateQueries({ queryKey: ['caja-historial'] }); setCerrarPanel(false); setMontoFinal(''); setNotasCierre(''); setCuadreResult(null); showToast({ type: 'success', message: 'Caja cerrada' }) },
   })
+
+  const handleVerificarCuadre = async () => {
+    const monto = parseFloat(montoFinal || '0')
+    if (!monto || monto <= 0) return
+    setVerificando(true)
+    try {
+      const res = await verificarCuadre(monto)
+      setCuadreResult(res)
+    } catch {
+      showToast({ type: 'error', message: 'Error al verificar cuadre' })
+    } finally {
+      setVerificando(false)
+    }
+  }
+
+  const handleRecontar = () => {
+    setCuadreResult(null)
+    setMontoFinal('')
+    setNotasCierre('')
+  }
 
   const movimientoMutation = useMutation({
     mutationFn: () => registrarMovimiento({ tipo: movTipo, monto: parseFloat(movMonto || '0'), motivo: movMotivo }),
@@ -99,7 +105,7 @@ export default function CajaPage() {
               <div className="grid grid-cols-2 gap-4 text-center">
                 <div>
                   <p className="text-xs text-text-secondary font-body">Inicial</p>
-                  <p className="font-mono text-lg text-text-primary">${cajaActiva.monto_inicial.toFixed(2)}</p>
+                  <p className="font-mono text-lg text-text-primary">${(cajaActiva.monto_inicial ?? 0).toFixed(2)}</p>
                 </div>
                 <div>
                   <p className="text-xs text-text-secondary font-body">Abierta por</p>
@@ -152,47 +158,149 @@ export default function CajaPage() {
         </div>
       </SidePanel>
 
-      <SidePanel open={cerrarPanel} onClose={() => setCerrarPanel(false)} title="Cerrar caja">
+      <SidePanel
+        open={cerrarPanel}
+        onClose={() => { setCerrarPanel(false); setCuadreResult(null); setMontoFinal(''); setNotasCierre('') }}
+        title="Cerrar caja"
+      >
         <div className="flex flex-col gap-4">
-          {loadingResumen ? (
-            <div className="flex justify-center py-8"><Spinner size="md" /></div>
-          ) : resumen ? (
-            <div className="bg-bg-primary rounded-xl border border-border p-4 flex flex-col gap-2">
-              <p className="text-xs font-semibold text-text-secondary uppercase tracking-wider mb-2">Resumen del día</p>
-              <div className="flex justify-between text-sm">
-                <span className="text-text-secondary font-body">Total órdenes</span>
-                <span className="font-mono text-text-primary">{resumen.total_ordenes}</span>
+          {!cuadreResult ? (
+            <>
+              <div className="bg-bg-primary rounded-xl border border-border p-4 flex flex-col gap-2">
+                <div className="flex items-center gap-2 mb-1">
+                  <HandCoins className="size-4 text-pos-accent" aria-hidden />
+                  <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                    Paso 1 — Contar efectivo
+                  </span>
+                </div>
+                <p className="text-xs text-text-secondary">
+                  Cuenta los billetes y monedas de la caja. No veas ningún total del sistema.
+                  Los pagos con tarjeta y otros métodos están en los tickets impresos del POS.
+                </p>
               </div>
-              <div className="border-t border-border/50 pt-2 flex flex-col gap-1">
-                {resumen.metodos.map((m) => (
-                  <div key={m.metodo} className="flex justify-between text-sm">
-                    <span className="text-text-secondary font-body capitalize">{m.metodo} ({m.cantidad_ordenes})</span>
-                    <span className="font-mono text-text-primary">${parseFloat(m.total).toFixed(2)}</span>
+
+              <Input
+                label="Monto contado"
+                type="text"
+                inputMode="decimal"
+                value={montoFinal}
+                onChange={(e) => setMontoFinal(e.target.value.replace(/[^0-9.]/g, ''))}
+                placeholder="0.00"
+              />
+
+              <Button
+                className="w-full"
+                onClick={handleVerificarCuadre}
+                loading={verificando}
+                disabled={!montoFinal || parseFloat(montoFinal) <= 0}
+              >
+                Verificar cuadre
+              </Button>
+            </>
+          ) : (
+            <>
+              {cuadreResult.cuadra ? (
+                <div className="bg-green-50 rounded-xl border-2 border-green-300 px-4 py-5 text-center flex flex-col items-center gap-2">
+                  <CircleCheck className="size-10 text-green-600" aria-hidden />
+                  <div>
+                    <p className="text-sm font-bold text-green-800">Caja cuadrada</p>
+                    <p className="text-xs text-green-600 mt-1">
+                      El monto contado coincide con el esperado
+                    </p>
                   </div>
-                ))}
-              </div>
-              <div className="border-t border-border pt-2 flex justify-between text-sm font-semibold">
-                <span className="text-text-primary font-body">Total esperado</span>
-                <span className="font-mono text-accent">${totalIngresos.toFixed(2)}</span>
-              </div>
-            </div>
-          ) : null}
+                  <div className="flex items-center gap-3 mt-1">
+                    <div className="text-center">
+                      <p className="text-[10px] text-green-600 uppercase tracking-wider">Esperado</p>
+                      <p className="text-sm font-mono font-bold text-green-800">${(cuadreResult.total_esperado ?? 0).toFixed(2)}</p>
+                    </div>
+                    <span className="text-green-400 text-lg">=</span>
+                    <div className="text-center">
+                      <p className="text-[10px] text-green-600 uppercase tracking-wider">Contado</p>
+                      <p className="text-sm font-mono font-bold text-green-800">${parseFloat(montoFinal || '0').toFixed(2)}</p>
+                    </div>
+                  </div>
+                </div>
+              ) : cuadreResult.diferencia > 0 ? (
+                <div className="bg-amber-50 rounded-xl border-2 border-amber-300 px-4 py-5 flex flex-col items-center gap-2">
+                  <TriangleAlert className="size-10 text-amber-600" aria-hidden />
+                  <div>
+                    <p className="text-sm font-bold text-amber-800">Sobrante detectado</p>
+                    <p className="text-xs text-amber-600 mt-1">
+                      Hay más dinero del esperado. Verifica tu conteo.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 mt-1">
+                    <div className="text-center">
+                      <p className="text-[10px] text-amber-600 uppercase tracking-wider">Esperado</p>
+                      <p className="text-sm font-mono font-bold text-amber-800">${(cuadreResult.total_esperado ?? 0).toFixed(2)}</p>
+                    </div>
+                    <span className="text-amber-500 text-lg">&lt;</span>
+                    <div className="text-center">
+                      <p className="text-[10px] text-amber-600 uppercase tracking-wider">Contado</p>
+                      <p className="text-sm font-mono font-bold text-amber-800">${parseFloat(montoFinal || '0').toFixed(2)}</p>
+                    </div>
+                  </div>
+                  <div className="bg-amber-100 rounded-lg px-3 py-1.5 mt-1">
+                    <p className="text-sm font-bold font-mono text-amber-700">
+                      Sobran ${(cuadreResult.diferencia ?? 0).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-red-50 rounded-xl border-2 border-red-300 px-4 py-5 flex flex-col items-center gap-2">
+                  <TriangleAlert className="size-10 text-red-600" aria-hidden />
+                  <div>
+                    <p className="text-sm font-bold text-red-800">Faltante detectado</p>
+                    <p className="text-xs text-red-600 mt-1">
+                      Falta dinero. Revisa el conteo o solicita autorización.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3 mt-1">
+                    <div className="text-center">
+                      <p className="text-[10px] text-red-600 uppercase tracking-wider">Esperado</p>
+                      <p className="text-sm font-mono font-bold text-red-800">${(cuadreResult.total_esperado ?? 0).toFixed(2)}</p>
+                    </div>
+                    <span className="text-red-500 text-lg">&gt;</span>
+                    <div className="text-center">
+                      <p className="text-[10px] text-red-600 uppercase tracking-wider">Contado</p>
+                      <p className="text-sm font-mono font-bold text-red-800">${parseFloat(montoFinal || '0').toFixed(2)}</p>
+                    </div>
+                  </div>
+                  <div className="bg-red-100 rounded-lg px-3 py-1.5 mt-1">
+                    <p className="text-sm font-bold font-mono text-red-700">
+                      Faltan ${Math.abs(cuadreResult.diferencia ?? 0).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+              )}
 
-          <Input label="Monto contado" type="text" inputMode="decimal" value={montoFinal} onChange={(e) => setMontoFinal(e.target.value.replace(/[^0-9.]/g, ''))} placeholder="0.00" />
+              <div className="border-t border-border pt-1" />
 
-          {hayDiferencia && (
-            <div className={`rounded-xl border-2 px-4 py-3 text-center ${diferencia < 0 ? 'bg-danger/10 border-danger/30' : 'bg-accent/10 border-accent/30'}`}>
-              <p className={`text-sm font-body font-semibold ${diferencia < 0 ? 'text-danger' : 'text-accent'}`}>
-                {diferencia < 0 ? <><TriangleAlert className="size-4 inline" aria-hidden /> Faltan ${Math.abs(diferencia).toFixed(2)}</> : <><TriangleAlert className="size-4 inline" aria-hidden /> Sobran ${diferencia.toFixed(2)}</>}
-              </p>
-            </div>
+              <Input
+                label="Notas (opcional)"
+                value={notasCierre}
+                onChange={(e) => setNotasCierre(e.target.value)}
+                placeholder="Observaciones del cierre..."
+              />
+
+              <div className="flex gap-2">
+                <Button
+                  variant="secondary"
+                  className="flex-1"
+                  onClick={handleRecontar}
+                >
+                  Recontar
+                </Button>
+                <Button
+                  className="flex-1"
+                  onClick={() => cerrarMutation.mutate()}
+                  loading={cerrarMutation.isPending}
+                >
+                  {cuadreResult.cuadra ? 'Cerrar caja' : 'Cerrar con diferencia'}
+                </Button>
+              </div>
+            </>
           )}
-
-          <Input label="Notas (opcional)" value={notasCierre} onChange={(e) => setNotasCierre(e.target.value)} placeholder="Observaciones..." />
-
-          <Button className="w-full" onClick={() => cerrarMutation.mutate()} loading={cerrarMutation.isPending} disabled={!montoFinal}>
-            {hayDiferencia ? 'Cerrar con diferencia' : 'Cerrar caja'}
-          </Button>
         </div>
       </SidePanel>
 

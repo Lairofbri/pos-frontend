@@ -1,48 +1,17 @@
 import api from '../../api/client'
-import type { Mesa, CajaTurno } from '../../types'
+import type { Mesa } from '../../types'
+import type { ResumenDiario } from '../admin/caja/api'
+import type { RentabilidadProducto, EvolucionRow } from '../admin/productos/api'
 
-export interface DashboardMetrics {
-  ventas_hoy: number
-  ticket_promedio: number
-  ordenes_hoy: number
-  clientes_hoy: number
-  trend_ventas: number
-  trend_ordenes: number
-}
+export { type ResumenDiario }
+export type { RentabilidadProducto, EvolucionRow }
 
 export interface DashboardAlerta {
   id: string
   severity: 'critical' | 'warning' | 'info'
-  icon: string
   titulo: string
   descripcion: string
   accion?: { label: string; ruta: string }
-}
-
-export interface ProductoTop {
-  id: string
-  nombre: string
-  icono: string
-  cantidad: number
-  total: number
-}
-
-export interface VentaHora {
-  hora: string
-  total: number
-}
-
-export function getDashboardMetrics(): Promise<DashboardMetrics> {
-  return api.get<{ ok: boolean; data: DashboardMetrics }>('/dashboard/metricas')
-    .then(r => r.data.data)
-    .catch(() => ({
-      ventas_hoy: 1250.75,
-      ticket_promedio: 18.50,
-      ordenes_hoy: 68,
-      clientes_hoy: 142,
-      trend_ventas: 12.5,
-      trend_ordenes: 8.3,
-    }))
 }
 
 export function getMesas(): Promise<Mesa[]> {
@@ -51,54 +20,37 @@ export function getMesas(): Promise<Mesa[]> {
     .catch(() => [])
 }
 
-export function getTopProductos(): Promise<ProductoTop[]> {
-  return api.get<{ ok: boolean; data: { productos: ProductoTop[] } }>('/dashboard/top-productos')
-    .then(r => r.data.data.productos)
-    .catch(() => [
-      { id: '1', nombre: 'Hamburguesa Clásica', icono: '🍔', cantidad: 42, total: 294.00 },
-      { id: '2', nombre: 'Pizza Pepperoni', icono: '🍕', cantidad: 28, total: 336.00 },
-      { id: '3', nombre: 'Papas Fritas', icono: '🍟', cantidad: 35, total: 105.00 },
-      { id: '4', nombre: 'Refresco Cola', icono: '🥤', cantidad: 50, total: 75.00 },
-      { id: '5', nombre: 'Ensalada César', icono: '🥗', cantidad: 18, total: 126.00 },
-    ])
+export function getResumenHoy(): Promise<ResumenDiario> {
+  return api.get<{ ok: boolean; data: { resumen: ResumenDiario } }>('/caja/resumen-diario')
+    .then(r => r.data.data.resumen)
+    .catch(() => ({
+      total_ordenes: 0,
+      total_ingresos: '0.00',
+      cantidad_ordenes: 0,
+      ticket_promedio: 0,
+      clientes_atendidos: 0,
+      total_personas: 0,
+      metodos: [],
+    }))
 }
 
-export function getVentasPorHora(): Promise<VentaHora[]> {
-  return api.get<{ ok: boolean; data: { horas: VentaHora[] } }>('/dashboard/ventas-por-hora')
-    .then(r => r.data.data.horas)
-    .catch(() => [
-      { hora: '10:00', total: 0 }, { hora: '11:00', total: 85.50 },
-      { hora: '12:00', total: 245.00 }, { hora: '13:00', total: 312.00 },
-      { hora: '14:00', total: 180.00 }, { hora: '15:00', total: 65.00 },
-      { hora: '16:00', total: 42.00 }, { hora: '17:00', total: 98.00 },
-      { hora: '18:00', total: 223.50 },
-    ])
+export function getRentabilidadTop(): Promise<RentabilidadProducto[]> {
+  return api.get<{ ok: boolean; data: { productos: RentabilidadProducto[] } }>('/productos/rentabilidad', {
+    params: { orden: 'margen_desc' },
+  })
+    .then(r => r.data.data.productos.slice(0, 8))
+    .catch(() => [])
 }
 
-export function getAlertas(): DashboardAlerta[] {
-  return [
-    {
-      id: '1', severity: 'critical', icon: '⚠️',
-      titulo: 'Stock bajo de ingredientes',
-      descripcion: '3 productos tienen stock por debajo del mínimo. Revisa inventario.',
-      accion: { label: 'Ver stock', ruta: '/admin/productos' },
-    },
-    {
-      id: '2', severity: 'warning', icon: '⏱️',
-      titulo: 'Órdenes demoradas en cocina',
-      descripcion: '2 órdenes llevan más de 30 min en preparación.',
-      accion: { label: 'Ver cocina', ruta: '/cocina' },
-    },
-    {
-      id: '3', severity: 'info', icon: '🪙',
-      titulo: 'Caja sin cerrar del turno anterior',
-      descripcion: 'Se recomienda cerrar la caja para iniciar el nuevo turno.',
-      accion: { label: 'Ir a caja', ruta: '/admin/caja' },
-    },
-  ]
-}
+export function getEvolucion7d(): Promise<EvolucionRow[]> {
+  const hoy = new Date()
+  const hace7d = new Date(hoy)
+  hace7d.setDate(hace7d.getDate() - 7)
+  const fmt = (d: Date) => d.toISOString().split('T')[0]
 
-export function getCajaActiva() {
-  return api.get<{ ok: boolean; data: CajaTurno | null }>('/caja/activa')
+  return api.get<{ ok: boolean; data: EvolucionRow[] }>('/productos/rentabilidad/evolucion', {
+    params: { desde: fmt(hace7d), hasta: fmt(hoy) },
+  })
     .then(r => r.data.data)
+    .catch(() => [])
 }

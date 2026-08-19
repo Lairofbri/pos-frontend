@@ -75,6 +75,7 @@ export function ItemCustomizer({ open, onClose, item, onSave }: ItemCustomizerPr
     if (!open) return
     if (item?.modificaciones) {
       const mod = item.modificaciones as ModificacionesState
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSin(new Set(mod.sin || []))
       setExtras(new Set((mod.extra || []).map(e => e.producto_id)))
       const pmap = new Map<string, number>()
@@ -92,6 +93,7 @@ export function ItemCustomizer({ open, onClose, item, onSave }: ItemCustomizerPr
   useEffect(() => {
     if (!open || ingredientes.length === 0) return
     if (!item?.modificaciones) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSin(new Set(ingredientes.map((i: IngredienteReceta) => i.ingrediente_id)))
     }
   }, [open, ingredientes, item])

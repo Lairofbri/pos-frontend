@@ -17,6 +17,9 @@ interface ClienteRaw {
   direccion: string | null
   municipio: string | null
   departamento: string | null
+  tipo_cliente: string | null
+  cod_actividad: string | null
+  desc_actividad: string | null
   activo: boolean
 }
 
@@ -37,6 +40,9 @@ function parseCliente(raw: ClienteRaw): Cliente {
     direccion: raw.direccion ?? undefined,
     municipio: raw.municipio ?? undefined,
     departamento: raw.departamento ?? undefined,
+    tipo_cliente: (raw.tipo_cliente as 'natural' | 'juridico') ?? 'natural',
+    cod_actividad: raw.cod_actividad ?? undefined,
+    desc_actividad: raw.desc_actividad ?? undefined,
     activo: raw.activo,
   }
 }

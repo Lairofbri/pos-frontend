@@ -35,6 +35,7 @@ const StaffReportePage = lazy(() => import('./routes/admin/reportes/staff/index'
 const DteReportePage = lazy(() => import('./routes/admin/reportes/dte/index'))
 const ConsolidadosReportePage = lazy(() => import('./routes/admin/reportes/consolidados/index'))
 const CostosReportePage = lazy(() => import('./routes/admin/reportes/costos/index'))
+const CuentasPage = lazy(() => import('./routes/admin/cuentas/index'))
 const DashboardPage = lazy(() => import('./routes/dashboard/index'))
 import { AuthGuard } from './components/shared/AuthGuard'
 import { RouteGuard } from './components/shared/RouteGuard'
@@ -73,6 +74,7 @@ const router = createBrowserRouter([
   { path: '/admin/reportes/dte', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><DteReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '/admin/reportes/consolidados', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><ConsolidadosReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '/admin/reportes/costos', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><CostosReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+  { path: '/admin/cuentas', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><CuentasPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '*', element: <Navigate to="/pos" replace /> },
 ])
 

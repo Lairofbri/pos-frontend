@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 
 interface AlertCardProps {
   severity: 'critical' | 'warning' | 'info'
-  icon: string
+  icon: ReactNode
   title: string
   description: string
   action?: { label: string; onClick: () => void }

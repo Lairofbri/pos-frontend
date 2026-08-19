@@ -62,6 +62,7 @@ export interface Producto {
   descripcion?: string
   precio: number
   precio_costo: number
+  costo_promedio: number
   categoria_id?: string
   categoria_nombre?: string
   categoria_color?: string
@@ -178,6 +179,7 @@ export interface Orden {
   propina_porcentaje: number
   propina_monto: number
   notas?: string
+  num_personas?: number
   items: OrdenItem[]
   pagos: Pago[]
   creado_en: string
@@ -222,6 +224,9 @@ export interface Cliente {
   direccion?: string
   municipio?: string
   departamento?: string
+  tipo_cliente?: 'natural' | 'juridico'
+  cod_actividad?: string
+  desc_actividad?: string
   activo: boolean
 }
 

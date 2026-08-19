@@ -12,7 +12,7 @@ import { GerentePinModal } from '../../components/shared/GerentePinModal'
 import { SwitchUserModal } from '../../components/shared/SwitchUserModal'
 import { ConfirmDialog } from '../../components/shared/ConfirmDialog'
 import { Icon } from '../../components/shared/Icon'
-import { crearOrden, agregarItem, actualizarItem, eliminarItem, cancelarItem, pagarOrden, enviarCocina, actualizarOrden, cancelarOrden, getOrdenes, getOrden, actualizarPropina } from './api'
+import { crearOrden, agregarItem, actualizarItem, eliminarItem, cancelarItem, pagarOrden, enviarCocina, actualizarOrden, cancelarOrden, getOrdenes, getOrden, actualizarPropina, emitirDTE } from './api'
 import type { ComboPos } from './api'
 import { useToastStore } from '../../store/toastStore'
 import { useAuthStore } from '../../store/authStore'
@@ -35,6 +35,9 @@ export default function POSPage() {
   const [mostrarSwitchUser, setMostrarSwitchUser] = useState(false)
   const [mobileTab, setMobileTab] = useState<'productos' | 'ticket'>('productos')
   const [customizingItem, setCustomizingItem] = useState<OrdenItem | null>(null)
+  const [separadores, setSeparadores] = useState<Set<string>>(new Set())
+  const [numPersonas, setNumPersonas] = useState(1)
+  const [clienteAsignado, setClienteAsignado] = useState<{ id: string; nombre: string; tipo_cliente?: string; nit?: string } | null>(null)
   useCocinaSocket(tenantId ?? '')
 
   const { data: ordenes } = useQuery({
@@ -66,6 +69,9 @@ export default function POSPage() {
   const limpiarOrden = (id: string | null) => {
     setOrdenConReset(null)
     setMostrarPayment(false)
+    setSeparadores(new Set())
+    setNumPersonas(1)
+    setClienteAsignado(null)
     queryClient.invalidateQueries({ queryKey: ['ordenes'] })
     queryClient.invalidateQueries({ queryKey: ['mesas'] })
     if (id) queryClient.removeQueries({ queryKey: ['orden', id] })
@@ -157,14 +163,20 @@ export default function POSPage() {
   })
 
   const pagarMutation = useMutation({
-    mutationFn: (pdata: Record<string, unknown>) => {
+    mutationFn: (pdata: { metodos: Array<{ metodo: string; monto: number; referencia?: string; banco?: string }> }) => {
       const idempotencyKey = crypto.randomUUID()
-      return pagarOrden(ordenSeleccionadaId!, pdata, idempotencyKey)
+      return pagarOrden(ordenSeleccionadaId!, pdata.metodos, idempotencyKey)
     },
     onSuccess: () => {
       const id = ordenSeleccionadaId
-      if (id) printMutation.mutate({ ordenId: id, tipo: 'ticket-consumo' })
+      if (id) {
+        const tipoDte = clienteAsignado?.tipo_cliente === 'juridico' && clienteAsignado?.nit ? '03' : '01'
+        emitirDTE(id, tipoDte).catch(() => { /* DTE opcional — no bloquea el flujo */ })
+        printMutation.mutate({ ordenId: id, tipo: 'ticket-consumo' })
+      }
       limpiarOrden(id)
+      setMostrarPayment(false)
+      setClienteAsignado(null)
       showToast({ type: 'success', message: 'Pago completado' })
     },
   })
@@ -185,6 +197,16 @@ export default function POSPage() {
 
   const propinaMutation = useMutation({
     mutationFn: (pct: number) => actualizarPropina(ordenActiva!.id, { porcentaje: pct }),
+    onSuccess: () => { invalidarOrden() },
+  })
+
+  const personasMutation = useMutation({
+    mutationFn: (n: number) => actualizarOrden(ordenActiva!.id, { num_personas: n }),
+    onSuccess: () => { invalidarOrden() },
+  })
+
+  const asignarClienteMutation = useMutation({
+    mutationFn: (clienteId: string | null) => actualizarOrden(ordenActiva!.id, { cliente_id: clienteId }),
     onSuccess: () => { invalidarOrden() },
   })
 
@@ -281,8 +303,13 @@ export default function POSPage() {
 
   const handleSelectProducto = (p: Producto) => {
     if (!ordenActiva) return
-    const existingPending = ordenActiva.items.find(
-      (i) => i.producto_id === p.id && i.estado === 'pendiente' && !i.notas
+    const items = ordenActiva.items
+    let startIdx = items.length
+    for (let i = items.length - 1; i >= 0; i--) {
+      if (!items[i].combo_id && separadores.has(items[i].id)) { startIdx = i + 1; break }
+    }
+    const existingPending = items.slice(startIdx).find(
+      (i) => i.producto_id === p.id && i.estado === 'pendiente' && !i.combo_id && !i.notas
     )
     if (existingPending) {
       incrementarItemMutation.mutate({
@@ -331,6 +358,22 @@ export default function POSPage() {
     setModifierProducto(null)
   }
 
+  const handleAgregarSeparador = () => {
+    if (!ordenActiva) return
+    const normales = ordenActiva.items.filter(i => !i.combo_id)
+    if (normales.length === 0) return
+    const lastId = normales[normales.length - 1].id
+    setSeparadores(prev => new Set([...prev, lastId]))
+    const nuevo = numPersonas + 1
+    setNumPersonas(nuevo)
+    personasMutation.mutate(nuevo)
+  }
+
+  const handleCambiarPersonas = (n: number) => {
+    setNumPersonas(n)
+    personasMutation.mutate(n)
+  }
+
   const handleEliminarItem = (itemId: string) => {
     eliminarMutation.mutate({ ordenId: ordenSeleccionadaId!, itemId })
   }
@@ -363,6 +406,7 @@ export default function POSPage() {
 
   const handleCambiarMesa = () => {
     setOrdenConReset(null)
+    setClienteAsignado(null)
   }
 
   return (
@@ -382,150 +426,167 @@ export default function POSPage() {
         </div>
       </div>
 
-      <div
-        className="flex flex-col lg:grid lg:grid-cols-[1fr_max-w-md] xl:grid-cols-[1fr_420px] gap-6 h-full overflow-hidden pb-16 lg:pb-0"
-      >
-        {/* LEFT COLUMN */}
-        <div className={`flex flex-col overflow-hidden min-h-0 px-4 lg:pl-6 lg:pr-0 lg:py-6 ${mobileTab === 'ticket' ? 'hidden md:flex' : ''}`}>
-          {!ordenActiva ? (
-            <>
-              {/* Modo toggle */}
-              <div className="flex flex-wrap items-center justify-end gap-2 mb-4 lg:mb-6 shrink-0">
-                <div className="flex items-center gap-1.5 lg:gap-2">
-                  <button
-                    onClick={() => setModo('mesa')}
-                    className={`h-9 px-3.5 rounded-[10px] text-[13px] font-medium transition-all duration-200 cursor-pointer flex items-center gap-1 ${
-                      modo === 'mesa'
-                        ? 'bg-pos-accent text-white border-transparent shadow-[0_8px_18px_rgba(199,102,46,0.22)]'
-                        : 'bg-white text-pos-text border border-pos-border'
-                    }`}
-                  >
-                    <Icon name="table" className="size-3.5" />
-                    Mesas
-                  </button>
-                  <button
-                    onClick={iniciarRapido}
-                    className={`h-9 px-3.5 rounded-[10px] text-[13px] font-medium transition-all duration-200 cursor-pointer flex items-center gap-1 ${
-                      modo === 'rapido'
-                        ? 'bg-pos-accent text-white border-transparent'
-                        : 'bg-white text-pos-text border border-pos-border'
-                    }`}
-                  >
-                    <Icon name="shopping-cart" className="size-3.5" />
-                    Rápido
-                  </button>
-                </div>
-              </div>
-
-              {/* TableMap */}
-              <div className="flex-1 overflow-y-auto min-h-0">
-                {modo === 'mesa' ? (
-                  <TableMap onSelectMesa={handleSelectMesa} />
-                ) : (
-                  <div className="flex flex-col items-center justify-center h-full gap-4">
-                    <p className="text-base text-pos-text-secondary">
-                      Inicia una venta rápida sin mesa asignada
-                    </p>
-                    <button
-                      onClick={iniciarRapido}
-                      className="h-11 px-6 rounded-xl bg-pos-accent text-white text-base font-semibold cursor-pointer hover:bg-pos-accent-hover transition-colors"
-                    >
-                      Iniciar venta rápida
-                    </button>
-                  </div>
-                )}
-              </div>
-            </>
-          ) : (
-            <>
-              {/* Back button + ProductGrid */}
-              <div className="flex items-center justify-between mb-3 lg:mb-4 shrink-0">
-                <button
-                  onClick={handleCambiarMesa}
-                  className="flex items-center gap-1.5 text-[13px] font-medium text-pos-text-secondary cursor-pointer hover:text-pos-accent transition-colors"
-                >
-                  <Icon name="arrow-left" className="size-4" />
-                  {modo === 'rapido' ? 'Nueva venta' : 'Cambiar mesa'}
-                </button>
-              </div>
-              <div className="flex-1 overflow-hidden">
-                <ProductGrid
-                  onSelectProducto={handleSelectProducto}
-                  onSelectCombo={handleSelectCombo}
-                  onLongPressProducto={handleLongPressProducto}
-                />
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* RIGHT COLUMN */}
-        <div className={`flex flex-col overflow-hidden min-h-0 px-4 lg:pl-0 lg:pr-6 lg:py-6 ${mobileTab === 'productos' ? 'hidden md:flex' : ''}`}>
-          {ordenActiva ? (
-            <div className="flex-1 overflow-y-auto">
-              <TicketPanel
-                key={ordenActiva.id}
-                orden={ordenActiva}
-                onEliminarItem={handleEliminarItem}
-                onModificarItem={(item) => setCustomizingItem(item)}
-                onEnviarCocina={() => ordenActiva && cocinaMutation.mutate(ordenActiva.id)}
-                onPagar={() => setMostrarPayment(true)}
-                onDescuento={(pct) => ordenActiva && descuentoMutation.mutate(pct)}
-                onGuardarNotas={(n) => notasMutation.mutate(n)}
-                onSolicitarAutorizacion={handleAutorizarEliminacion}
-                onLiberarMesa={handleLiberarMesa}
-                onImprimirPreCuenta={handleImprimirPreCuenta}
-                onActualizarPropina={(pct) => ordenActiva && propinaMutation.mutate(pct)}
-                enviando={cocinaMutation.isPending}
-              />
-            </div>
-          ) : (
-            <div className="overflow-y-auto">
-              <RestaurantSummary />
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Mobile bottom tabs */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white border-t border-border flex items-center justify-around h-14 px-2 pb-1">
-          <button
-            onClick={() => setMobileTab('productos')}
-            className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full rounded-lg transition-colors ${
-              mobileTab === 'productos' ? 'text-pos-accent bg-pos-accent/5' : 'text-text-secondary'
-            }`}
-          >
-            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
-            </svg>
-            <span className="text-[10px] font-semibold">Productos</span>
-          </button>
-          <button
-            onClick={() => setMobileTab('ticket')}
-            className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full rounded-lg transition-colors relative ${
-              mobileTab === 'ticket' ? 'text-pos-accent bg-pos-accent/5' : 'text-text-secondary'
-            }`}
-          >
-            <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-            </svg>
-            <span className="text-[10px] font-semibold">Ticket</span>
-            {ordenActiva && ordenActiva.items.length > 0 && (
-              <span className="absolute -top-0.5 right-1/4 min-w-[18px] h-[18px] rounded-full bg-accent text-white text-[10px] font-bold flex items-center justify-center px-1">
-                {ordenActiva.items.reduce((s, i) => s + i.cantidad, 0)}
-              </span>
-            )}
-          </button>
-        </div>
-
-      {ordenActiva && (
+      {mostrarPayment && ordenActiva ? (
         <PaymentPanel
-          open={mostrarPayment}
           onClose={() => setMostrarPayment(false)}
           orden={ordenActiva}
-          onConfirmar={(pdata) => pagarMutation.mutate(pdata)}
+          onConfirmar={(metodos) => pagarMutation.mutate({ metodos })}
           loading={pagarMutation.isPending}
+          numPersonas={numPersonas}
+          clienteNombre={clienteAsignado?.nombre}
+          clienteEsJuridico={clienteAsignado?.tipo_cliente === 'juridico' && !!clienteAsignado?.nit}
         />
+      ) : (
+        <>
+          <div
+            className={`flex flex-col lg:grid gap-6 h-full overflow-hidden pb-16 lg:pb-0 ${
+              modo === 'rapido'
+                ? 'lg:grid-cols-[1fr_280px]'
+                : 'lg:grid-cols-[1fr_max-w-md] xl:grid-cols-[1fr_420px]'
+            }`}>
+            {/* LEFT COLUMN */}
+            <div className={`flex flex-col overflow-hidden min-h-0 px-4 lg:pl-6 lg:pr-0 lg:py-6 ${mobileTab === 'ticket' ? 'hidden md:flex' : ''}`}>
+              {!ordenActiva ? (
+                <>
+                  {/* Modo toggle */}
+                  <div className="flex flex-wrap items-center justify-end gap-2 mb-4 lg:mb-6 shrink-0">
+                    <div className="flex items-center gap-1.5 lg:gap-2">
+                      <button
+                        onClick={() => setModo('mesa')}
+                        className={`h-9 px-3.5 rounded-[10px] text-[13px] font-medium transition-all duration-200 cursor-pointer flex items-center gap-1 ${
+                          modo === 'mesa'
+                            ? 'bg-pos-accent text-white border-transparent shadow-[0_8px_18px_rgba(199,102,46,0.22)]'
+                            : 'bg-white text-pos-text border border-pos-border'
+                        }`}
+                      >
+                        <Icon name="table" className="size-3.5" />
+                        Mesas
+                      </button>
+                      <button
+                        onClick={iniciarRapido}
+                        className={`h-9 px-3.5 rounded-[10px] text-[13px] font-medium transition-all duration-200 cursor-pointer flex items-center gap-1 ${
+                          modo === 'rapido'
+                            ? 'bg-pos-accent text-white border-transparent'
+                            : 'bg-white text-pos-text border border-pos-border'
+                        }`}
+                      >
+                        <Icon name="shopping-cart" className="size-3.5" />
+                        Rápido
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* TableMap */}
+                  <div className="flex-1 overflow-y-auto min-h-0">
+                    {modo === 'mesa' ? (
+                      <TableMap onSelectMesa={handleSelectMesa} />
+                    ) : (
+                      <div className="flex flex-col items-center justify-center h-full gap-4">
+                        <p className="text-base text-pos-text-secondary">
+                          Inicia una venta rápida sin mesa asignada
+                        </p>
+                        <button
+                          onClick={iniciarRapido}
+                          className="h-11 px-6 rounded-xl bg-pos-accent text-white text-base font-semibold cursor-pointer hover:bg-pos-accent-hover transition-colors"
+                        >
+                          Iniciar venta rápida
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Back button + ProductGrid */}
+                  <div className="flex items-center justify-between mb-3 lg:mb-4 shrink-0">
+                    <button
+                      onClick={handleCambiarMesa}
+                      className="flex items-center gap-1.5 text-[13px] font-medium text-pos-text-secondary cursor-pointer hover:text-pos-accent transition-colors"
+                    >
+                      <Icon name="arrow-left" className="size-4" />
+                      {modo === 'rapido' ? 'Nueva venta' : 'Cambiar mesa'}
+                    </button>
+                  </div>
+                  <div className="flex-1 overflow-hidden">
+                    <ProductGrid
+                      onSelectProducto={handleSelectProducto}
+                      onSelectCombo={handleSelectCombo}
+                      onLongPressProducto={handleLongPressProducto}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* RIGHT COLUMN */}
+            <div className={`flex flex-col overflow-hidden min-h-0 px-4 lg:pl-0 lg:pr-6 lg:py-6 ${mobileTab === 'productos' ? 'hidden md:flex' : ''}`}>
+              {ordenActiva ? (
+                <div className="flex-1 overflow-y-auto">
+                  <TicketPanel
+                    key={ordenActiva.id}
+                    orden={ordenActiva}
+                    onEliminarItem={handleEliminarItem}
+                    onModificarItem={(item) => setCustomizingItem(item)}
+                    onEnviarCocina={() => ordenActiva && cocinaMutation.mutate(ordenActiva.id)}
+                    onPagar={() => setMostrarPayment(true)}
+                    onDescuento={(pct) => ordenActiva && descuentoMutation.mutate(pct)}
+                    onGuardarNotas={(n) => notasMutation.mutate(n)}
+                    onSolicitarAutorizacion={handleAutorizarEliminacion}
+                    onLiberarMesa={handleLiberarMesa}
+                    onImprimirPreCuenta={handleImprimirPreCuenta}
+                    onActualizarPropina={(pct) => ordenActiva && propinaMutation.mutate(pct)}
+                    enviando={cocinaMutation.isPending}
+                    ocultarCocina={modo === 'rapido'}
+                    separadores={separadores}
+                    onAgregarSeparador={handleAgregarSeparador}
+                    numPersonas={numPersonas}
+                    onCambiarPersonas={handleCambiarPersonas}
+                    clienteNombre={clienteAsignado?.nombre}
+                    onAsignarCliente={(c) => {
+                      setClienteAsignado(c ? { id: c.id, nombre: c.razon_social || c.nombre_completo || c.nombre, tipo_cliente: c.tipo_cliente, nit: c.nit } : null)
+                      asignarClienteMutation.mutate(c ? c.id : null)
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="overflow-y-auto">
+                  <RestaurantSummary />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Mobile bottom tabs */}
+          <div className="fixed bottom-0 left-0 right-0 z-40 lg:hidden bg-white border-t border-border flex items-center justify-around h-14 px-2 pb-1">
+              <button
+                onClick={() => setMobileTab('productos')}
+                className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full rounded-lg transition-colors ${
+                  mobileTab === 'productos' ? 'text-pos-accent bg-pos-accent/5' : 'text-text-secondary'
+                }`}
+              >
+                <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16m-7 6h7" />
+                </svg>
+                <span className="text-[10px] font-semibold">Productos</span>
+              </button>
+              <button
+                onClick={() => setMobileTab('ticket')}
+                className={`flex flex-col items-center justify-center gap-0.5 flex-1 h-full rounded-lg transition-colors relative ${
+                  mobileTab === 'ticket' ? 'text-pos-accent bg-pos-accent/5' : 'text-text-secondary'
+                }`}
+              >
+                <svg className="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <span className="text-[10px] font-semibold">Ticket</span>
+                {ordenActiva && ordenActiva.items.length > 0 && (
+                  <span className="absolute -top-0.5 right-1/4 min-w-[18px] h-[18px] rounded-full bg-accent text-white text-[10px] font-bold flex items-center justify-center px-1">
+                    {ordenActiva.items.reduce((s, i) => s + i.cantidad, 0)}
+                  </span>
+                )}
+              </button>
+            </div>
+        </>
       )}
 
       <ModifierPanel

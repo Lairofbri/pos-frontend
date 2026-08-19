@@ -20,12 +20,12 @@ export function NumericKeypad({ onDigit, onClear, onBackspace, onEnter }: Numeri
   }
 
   return (
-    <div className="grid grid-cols-3 gap-3 max-w-xs mx-auto">
+    <div className="grid grid-cols-3 gap-2 max-w-[220px] mx-auto">
       {keys.flat().map((k) => (
         <button
           key={k}
           onClick={() => handleKey(k)}
-          className={`h-14 rounded-xl font-display text-xl border-2 transition-all duration-150 active:scale-95 cursor-pointer ${
+          className={`h-11 w-16 rounded-xl font-display text-lg border-2 transition-colors duration-150 active:scale-95 cursor-pointer touch-action-manipulation ${
             k === '✓'
               ? 'bg-pos-accent text-white border-pos-accent hover:brightness-110'
               : k === '⌫'
@@ -38,7 +38,7 @@ export function NumericKeypad({ onDigit, onClear, onBackspace, onEnter }: Numeri
       ))}
       <button
         onClick={onClear}
-        className="col-span-3 h-10 rounded-lg text-xs font-body text-text-secondary border border-border hover:text-danger hover:border-danger transition-colors cursor-pointer"
+        className="col-span-3 h-9 rounded-lg text-[10px] font-body text-text-secondary border border-border hover:text-danger hover:border-danger transition-colors cursor-pointer touch-action-manipulation"
       >
         Limpiar
       </button>

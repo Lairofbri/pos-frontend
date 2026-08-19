@@ -136,8 +136,8 @@ export function RestaurantSummary() {
     ? `$${parseFloat(resumen.total_ingresos).toFixed(2)}`
     : '...'
 
-  const ticketPromedio = resumen?.total_ingresos != null && resumen?.total_ordenes > 0
-    ? `$${(parseFloat(resumen.total_ingresos) / resumen.total_ordenes).toFixed(2)}`
+  const ticketPromedio = resumen?.total_ingresos != null && resumen?.total_personas > 0
+    ? `$${(parseFloat(resumen.total_ingresos) / resumen.total_personas).toFixed(2)}`
     : '-'
 
   return (
@@ -166,8 +166,8 @@ export function RestaurantSummary() {
           Ventas del día
         </span>
         <MetricRow label="Total" value={totalIngresos} />
-        <MetricRow label="Ticket promedio" value={ticketPromedio} />
-        <MetricRow label="Clientes" value={String(resumen?.total_ordenes ?? '-')} />
+        <MetricRow label="Promedio por persona" value={ticketPromedio} />
+        <MetricRow label="Personas" value={String(resumen?.total_personas ?? '-')} />
       </div>
 
       {/* Button */}

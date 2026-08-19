@@ -83,7 +83,7 @@ export const getMovimientosCaja = (cajaId: string) =>
     .then(r => (r.data.data.movimientos ?? []).map(parseMovimiento))
 
 export const verificarCuadre = (monto_final: number) =>
-  api.post<{ ok: boolean; data: { cuadra: boolean; mensaje: string } }>('/caja/verificar-cuadre', { monto_final })
+  api.post<{ ok: boolean; data: { cuadra: boolean; mensaje: string; diferencia: number; total_esperado: number } }>('/caja/verificar-cuadre', { monto_final })
     .then(r => r.data.data)
 
 export const obtenerCuadre = (id: string) =>
@@ -99,6 +99,10 @@ export interface ResumenMetodo {
 export interface ResumenDiario {
   total_ordenes: number
   total_ingresos: string
+  cantidad_ordenes: number
+  ticket_promedio: number
+  clientes_atendidos: number
+  total_personas: number
   metodos: ResumenMetodo[]
 }
 
