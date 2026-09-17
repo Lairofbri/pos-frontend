@@ -193,7 +193,14 @@ export const obtenerDTEPorOrden = (ordenId: string) =>
     .then(r => r.data.data)
     .catch(() => null)
 
+export interface DTEmitidoResult {
+  codigo_generacion: string | null
+  numero_control: string | null
+  sello_recepcion: string | null
+  estado: string
+  reutilizado?: boolean
+}
+
 export const emitirDTE = (ordenId: string, tipoDte = '01') =>
-  api.post<{ ok: boolean; data: { codigo_generacion: string; numero_control: string | null; sello_recepcion: string | null } }>('/dte/emitir', { orden_id: ordenId, tipo_dte: tipoDte })
+  api.post<{ ok: boolean; data: DTEmitidoResult }>('/dte/emitir', { orden_id: ordenId, tipo_dte: tipoDte })
     .then(r => r.data.data)
-    .catch(() => null)

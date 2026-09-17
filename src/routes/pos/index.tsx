@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { queryDefaults } from '../../config/queries'
 import { TableMap } from './components/TableMap'
@@ -38,6 +38,9 @@ export default function POSPage() {
   const [separadores, setSeparadores] = useState<Set<string>>(new Set())
   const [numPersonas, setNumPersonas] = useState(1)
   const [clienteAsignado, setClienteAsignado] = useState<{ id: string; nombre: string; tipo_cliente?: string; nit?: string } | null>(null)
+  // Fase 3 — la clave idempotente del pago se genera UNA vez por orden y se
+  // reutiliza en reintentos (doble click / refresh) para que el backend deduplique.
+  const idempotencyKeysRef = useRef<Map<string, string>>(new Map())
   useCocinaSocket(tenantId ?? '')
 
   const { data: ordenes } = useQuery({
@@ -164,20 +167,46 @@ export default function POSPage() {
 
   const pagarMutation = useMutation({
     mutationFn: (pdata: { metodos: Array<{ metodo: string; monto: number; referencia?: string; banco?: string }> }) => {
-      const idempotencyKey = crypto.randomUUID()
-      return pagarOrden(ordenSeleccionadaId!, pdata.metodos, idempotencyKey)
+      const ordenId = ordenSeleccionadaId!
+      let idempotencyKey = idempotencyKeysRef.current.get(ordenId)
+      if (!idempotencyKey) {
+        idempotencyKey = crypto.randomUUID()
+        idempotencyKeysRef.current.set(ordenId, idempotencyKey)
+      }
+      return pagarOrden(ordenId, pdata.metodos, idempotencyKey)
     },
-    onSuccess: () => {
+    onSuccess: async () => {
       const id = ordenSeleccionadaId
+      let dteEstado: string | null = null
       if (id) {
         const tipoDte = clienteAsignado?.tipo_cliente === 'juridico' && clienteAsignado?.nit ? '03' : '01'
-        emitirDTE(id, tipoDte).catch(() => { /* DTE opcional — no bloquea el flujo */ })
+        try {
+          // Fase 3 — no ocultar el resultado fiscal. El backend reutiliza el
+          // mismo DTE si ya fue emitido (idempotencia por orden).
+          const dte = await emitirDTE(id, tipoDte)
+          dteEstado = dte.estado
+        } catch {
+          // El interceptor global ya mostró el motivo. El pago está completo
+          // y el DTE quedó encolado/rechazado (visible en Cuentas).
+        }
         printMutation.mutate({ ordenId: id, tipo: 'ticket-consumo' })
       }
       limpiarOrden(id)
       setMostrarPayment(false)
       setClienteAsignado(null)
-      showToast({ type: 'success', message: 'Pago completado' })
+      if (id) idempotencyKeysRef.current.delete(id)
+
+      if (dteEstado === 'aceptado') {
+        showToast({ type: 'success', message: 'Pago completado — DTE aceptado por Hacienda' })
+      } else if (dteEstado === 'rechazado') {
+        showToast({ type: 'error', message: 'Pago completado, pero el DTE fue rechazado' })
+      } else if (dteEstado === 'contingencia') {
+        showToast({ type: 'success', message: 'Pago completado — DTE en contingencia' })
+      } else if (dteEstado) {
+        showToast({ type: 'success', message: 'Pago completado — DTE pendiente de emisión' })
+      } else {
+        showToast({ type: 'success', message: 'Pago completado' })
+      }
     },
   })
 
