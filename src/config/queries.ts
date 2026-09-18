@@ -32,6 +32,8 @@ export const QUERY_CONFIG: Record<string, QueryDefaults> = {
   'productos-stock': { staleTime: 60_000 },
   recetas: { staleTime: 60_000 },
   'productos-menu': { staleTime: 60_000 },
+  alertas: { staleTime: 30_000 },
+  'alertas-config': { staleTime: 300_000 },
 }
 
 export function queryDefaults(key: string): QueryDefaults {

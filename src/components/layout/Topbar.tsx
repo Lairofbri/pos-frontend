@@ -1,22 +1,27 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Sun, Moon } from 'lucide-react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { Sun, Moon, Bell, CircleCheck } from 'lucide-react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useTheme } from 'next-themes'
 import { queryDefaults } from '../../config/queries'
 import { useAuthStore } from '../../store/authStore'
 import { useSidebar } from '../../hooks/useSidebar'
 import { useCajaActiva } from '../../hooks/useCajaActiva'
+import { useAlertasSocket } from '../../hooks/useSocket'
 import { Icon } from '../shared/Icon'
+import { AlertCard } from '../shared/AlertCard'
+import { ALERTA_ICONOS } from '../shared/alertIconos'
+import { getAlertas, resolverAlerta } from '../../routes/dashboard/api'
 import api from '../../api/client'
 import { listarSucursales } from '../../routes/admin/sucursales/api'
 
-const QUERIES_SUCURSAL = ['ordenes', 'mesas', 'cocina', 'caja-activa', 'resumen-diario', 'dashboard-metrics']
+const QUERIES_SUCURSAL = ['ordenes', 'mesas', 'cocina', 'caja-activa', 'resumen-diario', 'dashboard-metrics', 'alertas']
 
 export function Topbar() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const usuario = useAuthStore((s) => s.usuario)
+  const tenantId = useAuthStore((s) => s.tenantId)
   const sucursalId = useAuthStore((s) => s.sucursalId)
   const setSucursalId = useAuthStore((s) => s.setSucursalId)
   const clearAuth = useAuthStore((s) => s.clearAuth)
@@ -25,9 +30,13 @@ export function Topbar() {
   const [loggingOut, setLoggingOut] = useState(false)
   const [hora, setHora] = useState('')
   const [sucursalOpen, setSucursalOpen] = useState(false)
+  const [alertasOpen, setAlertasOpen] = useState(false)
   const sucursalRef = useRef<HTMLDivElement>(null)
+  const alertasRef = useRef<HTMLDivElement>(null)
   const { theme, setTheme } = useTheme()
   const isDark = theme === 'dark'
+
+  useAlertasSocket(tenantId ?? '')
 
   useEffect(() => {
     const t = setInterval(() => {
@@ -46,7 +55,30 @@ export function Topbar() {
     return () => document.removeEventListener('mousedown', cerrar)
   }, [])
 
+  useEffect(() => {
+    const cerrar = (e: MouseEvent) => {
+      if (alertasRef.current && !alertasRef.current.contains(e.target as Node)) {
+        setAlertasOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', cerrar)
+    return () => document.removeEventListener('mousedown', cerrar)
+  }, [])
+
   const { caja: cajaActiva, isError: cajaError, mensajeError: cajaMensaje } = useCajaActiva()
+
+  const { data: alertas } = useQuery({
+    queryKey: ['alertas', sucursalId],
+    queryFn: getAlertas,
+    ...queryDefaults('alertas'),
+  })
+
+  const resolverMutation = useMutation({
+    mutationFn: resolverAlerta,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['alertas'] })
+    },
+  })
 
   const { data: sucursales } = useQuery({
     queryKey: ['sucursales'],
@@ -132,6 +164,65 @@ export function Topbar() {
             )}
           </div>
         )}
+
+        {/* Alertas */}
+        <div ref={alertasRef} className="relative">
+          <button
+            onClick={() => setAlertasOpen(!alertasOpen)}
+            className="relative flex items-center gap-1 text-xs font-mono text-text-secondary px-2 py-1 rounded-lg bg-bg-primary border border-border/50 hover:border-pos-accent transition-all cursor-pointer"
+            title="Alertas"
+            aria-label={`Alertas (${alertas?.length ?? 0} activas)`}
+            aria-expanded={alertasOpen}
+          >
+            <Bell className="size-3.5" />
+            {(alertas?.length ?? 0) > 0 && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-4 h-4 px-0.5 rounded-full bg-danger text-white text-[9px] font-bold flex items-center justify-center">
+                {alertas!.length}
+              </span>
+            )}
+          </button>
+
+          {alertasOpen && (
+            <div className="absolute right-0 mt-1.5 w-80 py-2 rounded-xl bg-bg-surface border border-border shadow-lg z-50">
+              <div className="px-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-text-muted">
+                Alertas activas
+              </div>
+              {(alertas?.length ?? 0) === 0 ? (
+                <div className="px-3 py-3 text-xs text-text-secondary flex items-center gap-2">
+                  <CircleCheck className="size-4 text-green-500 shrink-0" aria-hidden />
+                  Sin alertas activas
+                </div>
+              ) : (
+                <div className="max-h-80 overflow-y-auto flex flex-col gap-1.5 px-2 pb-1">
+                  {alertas?.map(a => (
+                    <AlertCard
+                      key={a.id}
+                      severity={a.severity}
+                      icon={ALERTA_ICONOS[a.severity]}
+                      title={a.titulo}
+                      description={a.descripcion}
+                      action={a.accion ? {
+                        label: a.accion.label,
+                        onClick: () => {
+                          navigate(a.accion!.ruta)
+                          setAlertasOpen(false)
+                        },
+                      } : undefined}
+                    >
+                      <button
+                        onClick={() => resolverMutation.mutate(a.id)}
+                        disabled={resolverMutation.isPending}
+                        className="mt-1 text-[11px] font-semibold text-text-secondary hover:text-pos-accent transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        {resolverMutation.isPending ? 'Resolviendo...' : 'Marcar como resuelta'}
+                      </button>
+                    </AlertCard>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
         {/* Theme toggle */}
         <button

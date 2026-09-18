@@ -11,6 +11,7 @@ interface ProductGridProps {
   onSelectProducto: (p: Producto) => void
   onSelectCombo?: (c: ComboPos) => void
   onLongPressProducto?: (p: Producto) => void
+  promosPorProducto?: Record<string, string>
 }
 
 function findCategoria(items: Categoria[], id: string): Categoria | null {
@@ -49,7 +50,7 @@ const iconoPorDefecto = (nombre: string): string => {
 
 const COMBOS_ID = '__combos__'
 
-export function ProductGrid({ onSelectProducto, onSelectCombo, onLongPressProducto }: ProductGridProps) {
+export function ProductGrid({ onSelectProducto, onSelectCombo, onLongPressProducto, promosPorProducto }: ProductGridProps) {
   const [busqueda, setBusqueda] = useState('')
   const [navStack, setNavStack] = useState<(string | null)[]>([null])
   const currentNavId = navStack[navStack.length - 1]
@@ -242,6 +243,7 @@ export function ProductGrid({ onSelectProducto, onSelectCombo, onLongPressProduc
                     variant="lg"
                     onSelect={onSelectProducto}
                     onLongPress={onLongPressProducto}
+                    promoLabel={promosPorProducto?.[p.id]}
                   />
                 ))}
               </div>
@@ -259,28 +261,47 @@ export function ProductGrid({ onSelectProducto, onSelectCombo, onLongPressProduc
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {combosFiltrados.map((combo, i) => (
-                  <button
-                    key={combo.id}
-                    onClick={() => onSelectCombo?.(combo)}
-                    className="group bg-white border-2 border-pos-border rounded-[18px] p-4 cursor-pointer text-left transition-all hover:border-pos-accent hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(198,106,30,0.12)] active:scale-[0.97]"
-                    style={{ animation: `fadeInUp 0.3s ease-out ${i * 0.05}s both` }}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-bold text-pos-text">{combo.nombre}</span>
-                      <span className="text-lg font-bold text-pos-accent">${Number(combo.precio).toFixed(2)}</span>
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      {combo.productos.map((cp) => (
-                        <div key={cp.producto_id} className="flex items-center gap-2 text-xs text-pos-text-muted">
-                          <span className="text-sm">{iconoPorDefecto(cp.nombre)}</span>
-                          <span className="font-semibold">{cp.cantidad}x</span>
-                          <span>{cp.nombre}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </button>
-                ))}
+                {combosFiltrados.map((combo, i) => {
+                  const faltante = combo.advertencias?.[0]
+                  return (
+                    <button
+                      key={combo.id}
+                      onClick={() => onSelectCombo?.(combo)}
+                      className="group bg-white border-2 border-pos-border rounded-[18px] p-4 cursor-pointer text-left transition-all hover:border-pos-accent hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(198,106,30,0.12)] active:scale-[0.97]"
+                      style={{ animation: `fadeInUp 0.3s ease-out ${i * 0.05}s both` }}
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-bold text-pos-text">{combo.nombre}</span>
+                        <span className="text-lg font-bold text-pos-accent">${Number(combo.precio).toFixed(2)}</span>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        {combo.productos.map((cp) => (
+                          <div key={cp.producto_id} className="flex items-center gap-2 text-xs text-pos-text-muted">
+                            <span className="text-sm">{iconoPorDefecto(cp.nombre)}</span>
+                            <span className="font-semibold">{cp.cantidad}x</span>
+                            <span>{cp.nombre}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-3 flex items-center gap-2">
+                        {combo.disponible ? (
+                          <span className="inline-flex items-center gap-1 text-[0.7rem] font-semibold text-pos-libre-text bg-pos-libre-bg border border-pos-libre-border/40 px-2 py-0.5 rounded-full">
+                            ● Disponible
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 text-[0.7rem] font-semibold text-pos-ocupada-text bg-pos-ocupada-bg border border-pos-ocupada-border/40 px-2 py-0.5 rounded-full">
+                            ⚠ Stock insuficiente
+                          </span>
+                        )}
+                        {faltante && (
+                          <span className="text-[0.7rem] text-pos-text-secondary truncate">
+                            falta {faltante.ingrediente ?? faltante.componente}
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
             )}
           </>

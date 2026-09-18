@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
-import { Unlock, ClipboardList, Printer, Minus } from 'lucide-react'
+import { Unlock, ClipboardList, Printer, Minus, Pencil } from 'lucide-react'
 import { printOrden } from '../../../components/shared/PrintTicket'
 import { DTEQR } from './DTEQR'
 import { ClientSelector } from './ClientSelector'
@@ -93,8 +93,9 @@ export function TicketPanel({
   const descuentoPct = orden.porcentaje_descuento
   let subtotal = 0
   for (const item of orden.items) {
+    if (item.estado === 'cancelado') continue
     const descItem = item.descuento_porcentaje
-    const precioConDesc = Math.round(item.precio_unitario * item.cantidad * (1 - descItem / 100) * 100) / 100
+    const precioConDesc = Math.round(item.subtotal * (1 - descItem / 100) * 100) / 100 - (item.descuento_promo ?? 0)
     subtotal = Math.round((subtotal + precioConDesc) * 100) / 100
   }
   const descuentoMonto = subtotal * (descuentoPct / 100)
@@ -128,20 +129,34 @@ export function TicketPanel({
 
   const renderItem = (item: typeof orden.items[0], esCombo = false) => {
     const descItem = item.descuento_porcentaje ?? 0
-    const precioLinea = Math.round(item.precio_unitario * item.cantidad * (1 - descItem / 100) * 100) / 100
+    const descPromo = item.descuento_promo ?? 0
+    const precioLinea = Math.round(item.subtotal * (1 - descItem / 100) * 100) / 100 - descPromo
     const locked = item.estado !== 'pendiente'
+    const esLineaVirtual = !item.producto_id
+    const modificable = !!onModificarItem && !esLineaVirtual && !locked
+    const mod = item.modificaciones as { sin?: unknown[]; extra?: unknown[]; notas_extra?: string } | undefined
+    const personalizado = !!mod && (!!mod.sin?.length || !!mod.extra?.length || !!mod.notas_extra)
 
     return (
       <div key={item.id}
-        className={`flex items-center gap-2 py-1.5 lg:py-2 min-h-0 ${esCombo ? 'pl-4' : ''} ${onModificarItem && !item.combo_id ? 'cursor-pointer hover:bg-accent/5 rounded px-1 -mx-1' : ''}`}
-        onClick={() => { if (!item.combo_id && !locked) onModificarItem?.(item) }}>
+        className={`flex items-center gap-2 py-1.5 lg:py-2 min-h-0 ${esCombo ? 'pl-4' : ''} ${modificable ? 'cursor-pointer hover:bg-accent/5 rounded px-1 -mx-1' : ''} ${personalizado ? 'border-l-2 border-accent/40 pl-2' : ''}`}
+        onClick={() => { if (modificable) onModificarItem?.(item) }}>
         <span className="text-xs font-mono text-text-secondary font-semibold w-5 shrink-0 text-right tabular-nums">
           {item.cantidad}
         </span>
         <div className="flex-1 min-w-0 flex items-center gap-1.5">
           <span className="text-sm font-body text-text-primary truncate">{item.nombre}</span>
+          {personalizado && (
+            <span className="inline-flex items-center gap-0.5 text-[9px] text-accent bg-accent/10 px-1 py-[1px] rounded font-mono shrink-0">
+              <Pencil className="size-2.5" />
+              mod
+            </span>
+          )}
           {descItem > 0 && (
             <span className="text-[9px] text-danger bg-danger/10 px-1 py-[1px] rounded font-mono shrink-0">-{descItem}%</span>
+          )}
+          {descPromo > 0 && (
+            <span className="text-[9px] text-accent bg-accent/10 px-1 py-[1px] rounded font-mono shrink-0">Promo</span>
           )}
           {locked && (
             <span className="text-[9px] text-blue-400 bg-blue-500/10 px-1 py-[1px] rounded font-mono shrink-0">
@@ -172,7 +187,7 @@ export function TicketPanel({
           )}
         </div>
         {item.notas && (
-          <p className="text-[10px] text-text-secondary italic truncate col-span-full -mt-1 ml-7">{item.notas}</p>
+          <p className={`text-[10px] truncate col-span-full -mt-1 ml-7 ${personalizado ? 'text-accent not-italic' : 'text-text-secondary italic'}`}>{item.notas}</p>
         )}
       </div>
     )
@@ -223,7 +238,7 @@ export function TicketPanel({
                   <span className="text-sm">🎁</span>
                   <span className="text-xs font-semibold text-pos-text truncate">{comboItems[0]?.combo_nombre || 'Combo'}</span>
                   <span className="text-xs font-mono text-pos-accent font-semibold ml-auto">
-                    ${comboItems.reduce((s, i) => s + i.subtotal, 0).toFixed(2)}
+                    ${comboItems.reduce((s, i) => s + i.subtotal - (i.descuento_promo ?? 0), 0).toFixed(2)}
                   </span>
                 </div>
                 {comboItems.map(item => renderItem(item, true))}
@@ -272,6 +287,17 @@ export function TicketPanel({
             <div className="flex items-center justify-between">
               <span className="text-[11px] text-danger">Dto. ({descuentoPct}%)</span>
               <span className="text-xs font-mono text-danger tabular-nums">-${descuentoMonto.toFixed(2)}</span>
+            </div>
+          )}
+
+          {orden.promociones_aplicadas && orden.promociones_aplicadas.length > 0 && (
+            <div className="flex flex-col gap-0.5 border-t border-accent/20 pt-1.5">
+              {orden.promociones_aplicadas.map((pr) => (
+                <div key={pr.promo_id} className="flex items-center justify-between">
+                  <span className="text-[11px] text-accent">{pr.nombre}</span>
+                  <span className="text-xs font-mono text-accent tabular-nums">-${Number(pr.monto).toFixed(2)}</span>
+                </div>
+              ))}
             </div>
           )}
 

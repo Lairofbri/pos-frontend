@@ -1,9 +1,8 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { queryDefaults } from '../../config/queries'
-import { getMesas, getResumenHoy, getRentabilidadTop, getEvolucion7d } from './api'
+import { getMesas, getResumenHoy, getRentabilidadTop, getEvolucion7d, getAlertas } from './api'
 import type { EvolucionRow } from './api'
-import { obtenerResumen } from '../admin/inventario/api'
 import { useCajaActiva } from '../../hooks/useCajaActiva'
 import { MetricsSection } from './components/MetricsSection'
 import type { MetricasReales } from './components/MetricsSection'
@@ -55,10 +54,10 @@ export default function DashboardPage() {
     ...queryDefaults('mesas'),
   })
 
-  const { data: inventario } = useQuery({
-    queryKey: ['inventario-resumen'],
-    queryFn: obtenerResumen,
-    ...queryDefaults('inventario-resumen'),
+  const { data: alertas } = useQuery({
+    queryKey: ['alertas', sucursalId],
+    queryFn: getAlertas,
+    ...queryDefaults('alertas'),
   })
 
   const metrics = useMemo((): MetricasReales => {
@@ -94,11 +93,6 @@ export default function DashboardPage() {
     }
   }, [resumen, evolucion])
 
-  const productosPerdida = useMemo(
-    () => (rentabilidad ?? []).filter(p => p.alerta === 'perdida'),
-    [rentabilidad],
-  )
-
   const loading = rLoading
 
   if (loading) {
@@ -130,12 +124,7 @@ export default function DashboardPage() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <TrendsSection evolucion={evolucion ?? []} />
-          <AlertsSection
-            alertasStock={inventario?.alertas_count ?? 0}
-            productosPerdida={productosPerdida}
-            cajaAbierta={caja?.estado === 'abierta'}
-            evolucion={evolucion ?? []}
-          />
+          <AlertsSection alertas={alertas ?? []} />
         </div>
       </div>
     </div>

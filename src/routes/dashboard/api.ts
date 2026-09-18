@@ -12,6 +12,36 @@ export interface DashboardAlerta {
   titulo: string
   descripcion: string
   accion?: { label: string; ruta: string }
+  desde: string
+}
+
+export interface AlertaConfig {
+  tendencia_caida_pct: number
+  silencio_desde: string | null
+  silencio_hasta: string | null
+  cooldown_minutos: number
+}
+
+export function getAlertas(): Promise<DashboardAlerta[]> {
+  return api.get<{ ok: boolean; data: { alertas: DashboardAlerta[] } }>('/alertas')
+    .then(r => r.data.data.alertas)
+    .catch(() => [])
+}
+
+export function resolverAlerta(alertaId: string): Promise<void> {
+  return api.post(`/alertas/${alertaId}/resolver`)
+    .then(() => undefined)
+}
+
+export function getConfigAlertas(): Promise<AlertaConfig | null> {
+  return api.get<{ ok: boolean; data: { config: AlertaConfig } }>('/alertas/config')
+    .then(r => r.data.data.config)
+    .catch(() => null)
+}
+
+export function guardarConfigAlertas(datos: Partial<AlertaConfig>): Promise<AlertaConfig> {
+  return api.put<{ ok: boolean; data: { config: AlertaConfig } }>('/alertas/config', datos)
+    .then(r => r.data.data.config)
 }
 
 export function getMesas(): Promise<Mesa[]> {

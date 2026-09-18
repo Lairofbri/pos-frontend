@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Package } from 'lucide-react'
 import { SidePanel } from '../../../components/shared/SidePanel'
 import { Button } from '@/components/ui/Button'
 import { Textarea } from '@/components/ui/Textarea'
@@ -163,6 +164,12 @@ export function ItemCustomizer({ open, onClose, item, onSave }: ItemCustomizerPr
   return (
     <SidePanel open={open} onClose={onClose} title={`Personalizar: ${item.nombre}`} direction="bottom">
       <div className="flex flex-col gap-5 p-4">
+        {item?.combo_nombre && (
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-wood-light/50 border border-wood-mid/30 text-pos-text">
+            <Package className="size-4 text-pos-accent shrink-0" />
+            <span className="text-xs font-semibold truncate">Componente de {item.combo_nombre}</span>
+          </div>
+        )}
         {ingredientes.length > 0 && (
           <div>
             {sectionLabel('Ingredientes')}

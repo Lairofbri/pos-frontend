@@ -7,6 +7,7 @@ interface ProductCardProps {
   onLongPress?: (p: Producto) => void
   selected?: boolean
   variant?: 'sm' | 'lg'
+  promoLabel?: string
 }
 
 const apiBase = (import.meta.env.VITE_API_URL ?? 'http://localhost:3000/api').replace(/\/api$/, '')
@@ -29,6 +30,7 @@ export function ProductCard({
   onLongPress,
   selected = false,
   variant = 'sm',
+  promoLabel,
 }: ProductCardProps) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const isLongPress = useRef(false)
@@ -116,6 +118,12 @@ export function ProductCard({
           ))}
         </span>
 
+        {promoLabel && (
+          <span className="absolute top-2 left-2 z-20 px-2 py-0.5 rounded-full bg-[#b86119] text-white text-[10px] font-bold tracking-wide">
+            {promoLabel}
+          </span>
+        )}
+
         {/* Image area */}
         <div className="h-[110px] bg-gradient-to-b from-[#FDF3E8] to-[#F8E6CF] flex items-center justify-center shrink-0 rounded-t-[16px] overflow-hidden">
           {showImage ? (
@@ -181,6 +189,12 @@ export function ProductCard({
           />
         ))}
       </span>
+
+      {promoLabel && (
+        <span className="absolute top-1 left-1 z-20 px-1.5 py-px rounded bg-[#b86119] text-white text-[8px] font-bold tracking-wide">
+          {promoLabel}
+        </span>
+      )}
 
       {showImage ? (
         <div className="size-10 rounded-lg overflow-hidden shrink-0">

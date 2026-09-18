@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { queryDefaults } from '../../config/queries'
 import { TableMap } from './components/TableMap'
@@ -12,10 +12,11 @@ import { GerentePinModal } from '../../components/shared/GerentePinModal'
 import { SwitchUserModal } from '../../components/shared/SwitchUserModal'
 import { ConfirmDialog } from '../../components/shared/ConfirmDialog'
 import { Icon } from '../../components/shared/Icon'
-import { crearOrden, agregarItem, actualizarItem, eliminarItem, cancelarItem, pagarOrden, enviarCocina, actualizarOrden, cancelarOrden, getOrdenes, getOrden, actualizarPropina, emitirDTE } from './api'
+import { crearOrden, agregarItem, actualizarItem, eliminarItem, cancelarItem, pagarOrden, enviarCocina, actualizarOrden, cancelarOrden, getOrdenes, getOrden, actualizarPropina, emitirDTE, getPromocionesActivas } from './api'
 import type { ComboPos } from './api'
 import { useToastStore } from '../../store/toastStore'
 import { useAuthStore } from '../../store/authStore'
+import { obtenerRestaurante } from '../admin/restaurante/api'
 
 import { useCocinaSocket } from '../../hooks/useSocket'
 import { imprimirTicket } from '../admin/impresoras/api'
@@ -45,6 +46,44 @@ export default function POSPage() {
     queryFn: () => getOrdenes(),
     ...queryDefaults('ordenes'),
   })
+
+  const { data: restaurante } = useQuery({
+    queryKey: ['restaurante-pos'],
+    queryFn: obtenerRestaurante,
+    ...queryDefaults('restaurante'),
+  })
+
+  const { data: promosActivas = [] } = useQuery({
+    queryKey: ['promos-activas'],
+    queryFn: getPromocionesActivas,
+    ...queryDefaults('promos'),
+    refetchInterval: 300_000,
+  })
+
+  const promosPorProducto = useMemo(() => {
+    const mapa: Record<string, string> = {}
+    for (const promo of promosActivas) {
+      const scope = promo.productos ?? []
+      if (scope.length === 0) continue
+      const label =
+        promo.tipo === 'dosxuno' ? '2x1'
+        : promo.tipo === 'volumen' ? `-${promo.descuento_porcentaje ?? 0}% vol.`
+        : promo.tipo === 'happy_hour' ? `-${promo.descuento_porcentaje ?? 0}% HH`
+        : `-${promo.descuento_porcentaje ?? 0}%`
+      for (const pid of scope) {
+        if (!mapa[pid]) mapa[pid] = label
+      }
+    }
+    return mapa
+  }, [promosActivas])
+
+  const modoPrecargadoRef = useRef(false)
+  useEffect(() => {
+    if (restaurante?.pos_default_mode && !modoPrecargadoRef.current) {
+      modoPrecargadoRef.current = true
+      setModo(restaurante.pos_default_mode === 'rapido' ? 'rapido' : 'mesa')
+    }
+  }, [restaurante])
 
   const { data: ordenActiva } = useQuery({
     queryKey: ['orden', ordenSeleccionadaId],
@@ -121,6 +160,20 @@ export default function POSPage() {
     onError: (_, params, context) => {
       if (context?.previous) queryClient.setQueryData(['orden', params.ordenId], context.previous)
       showToast({ type: 'error', message: 'Error al agregar producto' })
+    },
+    onSuccess: (data, params) => {
+      if (params._esCombo && data?.advertencias?.length) {
+        const lista = data.advertencias
+          .slice(0, 3)
+          .map((a) => (a.ingrediente ? `${a.ingrediente} (${a.componente})` : a.componente))
+          .join(', ')
+        const resto = data.advertencias.length > 3 ? ` y ${data.advertencias.length - 3} más` : ''
+        showToast({
+          type: 'warning',
+          message: 'Stock insuficiente para el combo',
+          description: `Falta: ${lista}${resto}. El pago se bloqueará si no se repone stock.`,
+        })
+      }
     },
     onSettled: (_, __, params) => {
       queryClient.invalidateQueries({ queryKey: ['orden', params.ordenId] })
@@ -512,6 +565,7 @@ export default function POSPage() {
                       onSelectProducto={handleSelectProducto}
                       onSelectCombo={handleSelectCombo}
                       onLongPressProducto={handleLongPressProducto}
+                      promosPorProducto={promosPorProducto}
                     />
                   </div>
                 </>
