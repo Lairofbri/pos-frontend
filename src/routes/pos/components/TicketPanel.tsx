@@ -91,14 +91,9 @@ export function TicketPanel({
   )
 
   const descuentoPct = orden.porcentaje_descuento
-  let subtotal = 0
-  for (const item of orden.items) {
-    const descItem = item.descuento_porcentaje
-    const precioConDesc = Math.round(item.precio_unitario * item.cantidad * (1 - descItem / 100) * 100) / 100
-    subtotal = Math.round((subtotal + precioConDesc) * 100) / 100
-  }
-  const descuentoMonto = subtotal * (descuentoPct / 100)
-  const totalConDescuento = subtotal - descuentoMonto
+  const subtotal = orden.subtotal
+  const descuentoMonto = orden.descuento
+  const totalConDescuento = orden.total
   const propinaPct = orden.propina_porcentaje
   const propinaMonto = orden.propina_monto
   const totalAPagar = totalConDescuento + propinaMonto
@@ -308,13 +303,13 @@ export function TicketPanel({
 
           {propinaMonto > 0 && (
             <div className="flex items-center justify-between">
-              <span className="text-[11px] text-pos-accent">Propina ({propinaPct}%)</span>
+              <span className="text-[11px] text-pos-accent">Propina ({propinaPct}%, fuera del DTE)</span>
               <span className="text-xs font-mono text-pos-accent tabular-nums">+${propinaMonto.toFixed(2)}</span>
             </div>
           )}
 
           <div className="flex items-center justify-between border-t border-border/40 pt-1.5">
-            <span className="text-xs font-body text-text-primary font-semibold">Total a pagar</span>
+            <span className="text-xs font-body text-text-primary font-semibold">Total a cobrar</span>
             <span className="text-base lg:text-lg font-mono text-accent font-bold tabular-nums">${totalAPagar.toFixed(2)}</span>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { PaymentMethodTabs } from './PaymentMethodTabs'
 import { BillButtons } from './BillButtons'
 import { NumericKeypad } from '../../../../components/shared/NumericKeypad'
 import { Button } from '@/components/ui/Button'
+import { fromCents, sumCents, toCents } from '../../../../lib/money'
 
 interface PagoAcumulado {
   metodo: string
@@ -54,16 +55,20 @@ export function PaymentPanel({ onClose, orden, onConfirmar, loading, numPersonas
   const [montoActual, setMontoActual] = useState('')
   const { data: metodosData } = useCatalogo('metodos_pago')
 
-  const totalAPagar = orden.total + orden.propina_monto
+  const totalFiscalCents = toCents(orden.total)
+  const propinaCents = toCents(orden.propina_monto)
+  const totalAPagarCents = totalFiscalCents + propinaCents
+  const totalAPagar = fromCents(totalAPagarCents)
 
   const totalPagado = useMemo(
-    () => pagosAcumulados.reduce((s, p) => s + p.monto, 0),
+    () => fromCents(sumCents(pagosAcumulados.map(p => p.monto))),
     [pagosAcumulados],
   )
+  const totalPagadoCents = toCents(totalPagado)
 
-  const faltante = Math.max(0, totalAPagar - totalPagado)
-  const vuelto = Math.max(0, totalPagado - totalAPagar)
-  const cubierto = totalPagado >= totalAPagar && pagosAcumulados.length > 0
+  const faltante = fromCents(Math.max(0, totalAPagarCents - totalPagadoCents))
+  const vuelto = fromCents(Math.max(0, totalPagadoCents - totalAPagarCents))
+  const cubierto = totalPagadoCents >= totalAPagarCents && pagosAcumulados.length > 0
   const esEfectivo = metodoActivo === 'efectivo'
 
   const handleDigit = (d: string) => {
@@ -80,12 +85,12 @@ export function PaymentPanel({ onClose, orden, onConfirmar, loading, numPersonas
   const handleEnter = () => {
     const monto = parseFloat(montoActual)
     if (isNaN(monto) || monto <= 0) return
-    setPagosAcumulados((prev) => [...prev, { metodo: metodoActivo, monto }])
+    setPagosAcumulados((prev) => [...prev, { metodo: metodoActivo, monto: fromCents(toCents(monto)) }])
     setMontoActual('')
   }
 
   const handleBillSelect = (amount: number) => {
-    setPagosAcumulados((prev) => [...prev, { metodo: 'efectivo', monto: amount }])
+    setPagosAcumulados((prev) => [...prev, { metodo: 'efectivo', monto: fromCents(toCents(amount)) }])
     setMontoActual('')
   }
 
@@ -133,8 +138,9 @@ export function PaymentPanel({ onClose, orden, onConfirmar, loading, numPersonas
         <div className="flex flex-col gap-3 min-h-0 overflow-y-auto overscroll-behavior-contain">
           {/* TOTAL */}
           <div className="text-center">
-            <span className="text-xs text-text-secondary uppercase tracking-wider font-semibold">Total a pagar</span>
+            <span className="text-xs text-text-secondary uppercase tracking-wider font-semibold">Total a cobrar</span>
             <p className="text-3xl font-mono font-bold text-accent tabular-nums">${totalAPagar.toFixed(2)}</p>
+            <p className="text-[10px] text-text-secondary">Total fiscal: ${fromCents(totalFiscalCents).toFixed(2)} + propina: ${fromCents(propinaCents).toFixed(2)}</p>
           </div>
 
           {/* Amount input (non-efectivo) */}

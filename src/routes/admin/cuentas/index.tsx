@@ -110,7 +110,7 @@ export default function CuentasPage() {
     const cuentas = data.cuentas
     const total = cuentas.length
     const monto = cuentas.reduce((sum, c) => sum + (c.total ?? 0), 0)
-    const dteEmitidos = cuentas.filter(c => c.dte_estado === 'emitido').length
+    const dteEmitidos = cuentas.filter(c => c.dte_estado === 'aceptado').length
     const promedio = total > 0 ? monto / cuentas.filter(c => c.total > 0).length || 0 : 0
     return { total, monto, dteEmitidos, promedio }
   }, [data])
@@ -211,23 +211,31 @@ export default function CuentasPage() {
     }
   }, [fechas, showToast])
 
+  const DTE_ESTADO_BADGE: Record<string, { label: string; cls: string }> = {
+  aceptado: { label: '✓', cls: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800' },
+  rechazado: { label: '✕', cls: 'bg-red-50 text-red-700 border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800' },
+  contingencia: { label: '!', cls: 'bg-orange-50 text-orange-700 border-orange-200 dark:bg-orange-950/30 dark:text-orange-400 dark:border-orange-800' },
+  pendiente: { label: '…', cls: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800' },
+  generando: { label: '…', cls: 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-800' },
+  firmado: { label: '…', cls: 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-800' },
+  enviado: { label: '…', cls: 'bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-950/30 dark:text-sky-400 dark:border-sky-800' },
+  anulado: { label: '—', cls: 'bg-slate-100 text-slate-600 border-slate-200 dark:bg-slate-800/40 dark:text-slate-400 dark:border-slate-700' },
+}
+
   const dteBadge = (cuenta: CuentaItem) => {
     if (!cuenta.dte_tipo) {
       return <span className="text-xs text-text-secondary tabular-nums">—</span>
     }
     const label = DTE_LABELS[cuenta.dte_tipo] ?? cuenta.dte_tipo
-    const emitido = cuenta.dte_estado === 'emitido'
+    const badge = DTE_ESTADO_BADGE[cuenta.dte_estado ?? ''] ?? { label: '…', cls: 'bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800' }
     return (
       <span
         className={`
-          inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium tabular-nums
-          ${emitido
-            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800'
-            : 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-950/30 dark:text-amber-400 dark:border-amber-800'
-          }
+          inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium tabular-nums border
+          ${badge.cls}
         `}
       >
-        {label} {emitido && '✓'}
+        {label} {badge.label}
       </span>
     )
   }
