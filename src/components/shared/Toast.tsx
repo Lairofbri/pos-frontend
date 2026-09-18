@@ -14,26 +14,18 @@ export function Toast() {
   if (!toast) return null
 
   const isError = toast.type === 'error'
+  const isWarning = toast.type === 'warning'
+  const borderColor = isError ? 'border-danger/40' : isWarning ? 'border-warning/50' : 'border-success/40'
+  const textColor = isError ? 'text-danger' : isWarning ? 'text-warning' : 'text-success'
+  const icono = isError ? '❌' : isWarning ? '⚠️' : '✅'
 
   return (
     <div className="fixed top-4 right-4 z-[100] animate-fadeIn max-w-sm">
-      <div
-        className={`rounded-xl border-2 px-5 py-4 shadow-2xl ${
-          isError
-            ? 'bg-bg-surface border-danger/40'
-            : 'bg-bg-surface border-success/40'
-        }`}
-      >
+      <div className={`rounded-xl border-2 px-5 py-4 shadow-2xl bg-bg-surface ${borderColor}`}>
         <div className="flex items-start gap-3">
-          <span className="text-lg mt-0.5">
-            {isError ? '❌' : '✅'}
-          </span>
+          <span className="text-lg mt-0.5">{icono}</span>
           <div className="flex-1 min-w-0">
-            <p
-              className={`text-sm font-semibold font-body ${
-                isError ? 'text-danger' : 'text-success'
-              }`}
-            >
+            <p className={`text-sm font-semibold font-body ${textColor}`}>
               {toast.message}
             </p>
             {toast.description && (

@@ -39,3 +39,19 @@ export function useCocinaSocket(tenantId: string) {
     return () => { socket.disconnect() }
   }, [tenantId, token, queryClient])
 }
+
+export function useAlertasSocket(tenantId: string) {
+  const queryClient = useQueryClient()
+
+  useEffect(() => {
+    if (!tenantId) return
+    const socket = io(SOCKET_URL, { transports: ['websocket', 'polling'] })
+    socket.emit('join:tenant', tenantId)
+
+    socket.on('alertas:actualizadas', () => {
+      queryClient.invalidateQueries({ queryKey: ['alertas'] })
+    })
+
+    return () => { socket.disconnect() }
+  }, [tenantId, queryClient])
+}

@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 
 export interface ToastMessage {
-  type: 'success' | 'error'
+  type: 'success' | 'error' | 'warning'
   message: string
   description?: string
 }

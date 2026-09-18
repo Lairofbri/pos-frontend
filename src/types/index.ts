@@ -92,11 +92,38 @@ export interface Categoria {
   modulo?: string
 }
 
+export interface ComboFaltante {
+  nombre: string
+  necesita: number
+  hay: number
+}
+
 export interface ComboProducto {
   producto_id: string
   cantidad: number
   nombre?: string
   precio?: number
+  tiene_stock?: boolean
+  tiene_receta?: boolean
+  stock_actual?: number
+  se_vende?: boolean
+  producto_activo?: boolean
+  imagen_url?: string
+  costo_promedio?: number
+  costo_unitario?: number
+  costo_estimado?: number
+  disponible?: boolean
+  unidad_medida_id?: string
+  unidad_nombre?: string
+  unidad_abreviatura?: string
+  faltantes?: ComboFaltante[]
+}
+
+export interface ComboAdvertencia {
+  componente: string
+  ingrediente?: string
+  necesita: number
+  hay: number
 }
 
 export interface Combo {
@@ -105,6 +132,9 @@ export interface Combo {
   precio: number
   productos: ComboProducto[]
   activo: boolean
+  costo_estimado?: number
+  disponible?: boolean
+  advertencias?: ComboAdvertencia[]
 }
 
 export interface Mesa {
@@ -179,12 +209,36 @@ export interface Orden {
   propina_porcentaje: number
   propina_monto: number
   notas?: string
+  promociones_aplicadas?: PromocionAplicada[]
   num_personas?: number
   items: OrdenItem[]
   pagos: Pago[]
   creado_en: string
   actualizado_en?: string
   cerrado_en?: string
+}
+
+export interface PromocionAplicada {
+  promo_id: string
+  nombre: string
+  tipo: string
+  monto: number
+}
+
+export interface Promocion {
+  id: string
+  nombre: string
+  tipo: 'porcentaje' | 'dosxuno' | 'volumen' | 'happy_hour'
+  descuento_porcentaje: number | null
+  volumen_minimo: number | null
+  hora_inicio: string | null
+  hora_fin: string | null
+  dias: number[] | null
+  vigente_desde: string | null
+  vigente_hasta: string | null
+  activo: boolean
+  productos: string[]
+  creado_en?: string
 }
 
 export interface OrdenItem {
@@ -195,6 +249,7 @@ export interface OrdenItem {
   precio_unitario: number
   subtotal: number
   descuento_porcentaje: number
+  descuento_promo?: number
   notas?: string
   estado: 'pendiente' | 'en_proceso' | 'listo' | 'cancelado'
   enviado_en?: string

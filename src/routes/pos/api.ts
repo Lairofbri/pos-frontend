@@ -115,12 +115,26 @@ export const getCategorias = (arbol?: boolean) =>
   }).then(r => r.data.data.categorias)
     .catch(() => [])
 
+export interface ComboPosComponente {
+  producto_id: string
+  cantidad: number
+  nombre: string
+  precio: number
+  tiene_stock: boolean
+  tiene_receta: boolean
+  stock_actual: number
+  disponible: boolean
+  imagen_url?: string
+}
+
 export interface ComboPos {
   id: string
   nombre: string
   precio: number
   activo: boolean
-  productos: { producto_id: string; cantidad: number; nombre: string; precio: number }[]
+  productos: ComboPosComponente[]
+  disponible: boolean
+  advertencias: { componente: string; ingrediente?: string; necesita: number; hay: number }[]
 }
 
 export const getCombos = () =>
@@ -128,7 +142,9 @@ export const getCombos = () =>
     .then(r => r.data.data.combos.map(c => ({
       ...c,
       precio: Number(c.precio),
-      productos: c.productos.map(p => ({ ...p, precio: Number(p.precio) })),
+      productos: (c.productos ?? []).map(p => ({ ...p, precio: Number(p.precio), stock_actual: Number(p.stock_actual ?? 0) })),
+      disponible: c.disponible ?? true,
+      advertencias: c.advertencias ?? [],
     })))
     .catch(() => [])
 
@@ -149,8 +165,23 @@ export const crearOrden = (data: { tipo?: string; mesa_id?: string; origen?: str
   api.post<{ ok: boolean; data: { orden: OrdenRaw } }>('/ordenes', { tipo: 'mesa', origen: 'pos', ...data })
     .then(r => parseOrden(r.data.data.orden))
 
+export interface AgregarItemAdvertencia {
+  componente: string
+  ingrediente?: string
+  necesita: number
+  hay: number
+}
+
+export interface AgregarItemResponse {
+  items?: unknown[]
+  totales?: unknown
+  es_combo?: boolean
+  combo_nombre?: string
+  advertencias?: AgregarItemAdvertencia[]
+}
+
 export const agregarItem = (ordenId: string, data: { producto_id: string; cantidad: number; notas?: string }) =>
-  api.post(`/ordenes/${ordenId}/items`, data).then(r => r.data.data)
+  api.post<{ ok: boolean; data: AgregarItemResponse }>(`/ordenes/${ordenId}/items`, data).then(r => r.data.data)
 
 export const eliminarItem = (ordenId: string, itemId: string) =>
   api.delete(`/ordenes/${ordenId}/items/${itemId}`).then(r => r.data)
@@ -204,3 +235,19 @@ export interface DTEmitidoResult {
 export const emitirDTE = (ordenId: string, tipoDte = '01') =>
   api.post<{ ok: boolean; data: DTEmitidoResult }>('/dte/emitir', { orden_id: ordenId, tipo_dte: tipoDte })
     .then(r => r.data.data)
+    .catch(() => null)
+
+export interface PromoActiva {
+  id: string
+  nombre: string
+  tipo: string
+  descuento_porcentaje: number | null
+  volumen_minimo: number | null
+  productos: string[]
+}
+
+export const getPromocionesActivas = () =>
+  api.get<{ ok: boolean; data: { promociones: PromoActiva[] } }>('/promociones/activas')
+    .then(r => r.data.data.promociones ?? [])
+    .catch(() => [] as PromoActiva[])
+

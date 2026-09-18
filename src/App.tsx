@@ -12,6 +12,8 @@ const POSPage = lazy(() => import('./routes/pos/index'))
 const CocinaPage = lazy(() => import('./routes/cocina/index'))
 const ProductosPage = lazy(() => import('./routes/admin/productos/index'))
 const CombosPage = lazy(() => import('./routes/admin/combos/index'))
+const CrearComboPage = lazy(() => import('./routes/admin/combos/crear/index'))
+const EditarComboPage = lazy(() => import('./routes/admin/combos/editar/index'))
 const MesasPage = lazy(() => import('./routes/admin/mesas/index'))
 const UsuariosPage = lazy(() => import('./routes/admin/usuarios/index'))
 const RolesPage = lazy(() => import('./routes/configuraciones/roles/index'))
@@ -37,6 +39,8 @@ const ConsolidadosReportePage = lazy(() => import('./routes/admin/reportes/conso
 const CostosReportePage = lazy(() => import('./routes/admin/reportes/costos/index'))
 const CuentasPage = lazy(() => import('./routes/admin/cuentas/index'))
 const DashboardPage = lazy(() => import('./routes/dashboard/index'))
+const RestaurantePage = lazy(() => import('./routes/admin/restaurante/index'))
+const PromocionesPage = lazy(() => import('./routes/admin/promociones/index'))
 import { AuthGuard } from './components/shared/AuthGuard'
 import { RouteGuard } from './components/shared/RouteGuard'
 import { CajaGuard } from './components/shared/CajaGuard'
@@ -50,6 +54,8 @@ const router = createBrowserRouter([
   { path: '/admin/productos', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><ProductosPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '/admin/categorias', element: <Navigate to="/admin/productos" replace /> },
   { path: '/admin/combos', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><CombosPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+  { path: '/admin/combos/crear', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><CrearComboPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+  { path: '/admin/combos/editar/:id', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><EditarComboPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '/admin/mesas', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><MesasPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '/admin/usuarios', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><UsuariosPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '/configuraciones/usuarios', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><UsuariosPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
@@ -75,6 +81,8 @@ const router = createBrowserRouter([
   { path: '/admin/reportes/consolidados', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><ConsolidadosReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '/admin/reportes/costos', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><CostosReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '/admin/cuentas', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><CuentasPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+  { path: '/admin/restaurante', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><RestaurantePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+  { path: '/admin/promociones', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><PromocionesPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '*', element: <Navigate to="/pos" replace /> },
 ])
 
