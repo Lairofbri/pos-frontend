@@ -3,6 +3,10 @@
   "name": "pos-frontend",
   "compatibility_date": "2026-09-19",
   "pages_build_output_dir": "./dist",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  },
   "vars": {
     "VITE_API_URL": "https://staging-pos-api.sandalfol.com/api",
     "VITE_SOCKET_URL": "https://staging-pos-api.sandalfol.com",
