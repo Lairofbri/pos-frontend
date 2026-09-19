@@ -42,16 +42,20 @@ export function useCocinaSocket(tenantId: string) {
 
 export function useAlertasSocket(tenantId: string) {
   const queryClient = useQueryClient()
+  const token = useAuthStore((state) => state.token)
 
   useEffect(() => {
     if (!tenantId) return
-    const socket = io(SOCKET_URL, { transports: ['websocket', 'polling'] })
-    socket.emit('join:tenant', tenantId)
+    if (!token) return
+    const socket = io(SOCKET_URL, {
+      transports: ['websocket', 'polling'],
+      auth: { token },
+    })
 
     socket.on('alertas:actualizadas', () => {
       queryClient.invalidateQueries({ queryKey: ['alertas'] })
     })
 
     return () => { socket.disconnect() }
-  }, [tenantId, queryClient])
+  }, [tenantId, token, queryClient])
 }

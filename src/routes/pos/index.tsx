@@ -213,9 +213,16 @@ export default function POSPage() {
   })
 
   const printMutation = useMutation({
-    mutationFn: ({ ordenId, tipo }: { ordenId: string; tipo: 'pre-cuenta' | 'ticket-consumo' }) =>
+    mutationFn: ({ ordenId, tipo }: { ordenId: string; tipo: 'pre-cuenta' | 'ticket-consumo' | 'factura' }) =>
       imprimirTicket(ordenId, tipo),
-    onError: () => { /* silent — fallback to browser print */ },
+    onError: (_, params) => {
+      showToast({
+        type: 'error',
+        message: params.tipo === 'factura'
+          ? 'El pago se completó, pero no se pudo imprimir el documento fiscal.'
+          : 'No se pudo imprimir el ticket.',
+      })
+    },
   })
 
   const pagarMutation = useMutation({
@@ -237,12 +244,15 @@ export default function POSPage() {
           // Fase 3 — no ocultar el resultado fiscal. El backend reutiliza el
           // mismo DTE si ya fue emitido (idempotencia por orden).
           const dte = await emitirDTE(id, tipoDte)
-          dteEstado = dte.estado
+          dteEstado = dte?.estado ?? null
         } catch {
           // El interceptor global ya mostró el motivo. El pago está completo
           // y el DTE quedó encolado/rechazado (visible en Cuentas).
         }
-        printMutation.mutate({ ordenId: id, tipo: 'ticket-consumo' })
+        printMutation.mutate({
+          ordenId: id,
+          tipo: dteEstado === 'aceptado' ? 'factura' : 'ticket-consumo',
+        })
       }
       limpiarOrden(id)
       setMostrarPayment(false)

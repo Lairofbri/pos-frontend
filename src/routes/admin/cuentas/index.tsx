@@ -131,10 +131,10 @@ export default function CuentasPage() {
 
   const handleReprint = useCallback(async (ordenId: string, numero: number) => {
     try {
-      await imprimirTicket(ordenId, 'ticket-consumo')
-      showToast({ type: 'success', message: `Comanda #${numero} enviada a impresión` })
+      await imprimirTicket(ordenId, 'pre-cuenta')
+      showToast({ type: 'success', message: `Cuenta #${numero} enviada a impresión` })
     } catch {
-      showToast({ type: 'error', message: 'Error al imprimir comanda' })
+      showToast({ type: 'error', message: 'Error al imprimir cuenta' })
     }
   }, [showToast])
 
@@ -443,7 +443,7 @@ export default function CuentasPage() {
                               <button
                                 onClick={() => handleReprint(cuenta.id, cuenta.numero_orden)}
                                 className="p-1.5 rounded-md text-text-secondary hover:text-pos-accent hover:bg-pos-accent/10 transition-colors duration-200"
-                                aria-label={`Reimprimir comanda de orden #${cuenta.numero_orden}`}
+                                aria-label={`Reimprimir cuenta de orden #${cuenta.numero_orden}`}
                               >
                                 <Printer className="size-3.5" />
                               </button>

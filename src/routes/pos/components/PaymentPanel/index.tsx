@@ -171,7 +171,7 @@ export function PaymentPanel({ onClose, orden, onConfirmar, loading, numPersonas
           {/* Method tabs */}
           {metodosData && (
             <PaymentMethodTabs
-              metodos={metodosData}
+              metodos={metodosData.filter((metodo) => metodo.valor !== 'mixto')}
               selected={metodoActivo}
               onSelect={handleMetodoChange}
             />
