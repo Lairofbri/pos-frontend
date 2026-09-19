@@ -1,0 +1,11 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "pos-frontend",
+  "compatibility_date": "2026-09-19",
+  "pages_build_output_dir": "./dist",
+  "vars": {
+    "VITE_API_URL": "https://staging-pos-api.sandalfol.com/api",
+    "VITE_SOCKET_URL": "https://staging-pos-api.sandalfol.com",
+    "VITE_REPORTES_API_URL": "https://staging-reportes-api.sandalfol.com"
+  }
+}
