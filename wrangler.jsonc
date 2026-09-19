@@ -11,5 +11,12 @@
     "VITE_API_URL": "https://staging-pos-api.sandalfol.com/api",
     "VITE_SOCKET_URL": "https://staging-pos-api.sandalfol.com",
     "VITE_REPORTES_API_URL": "https://staging-reportes-api.sandalfol.com"
-  }
+  },  
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true,
+      "persist": true
+    }
+  },
 }
