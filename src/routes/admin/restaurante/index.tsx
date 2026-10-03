@@ -1,10 +1,12 @@
 import { useState, useRef, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Store, Grid2x2, Zap, BellRing } from 'lucide-react'
+import { Store, Grid2x2, Zap, BellRing, Link2 } from 'lucide-react'
+import type { AxiosError } from 'axios'
 import { useApiMutation } from '../../../hooks/useApiMutation'
 import { queryDefaults } from '../../../config/queries'
 import { obtenerRestaurante, actualizarRestaurante, type Restaurante } from './api'
 import { getConfigAlertas, guardarConfigAlertas, type AlertaConfig } from '../../dashboard/api'
+import { getEstadoFiscal } from '../empresas/api'
 import { PageHeader } from '../../../components/shared/PageHeader'
 import { InlineError } from '../../../components/shared/InlineError'
 import { Input } from '@/components/ui/Input'
@@ -47,6 +49,15 @@ export default function RestaurantePage() {
       setAlertasForm(alertasConfig)
     }
   }, [alertasConfig])
+
+  const { data: estadoFiscal, error: estadoFiscalError } = useQuery({
+    queryKey: ['estado-fiscal'],
+    queryFn: getEstadoFiscal,
+    retry: false,
+  })
+
+  const estadoFiscalProhibido = (estadoFiscalError as AxiosError<unknown> | null)?.response?.status === 403
+  const estadoFiscalVisible = Boolean(estadoFiscal) || (estadoFiscalError && !estadoFiscalProhibido)
 
   const alertasMutation = useApiMutation({
     mutationFn: () => {
@@ -214,6 +225,68 @@ export default function RestaurantePage() {
             </Button>
           </div>
         </section>
+
+        {/* Integración DTE (estado fiscal) — oculta si el rol no puede consultarlo (403) */}
+        {estadoFiscalVisible && (
+          <section className="dashboard-card p-5">
+            <div className="flex items-center gap-2 mb-4">
+              <Link2 className="size-4 text-pos-accent" />
+              <h2 className="font-semibold text-sm text-text-primary">Integración con DTE Service</h2>
+            </div>
+            {estadoFiscal ? (
+              <div className="flex flex-col gap-3 text-sm font-body">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-text-secondary text-xs">Estado de provisión</span>
+                  <Badge variant={
+                    estadoFiscal.provisioning_status === 'active' ? 'success'
+                      : estadoFiscal.provisioning_status === 'blocked' || estadoFiscal.provisioning_status === 'failed' ? 'danger'
+                        : estadoFiscal.provisioning_status === 'provisioning' ? 'info' : 'warning'
+                  }>
+                    {estadoFiscal.provisioning_status === 'active' ? 'Activa'
+                      : estadoFiscal.provisioning_status === 'pending_fiscal_setup' ? 'Configuración fiscal pendiente'
+                        : estadoFiscal.provisioning_status}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-text-secondary text-xs">Credenciales Hacienda</span>
+                  <Badge variant={estadoFiscal.credenciales_hacienda ? 'success' : 'warning'}>
+                    {estadoFiscal.credenciales_hacienda ? 'Configuradas' : 'Pendientes'}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-text-secondary text-xs">Certificado de firma</span>
+                  <Badge variant={estadoFiscal.firma?.estado === 'listo' ? 'success' : 'warning'}>
+                    {estadoFiscal.firma?.estado === 'listo' ? 'Listo' : estadoFiscal.firma?.estado === 'firmador_offline' ? 'Firmador fuera de línea' : estadoFiscal.firma?.estado === 'sin_credencial' ? 'Sin credencial' : (estadoFiscal.firma?.estado ?? '—')}
+                  </Badge>
+                </div>
+                <div className="flex flex-col gap-1.5 mt-1">
+                  <span className="text-text-secondary text-xs">Establecimientos vinculados</span>
+                  {estadoFiscal.establecimientos.length === 0 ? (
+                    <p className="text-xs text-text-secondary">Ninguno.</p>
+                  ) : (
+                    estadoFiscal.establecimientos.map((e) => (
+                      <div key={e.establecimiento_id} className="flex items-center justify-between gap-2 rounded-lg border border-border bg-bg-surface px-3 py-1.5">
+                        <span className="font-mono text-[11px] text-text-secondary truncate">{e.branch_id ?? 'sin branch_id'}</span>
+                        <Badge variant={
+                          e.fiscal_status === 'ready' ? 'success'
+                            : e.fiscal_status === 'blocked' ? 'danger'
+                              : e.fiscal_status === 'inactive' ? 'default' : 'warning'
+                        }>
+                          {e.fiscal_status === 'ready' ? 'Listo' : e.fiscal_status === 'pending_mh_data' ? 'Datos MH pendientes' : e.fiscal_status === 'pending_link' ? 'Sin vínculo' : e.fiscal_status === 'blocked' ? 'Bloqueado' : 'Inactivo'}
+                        </Badge>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <p className="text-[11px] text-text-secondary mt-1">
+                  Fuente de verdad fiscal: DTE Service. El POS solo muestra estados operativos, nunca credenciales.
+                </p>
+              </div>
+            ) : (
+              <InlineError message="No se pudo consultar el estado fiscal" onRetry={() => refetch()} />
+            )}
+          </section>
+        )}
       </div>
 
       <div className="flex justify-end mt-5">

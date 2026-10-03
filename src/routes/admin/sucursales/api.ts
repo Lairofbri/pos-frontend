@@ -1,5 +1,7 @@
 import api from '../../../api/client'
 
+export type FiscalStatus = 'pending_link' | 'pending_mh_data' | 'ready' | 'inactive' | 'blocked'
+
 export interface Sucursal {
   id: string
   tenant_id: string
@@ -9,6 +11,11 @@ export interface Sucursal {
   es_principal: boolean
   activo: boolean
   creado_en: string
+  branch_id?: string
+  dte_establecimiento_id?: string
+  fiscal_status?: FiscalStatus
+  sync_error?: string
+  last_fiscal_sync_at?: string
 }
 
 interface SucursalRaw {
@@ -20,6 +27,11 @@ interface SucursalRaw {
   es_principal: boolean
   activo: boolean
   creado_en: string
+  branch_id: string | null
+  dte_establecimiento_id: string | null
+  fiscal_status: FiscalStatus | null
+  sync_error: string | null
+  last_fiscal_sync_at: string | null
 }
 
 function parseSucursal(raw: SucursalRaw): Sucursal {
@@ -27,6 +39,11 @@ function parseSucursal(raw: SucursalRaw): Sucursal {
     ...raw,
     direccion: raw.direccion ?? undefined,
     telefono: raw.telefono ?? undefined,
+    branch_id: raw.branch_id ?? undefined,
+    dte_establecimiento_id: raw.dte_establecimiento_id ?? undefined,
+    fiscal_status: raw.fiscal_status ?? undefined,
+    sync_error: raw.sync_error ?? undefined,
+    last_fiscal_sync_at: raw.last_fiscal_sync_at ?? undefined,
   }
 }
 

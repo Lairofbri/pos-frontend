@@ -41,6 +41,7 @@ const CuentasPage = lazy(() => import('./routes/admin/cuentas/index'))
 const DashboardPage = lazy(() => import('./routes/dashboard/index'))
 const RestaurantePage = lazy(() => import('./routes/admin/restaurante/index'))
 const PromocionesPage = lazy(() => import('./routes/admin/promociones/index'))
+const EmpresasPage = lazy(() => import('./routes/admin/empresas/index'))
 import { AuthGuard } from './components/shared/AuthGuard'
 import { RouteGuard } from './components/shared/RouteGuard'
 import { CajaGuard } from './components/shared/CajaGuard'
@@ -83,6 +84,7 @@ const router = createBrowserRouter([
   { path: '/admin/cuentas', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><CuentasPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '/admin/restaurante', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><RestaurantePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '/admin/promociones', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><PromocionesPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+  { path: '/admin/empresas', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><EmpresasPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
   { path: '*', element: <Navigate to="/pos" replace /> },
 ])
 

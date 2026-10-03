@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useApiMutation } from '../../../hooks/useApiMutation'
 import { queryDefaults } from '../../../config/queries'
 import { listarSucursales, crearSucursal, actualizarSucursal } from './api'
-import type { Sucursal } from './api'
+import type { Sucursal, FiscalStatus } from './api'
 import { SidePanel } from '../../../components/shared/SidePanel'
 import { LoadingOverlay } from '../../../components/shared/LoadingOverlay'
 import { Input } from '@/components/ui/Input'
@@ -13,6 +13,29 @@ import { InlineError } from '../../../components/shared/InlineError'
 import { Spinner } from '@/components/ui/Spinner'
 
 const FORM_INICIAL = { nombre: '', direccion: '', telefono: '' }
+
+const FISCAL_STATUS: Record<FiscalStatus, { label: string; variant: 'success' | 'warning' | 'danger' | 'info' | 'default' }> = {
+  pending_link: { label: 'Sin vínculo fiscal', variant: 'info' },
+  pending_mh_data: { label: 'Datos MH pendientes', variant: 'warning' },
+  ready: { label: 'Lista para emitir', variant: 'success' },
+  inactive: { label: 'Fiscal inactivo', variant: 'default' },
+  blocked: { label: 'Vínculo bloqueado', variant: 'danger' },
+}
+
+function FiscalStatusBadge({ status, syncError }: { status?: FiscalStatus; syncError?: string }) {
+  if (!status) return null
+  const cfg = FISCAL_STATUS[status]
+  return (
+    <Badge
+      variant={cfg.variant}
+      className="cursor-help"
+      title={syncError ? `sync_error: ${syncError}` : cfg.label}
+    >
+      {cfg.label}
+      {syncError ? ' ⚠' : ''}
+    </Badge>
+  )
+}
 
 function SucursalCard({ s, activa, onEditar, onToggle }: { s: Sucursal; activa: boolean; onEditar: () => void; onToggle: () => void }) {
   return (
@@ -33,6 +56,7 @@ function SucursalCard({ s, activa, onEditar, onToggle }: { s: Sucursal; activa: 
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+          <FiscalStatusBadge status={s.fiscal_status} syncError={s.sync_error} />
           <Badge variant={s.activo ? 'success' : 'danger'}>{s.activo ? 'Activo' : 'Inactivo'}</Badge>
         </div>
       </div>
@@ -113,6 +137,9 @@ export default function SucursalesPage() {
   const guardar = () => { if (editando) editarMutation.mutate(); else crearMutation.mutate() }
   const isMutating = crearMutation.isPending || editarMutation.isPending
 
+  const sinVinculoFiscal = !editando?.fiscal_status || editando.fiscal_status === 'pending_link'
+  const conErrorFiscal = editando?.fiscal_status === 'blocked' && editando.sync_error
+
   return (
     <>
       <div className="px-4 pb-4">
@@ -160,6 +187,26 @@ export default function SucursalesPage() {
         <div className="relative">
           {isMutating && <LoadingOverlay />}
           <div className="flex flex-col gap-4">
+            {editando && (
+              <div className="flex flex-col gap-2 rounded-xl border border-border bg-bg-surface p-3">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-semibold text-text-secondary uppercase tracking-wider">Estado fiscal</span>
+                  <FiscalStatusBadge status={editando.fiscal_status} syncError={editando.sync_error} />
+                </div>
+                {sinVinculoFiscal && (
+                  <p className="text-xs text-text-secondary font-body">
+                    Esta sucursal aún no tiene un vínculo fiscal con el establecimiento DTE. Podrá operar internamente, pero
+                    <span className="text-warning font-semibold"> no podrá emitir DTE </span>
+                    hasta que el vínculo quede <span className="font-semibold">Listo</span>.
+                  </p>
+                )}
+                {conErrorFiscal && (
+                  <p className="text-xs text-danger font-body">
+                    Error de sincronización: {editando.sync_error}
+                  </p>
+                )}
+              </div>
+            )}
             <Input label="Nombre" value={form.nombre} onChange={(e) => setForm({ ...form, nombre: e.target.value })} required />
             <Input label="Dirección" value={form.direccion} onChange={(e) => setForm({ ...form, direccion: e.target.value })} />
             <Input label="Teléfono" value={form.telefono} onChange={(e) => setForm({ ...form, telefono: e.target.value })} />

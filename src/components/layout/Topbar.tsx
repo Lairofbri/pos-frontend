@@ -14,8 +14,25 @@ import { ALERTA_ICONOS } from '../shared/alertIconos'
 import { getAlertas, resolverAlerta } from '../../routes/dashboard/api'
 import api from '../../api/client'
 import { listarSucursales } from '../../routes/admin/sucursales/api'
+import type { FiscalStatus } from '../../routes/admin/sucursales/api'
 
 const QUERIES_SUCURSAL = ['ordenes', 'mesas', 'cocina', 'caja-activa', 'resumen-diario', 'dashboard-metrics', 'alertas']
+
+const FISCAL_DOT: Record<FiscalStatus, string> = {
+  ready: 'bg-success',
+  pending_mh_data: 'bg-warning',
+  pending_link: 'bg-info',
+  blocked: 'bg-danger',
+  inactive: 'bg-text-disabled',
+}
+
+const FISCAL_LABEL: Record<FiscalStatus, string> = {
+  ready: 'Lista para emitir DTE',
+  pending_mh_data: 'Datos MH pendientes',
+  pending_link: 'Sin vínculo fiscal',
+  blocked: 'Vínculo fiscal bloqueado',
+  inactive: 'Fiscal inactivo',
+}
 
 export function Topbar() {
   const navigate = useNavigate()
@@ -88,6 +105,8 @@ export function Topbar() {
 
   const sucursalActual = sucursales?.find((s) => s.id === sucursalId)
   const tieneMultiplesSucursales = (sucursales?.length ?? 0) > 1
+  const estadoFiscal = sucursalActual?.fiscal_status
+  const tituloSucursal = sucursalActual?.nombre + (estadoFiscal ? ` — ${FISCAL_LABEL[estadoFiscal]}` : '')
 
   const cambiarSucursal = (id: string) => {
     if (id === sucursalId) { setSucursalOpen(false); return }
@@ -132,10 +151,13 @@ export function Topbar() {
                   ? 'bg-accent/10 text-accent border-accent/30 hover:bg-accent/20'
                   : 'bg-bg-primary text-text-secondary border-border/50'
               }`}
-              title={sucursalActual.nombre}
+              title={tituloSucursal}
             >
-              <span className="size-1.5 rounded-full bg-accent shrink-0" />
+              <span className={`size-1.5 rounded-full shrink-0 ${estadoFiscal ? FISCAL_DOT[estadoFiscal] : 'bg-accent'}`} />
               <span className="max-w-24 truncate">{sucursalActual.nombre}</span>
+              {estadoFiscal && estadoFiscal !== 'ready' && (
+                <span className="size-1.5 rounded-full bg-warning animate-pulse shrink-0" title={FISCAL_LABEL[estadoFiscal]} />
+              )}
               {tieneMultiplesSucursales && (
                 <svg className={`size-3 transition-transform ${sucursalOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
