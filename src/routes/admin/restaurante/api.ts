@@ -51,3 +51,32 @@ export const obtenerRestaurante = () =>
 export const actualizarRestaurante = (data: ActualizarRestauranteData) =>
   api.put<{ ok: boolean; data: { restaurante: RestauranteRaw } }>('/restaurante', data)
     .then(r => parseRestaurante(r.data.data.restaurante))
+
+// ─────────────────────────────────────────────
+// Estado fiscal (Fase 4) — consulta de LECTURA del DTE Service.
+// Nunca expone secretos Hacienda (spec §3.3).
+// ─────────────────────────────────────────────
+
+export interface EstadoFiscoEstablecimiento {
+  establecimiento_id: string
+  branch_id: string | null
+  fiscal_status: string
+  activo: boolean
+}
+
+export interface EstadoFiscal {
+  tenant_id: string
+  provisioning_status: string
+  credenciales_hacienda: boolean
+  token_vigente: boolean
+  firma: {
+    estado: string
+    firmador_disponible: boolean
+    credencial_firma_disponible: boolean
+  } | null
+  establecimientos: EstadoFiscoEstablecimiento[]
+}
+
+export const getEstadoFiscal = () =>
+  api.get<{ ok: boolean; data: EstadoFiscal }>('/provisioning/estado-fiscal')
+    .then(r => r.data.data)

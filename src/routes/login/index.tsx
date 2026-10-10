@@ -10,6 +10,52 @@ import { NumericKeypad } from '../../components/shared/NumericKeypad'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 
+// Estado de provisión de la empresa en el selector de login (2026-10-07):
+// se alimenta del estado fiscal real devuelto por GET /api/empresas.
+const PROVISION_LABEL: Record<string, string> = {
+  provisioning: 'Provisionando',
+  pending_fiscal_setup: 'Config. fiscal pendiente',
+  active: 'Activa',
+  blocked: 'Bloqueada',
+  failed: 'Fallida',
+}
+
+const PROVISION_STYLE: Record<string, string> = {
+  provisioning: 'bg-blue-50 text-blue-700 border-blue-200',
+  pending_fiscal_setup: 'bg-amber-50 text-amber-700 border-amber-200',
+  active: 'bg-green-50 text-green-700 border-green-200',
+  blocked: 'bg-red-50 text-red-700 border-red-200',
+  failed: 'bg-red-50 text-red-700 border-red-200',
+}
+
+const FISCAL_LABEL: Record<string, string> = {
+  ready: 'Listo',
+  pending_link: 'Sin vínculo',
+  pending_mh_data: 'Datos MH pendientes',
+  inactive: 'Inactiva',
+  blocked: 'Bloqueada',
+}
+
+const FISCAL_STYLE: Record<string, string> = {
+  ready: 'bg-green-50 text-green-700 border-green-200',
+  pending_link: 'bg-sky-50 text-sky-700 border-sky-200',
+  pending_mh_data: 'bg-amber-50 text-amber-700 border-amber-200',
+  inactive: 'bg-gray-50 text-gray-600 border-gray-200',
+  blocked: 'bg-red-50 text-red-700 border-red-200',
+}
+
+const FiscalBadge = ({ estado }: { estado: string | null }) => {
+  if (!estado) return null
+  return (
+    <span className={`mt-0.5 inline-flex items-center rounded-full border px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide ${FISCAL_STYLE[estado] ?? 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+      {FISCAL_LABEL[estado] ?? estado}
+    </span>
+  )
+}
+
+const nombreSesion = (empresa?: { nombre: string; nombre_comercial?: string | null } | null) =>
+  empresa ? (empresa.nombre_comercial || empresa.nombre) : undefined
+
 export default function LoginPage() {
   const navigate = useNavigate()
   const { setAuth, setTenantId, setSucursalId } = useAuthStore()
@@ -93,23 +139,40 @@ export default function LoginPage() {
       <div className="login-glass-card rounded-2xl p-8 sm:p-10 w-full max-w-md shadow-[0_12px_32px_rgba(70,55,40,0.15)]">
         <div className="flex flex-col items-center mb-8">
           {selectedEmpresa?.logo_url ? (
-            <img src={selectedEmpresa.logo_url} alt={selectedEmpresa.nombre} className="h-16 w-auto mb-4 object-contain" />
+            <img src={selectedEmpresa.logo_url} alt={nombreSesion(selectedEmpresa)} className="h-16 w-auto mb-4 object-contain" />
           ) : (
             <div className="h-16 w-16 rounded-2xl bg-wood-light border-2 border-pos-accent/20 flex items-center justify-center mb-4">
-              <span className="font-display text-2xl text-pos-accent">{selectedEmpresa?.nombre?.charAt(0) || 'A'}</span>
+              <span className="font-display text-2xl text-pos-accent">{nombreSesion(selectedEmpresa)?.charAt(0) || 'A'}</span>
             </div>
           )}
-          <h1 className="font-display text-2xl text-pos-text tracking-wider">{selectedEmpresa?.nombre || 'AMBER POS'}</h1>
+          <h1 className="font-display text-2xl text-pos-text tracking-wider">{nombreSesion(selectedEmpresa) || 'AMBER POS'}</h1>
+          {selectedEmpresa?.fiscal_sync_status && empresas.length <= 1 ? (
+            <span className={`mt-1.5 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${PROVISION_STYLE[selectedEmpresa.fiscal_sync_status] ?? 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+              {PROVISION_LABEL[selectedEmpresa.fiscal_sync_status] ?? selectedEmpresa.fiscal_sync_status}
+            </span>
+          ) : null}
         </div>
 
         <div className="mb-5 flex flex-col gap-3">
           {empresas.length > 1 && (
-            <Select
-              label="Empresa"
-              value={effectiveEmpresaId}
-              onValueChange={(v) => { setEmpresaId(v); setError('') }}
-              options={empresas.map((e) => ({ value: e.id, label: e.nombre }))}
-            />
+            <div>
+              <Select
+                label="Empresa"
+                value={effectiveEmpresaId}
+                onValueChange={(v) => { setEmpresaId(v); setError('') }}
+                options={empresas.map((e) => ({ value: e.id, label: nombreSesion(e) ?? e.nombre }))}
+              />
+              {selectedEmpresa?.fiscal_sync_status ? (
+                <span className={`mt-1.5 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${PROVISION_STYLE[selectedEmpresa.fiscal_sync_status] ?? 'bg-gray-50 text-gray-600 border-gray-200'}`}>
+                  {PROVISION_LABEL[selectedEmpresa.fiscal_sync_status] ?? selectedEmpresa.fiscal_sync_status}
+                </span>
+              ) : null}
+              {selectedEmpresa?.nombre && selectedEmpresa.nombre !== nombreSesion(selectedEmpresa) ? (
+                <span className="block text-[10px] text-text-secondary mt-0.5">
+                  {selectedEmpresa.nombre}
+                </span>
+              ) : null}
+            </div>
           )}
 
           {sucursales.length > 1 && (
@@ -127,8 +190,16 @@ export default function LoginPage() {
                     }`}
                   >
                     <span className="block font-medium truncate">{s.nombre}</span>
-                    {s.es_principal && (
-                      <span className="text-[10px] font-semibold uppercase tracking-wider text-accent/70 mt-0.5 block">Principal</span>
+                    <span className="flex items-center gap-1.5 mt-0.5">
+                      {s.es_principal && (
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-accent/70">Principal</span>
+                      )}
+                      <FiscalBadge estado={s.fiscal_status} />
+                    </span>
+                    {s.fiscal_status && s.fiscal_status !== 'ready' && (
+                      <span className="block text-[10px] text-text-secondary/80 mt-0.5">
+                        No podrá emitir DTE
+                      </span>
                     )}
                   </button>
                 ))}

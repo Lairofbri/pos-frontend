@@ -4,7 +4,9 @@ import type { LoginRequest, LoginPinRequest, LoginResponse } from '../../types'
 export interface Empresa {
   id: string
   nombre: string
+  nombre_comercial: string | null
   logo_url: string | null
+  fiscal_sync_status: string | null
 }
 
 export interface PinUser {
@@ -19,6 +21,9 @@ export interface SucursalOption {
   tenant_id: string
   nombre: string
   es_principal: boolean
+  fiscal_status: string | null
+  branch_id: string | null
+  dte_establecimiento_id: string | null
 }
 
 interface EmpresasResponse {
