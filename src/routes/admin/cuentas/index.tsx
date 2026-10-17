@@ -15,7 +15,8 @@ import { Spinner } from '@/components/ui/Spinner'
 import { Button } from '@/components/ui/Button'
 import { DatePicker } from '@/components/ui/DatePicker'
 import { useToastStore } from '@/store/toastStore'
-import { imprimirTicket } from '@/routes/admin/impresoras/api'
+import { imprimirTicketOrden, esErrorImpresion } from '@/lib/printingService'
+import type { TipoTicket } from '@/lib/printingService'
 
 type Periodo = 'hoy' | 'semana' | 'mes' | 'personalizado'
 
@@ -129,12 +130,19 @@ export default function CuentasPage() {
     queryClient.invalidateQueries({ queryKey: ['cuentas'] })
   }, [queryClient])
 
-  const handleReprint = useCallback(async (ordenId: string, numero: number) => {
+  const handleReprint = useCallback(async (cuenta: CuentaItem) => {
+    // Reimprime la operación original por el agente local: no crea ventas ni DTE
+    // (decisión D5). Si el DTE está aceptado se reimprime la factura; si no, el
+    // ticket de consumo (no fiscal).
+    const tipo: TipoTicket = cuenta.dte_estado === 'aceptado' ? 'factura' : 'ticket-consumo'
     try {
-      await imprimirTicket(ordenId, 'pre-cuenta')
-      showToast({ type: 'success', message: `Cuenta #${numero} enviada a impresión` })
-    } catch {
-      showToast({ type: 'error', message: 'Error al imprimir cuenta' })
+      await imprimirTicketOrden(cuenta.id, tipo)
+      showToast({ type: 'success', message: `Cuenta #${cuenta.numero_orden} enviada a impresión` })
+    } catch (err) {
+      showToast({
+        type: 'error',
+        message: esErrorImpresion(err) ? err.message : 'Error al imprimir cuenta',
+      })
     }
   }, [showToast])
 
@@ -441,7 +449,7 @@ export default function CuentasPage() {
                           <td className="py-2.5 text-right">
                             <div className="flex items-center justify-end gap-0.5">
                               <button
-                                onClick={() => handleReprint(cuenta.id, cuenta.numero_orden)}
+                                onClick={() => handleReprint(cuenta)}
                                 className="p-1.5 rounded-md text-text-secondary hover:text-pos-accent hover:bg-pos-accent/10 transition-colors duration-200"
                                 aria-label={`Reimprimir cuenta de orden #${cuenta.numero_orden}`}
                               >

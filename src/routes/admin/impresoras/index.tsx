@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/Badge'
 import { Spinner } from '@/components/ui/Spinner'
 import { EmptyState } from '../../../components/shared/EmptyState'
 import { ErrorState } from '../../../components/shared/ErrorState'
+import { AgenteImpresionPanel } from './AgenteImpresionPanel'
 
 const TIPOS = [
   { value: 'ticket-consumo', label: 'Ticket de Consumo' },
@@ -98,7 +99,10 @@ export default function ImpresorasPage() {
     <>
       <PageHeader title="Impresoras Térmicas" onNew={() => abrirForm()} newLabel="Nueva impresora" />
 
-      {isLoading ? (
+      <div className="flex flex-col gap-4">
+        <AgenteImpresionPanel />
+
+        {isLoading ? (
         <div className="flex justify-center py-16"><Spinner size="lg" /></div>
       ) : error ? (
         <ErrorState message="Error al cargar impresoras" onRetry={() => refetch()} />
@@ -140,6 +144,7 @@ export default function ImpresorasPage() {
           ))}
         </div>
       )}
+      </div>
 
       <SidePanel
         open={panelOpen}

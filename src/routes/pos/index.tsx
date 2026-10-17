@@ -19,7 +19,8 @@ import { useAuthStore } from '../../store/authStore'
 import { obtenerRestaurante } from '../admin/restaurante/api'
 
 import { useCocinaSocket } from '../../hooks/useSocket'
-import { imprimirTicket } from '../admin/impresoras/api'
+import { imprimirTicketOrden, obtenerConfigAgente, agenteConfigurado, esErrorImpresion } from '../../lib/printingService'
+import type { TipoTicket } from '../../lib/printingService'
 import type { Mesa, Producto, Orden, OrdenItem } from '../../types'
 
 export default function POSPage() {
@@ -39,6 +40,9 @@ export default function POSPage() {
   const [separadores, setSeparadores] = useState<Set<string>>(new Set())
   const [numPersonas, setNumPersonas] = useState(1)
   const [clienteAsignado, setClienteAsignado] = useState<{ id: string; nombre: string; tipo_cliente?: string; nit?: string } | null>(null)
+  // Estado de impresión separado del cobro y del DTE (verificar.txt §5, §11):
+  // un fallo de impresión no revierte ni repite la venta; solo se reintenta imprimir.
+  const [impresionPendiente, setImpresionPendiente] = useState<{ ordenId: string; tipo: TipoTicket; etiqueta: string } | null>(null)
   // Fase 3 — la clave idempotente del pago se genera UNA vez por orden y se
   // reutiliza en reintentos (doble click / refresh) para que el backend deduplique.
   const idempotencyKeysRef = useRef<Map<string, string>>(new Map())
@@ -54,6 +58,16 @@ export default function POSPage() {
     queryKey: ['restaurante-pos'],
     queryFn: obtenerRestaurante,
     ...queryDefaults('restaurante'),
+  })
+
+  // Preferencias del agente local (auto-impresión). Solo si hay token configurado;
+  // si el agente no responde, el cobro nunca se bloquea.
+  const { data: configAgente } = useQuery({
+    queryKey: ['agente-config'],
+    queryFn: obtenerConfigAgente,
+    enabled: agenteConfigurado(),
+    retry: false,
+    staleTime: 30_000,
   })
 
   const { data: promosActivas = [] } = useQuery({
@@ -213,14 +227,21 @@ export default function POSPage() {
   })
 
   const printMutation = useMutation({
-    mutationFn: ({ ordenId, tipo }: { ordenId: string; tipo: 'pre-cuenta' | 'ticket-consumo' | 'factura' }) =>
-      imprimirTicket(ordenId, tipo),
-    onError: (_, params) => {
+    mutationFn: ({ ordenId, tipo }: { ordenId: string; tipo: TipoTicket; etiqueta: string }) =>
+      imprimirTicketOrden(ordenId, tipo),
+    onSuccess: (_, params) => {
+      setImpresionPendiente((actual) =>
+        actual?.ordenId === params.ordenId && actual.tipo === params.tipo ? null : actual,
+      )
+    },
+    onError: (err, params) => {
+      setImpresionPendiente({ ordenId: params.ordenId, tipo: params.tipo, etiqueta: params.etiqueta })
       showToast({
         type: 'error',
-        message: params.tipo === 'factura'
-          ? 'El pago se completó, pero no se pudo imprimir el documento fiscal.'
-          : 'No se pudo imprimir el ticket.',
+        message: `No se pudo imprimir ${params.etiqueta}.`,
+        description: esErrorImpresion(err)
+          ? err.message
+          : 'El cobro y el DTE no se ven afectados; podés reintentar la impresión.',
       })
     },
   })
@@ -249,10 +270,15 @@ export default function POSPage() {
           // El interceptor global ya mostró el motivo. El pago está completo
           // y el DTE quedó encolado/rechazado (visible en Cuentas).
         }
-        printMutation.mutate({
-          ordenId: id,
-          tipo: dteEstado === 'aceptado' ? 'factura' : 'ticket-consumo',
-        })
+        const tipoImpresion: TipoTicket = dteEstado === 'aceptado' ? 'factura' : 'ticket-consumo'
+        const autoImpresion = agenteConfigurado() && (configAgente?.impresion.autoImpresion ?? true)
+        if (autoImpresion) {
+          printMutation.mutate({
+            ordenId: id,
+            tipo: tipoImpresion,
+            etiqueta: tipoImpresion === 'factura' ? 'el documento fiscal' : 'el ticket de consumo',
+          })
+        }
       }
       limpiarOrden(id)
       setMostrarPayment(false)
@@ -483,7 +509,21 @@ export default function POSPage() {
 
   const handleImprimirPreCuenta = () => {
     if (ordenSeleccionadaId) {
-      printMutation.mutate({ ordenId: ordenSeleccionadaId, tipo: 'pre-cuenta' })
+      printMutation.mutate({
+        ordenId: ordenSeleccionadaId,
+        tipo: 'pre-cuenta',
+        etiqueta: `la pre-cuenta #${ordenActiva?.numero_orden ?? ''}`.trim(),
+      })
+    }
+  }
+
+  const handleImprimirTicket = () => {
+    if (ordenSeleccionadaId) {
+      printMutation.mutate({
+        ordenId: ordenSeleccionadaId,
+        tipo: 'ticket-consumo',
+        etiqueta: `el ticket de consumo #${ordenActiva?.numero_orden ?? ''}`.trim(),
+      })
     }
   }
 
@@ -627,6 +667,7 @@ export default function POSPage() {
                     onSolicitarAutorizacion={handleAutorizarEliminacion}
                     onLiberarMesa={handleLiberarMesa}
                     onImprimirPreCuenta={handleImprimirPreCuenta}
+                    onImprimirTicket={handleImprimirTicket}
                     onActualizarPropina={(pct) => ordenActiva && propinaMutation.mutate(pct)}
                     enviando={cocinaMutation.isPending}
                     ocultarCocina={modo === 'rapido'}
@@ -680,6 +721,35 @@ export default function POSPage() {
               </button>
             </div>
         </>
+      )}
+
+      {impresionPendiente && (
+        <div className="fixed bottom-16 lg:bottom-4 left-1/2 -translate-x-1/2 z-50 w-[calc(100%-2rem)] max-w-md bg-bg-surface border border-danger/40 rounded-xl shadow-lg px-4 py-3 flex items-start gap-3" role="alert">
+          <Icon name="alert" className="size-5 text-danger shrink-0 mt-0.5" />
+          <div className="flex-1 min-w-0">
+            <p className="text-[13px] font-semibold text-text-primary">
+              No se pudo imprimir {impresionPendiente.etiqueta}
+            </p>
+            <p className="text-[11px] text-text-secondary mt-0.5">
+              El cobro y el DTE quedaron registrados. Podés reintentar o reimprimir desde Cuentas.
+            </p>
+            <div className="flex items-center gap-2 mt-2">
+              <button
+                onClick={() => printMutation.mutate(impresionPendiente)}
+                disabled={printMutation.isPending}
+                className="text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-accent text-white hover:bg-accent-dark disabled:opacity-40 cursor-pointer"
+              >
+                {printMutation.isPending ? 'Reintentando…' : 'Reintentar'}
+              </button>
+              <button
+                onClick={() => setImpresionPendiente(null)}
+                className="text-[11px] px-3 py-1.5 rounded-lg border border-border text-text-secondary hover:text-text-primary transition-colors cursor-pointer"
+              >
+                Descartar
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <ModifierPanel

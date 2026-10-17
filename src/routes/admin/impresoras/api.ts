@@ -34,6 +34,11 @@ export const probarImpresora = (impresoraId: string) =>
   api.post<{ ok: boolean; data: { impreso: boolean; mensaje: string } }>('/impresion/test', { impresora_id: impresoraId })
     .then(r => r.data.data)
 
-export const imprimirTicket = (ordenId: string, tipo: 'pre-cuenta' | 'ticket-consumo' | 'factura', impresoraId?: string) =>
+/**
+ * @deprecated Camino TCP del POS (impresoras de red, decisión D4). El POS ya
+ * imprime por el agente local (`printingService.imprimirTicketOrden`). Se
+ * conserva por si se quiere ofrecer explícitamente una impresora de red.
+ */
+export const imprimirTicket = (ordenId: string, tipo: 'pre-cuenta' | 'ticket-consumo' | 'cocina' | 'factura', impresoraId?: string) =>
   api.post<{ ok: boolean; data: { impreso: boolean; impresora: string } }>(`/impresion/print/${ordenId}`, { tipo, impresora_id: impresoraId })
     .then(r => r.data.data)

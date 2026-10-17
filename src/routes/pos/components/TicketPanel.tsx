@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { Unlock, ClipboardList, Printer, Minus, Pencil } from 'lucide-react'
-import { printOrden } from '../../../components/shared/PrintTicket'
 import { DTEQR } from './DTEQR'
 import { ClientSelector } from './ClientSelector'
 import { Textarea } from '@/components/ui/Textarea'
@@ -18,6 +17,7 @@ interface TicketPanelProps {
   onSolicitarAutorizacion?: (itemId: string) => void
   onLiberarMesa?: () => void
   onImprimirPreCuenta?: () => void
+  onImprimirTicket?: () => void
   onActualizarPropina?: (pct: number) => void
   enviando?: boolean
   ocultarCocina?: boolean
@@ -56,6 +56,7 @@ export function TicketPanel({
   onSolicitarAutorizacion,
   onLiberarMesa,
   onImprimirPreCuenta,
+  onImprimirTicket,
   onActualizarPropina,
   enviando,
   ocultarCocina,
@@ -411,10 +412,10 @@ export function TicketPanel({
             {imprimiendo ? '...' : <ClipboardList className="size-4" />}
           </button>
           <button
-            onClick={() => printOrden(orden)}
-            disabled={orden.items.length === 0}
+            onClick={() => onImprimirTicket?.()}
+            disabled={orden.items.length === 0 || !onImprimirTicket}
             className="h-8 w-8 rounded-lg border border-border/50 text-text-secondary hover:text-text-primary hover:border-border transition-colors cursor-pointer disabled:opacity-30 shrink-0 flex items-center justify-center"
-            title="Imprimir ticket (navegador)"
+            title="Imprimir ticket de consumo"
           >
             <Printer className="size-4" />
           </button>

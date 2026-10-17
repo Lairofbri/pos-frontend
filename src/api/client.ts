@@ -33,6 +33,9 @@ function mostrarToast(error: AxiosError<{ mensaje?: string }>) {
 
 function parseItem(value: unknown): unknown {
   if (value === null || value === undefined) return value
+  // Respuestas binarias (ESC/POS con responseType 'arraybuffer', blobs, form-data):
+  // no intentar recorrerlas como objetos JSON o se vaciarían.
+  if (value instanceof ArrayBuffer || value instanceof Blob || value instanceof FormData) return value
   if (Array.isArray(value)) return value.map(parseItem)
   if (typeof value === 'object' && !(value instanceof Date)) {
     const result: Record<string, unknown> = {}

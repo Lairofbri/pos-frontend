@@ -1,7 +1,8 @@
 import { useMemo, useCallback, useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { queryDefaults } from '../../config/queries'
-import { getItemsActivos, getTicket, marcarItemListo, marcarOrdenCompletada } from './api'
+import { getItemsActivos, marcarItemListo, marcarOrdenCompletada } from './api'
+import { imprimirTicketOrden, esErrorImpresion } from '../../lib/printingService'
 import { CocinaCard } from './components/CocinaCard'
 import { KanbanBoard } from '../../components/shared/KanbanBoard'
 import { Spinner } from '@/components/ui/Spinner'
@@ -66,15 +67,13 @@ export default function CocinaPage() {
 
   const imprimirTicket = useCallback(async (ordenId: string) => {
     try {
-      const html = await getTicket(ordenId)
-      const w = window.open('', '_blank')
-      if (w) {
-        w.document.write(html)
-        w.document.close()
-        w.print()
-      }
-    } catch {
-      showToast({ type: 'error', message: 'Error al imprimir ticket' })
+      await imprimirTicketOrden(ordenId, 'cocina')
+      showToast({ type: 'success', message: 'Ticket de cocina enviado a impresión' })
+    } catch (err) {
+      showToast({
+        type: 'error',
+        message: esErrorImpresion(err) ? err.message : 'Error al imprimir el ticket de cocina',
+      })
     }
   }, [showToast])
 
