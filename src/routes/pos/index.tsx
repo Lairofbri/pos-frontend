@@ -46,6 +46,11 @@ export default function POSPage() {
   // Fase 3 — la clave idempotente del pago se genera UNA vez por orden y se
   // reutiliza en reintentos (doble click / refresh) para que el backend deduplique.
   const idempotencyKeysRef = useRef<Map<string, string>>(new Map())
+  // Venta rápida con creación diferida: la orden se crea al elegir el primer
+  // producto (antes había que pulsar "Iniciar venta rápida" y la pantalla
+  // quedaba en un callejón sin salida si la creación fallaba).
+  const idRapidaRef = useRef<string | null>(null)
+  const creandoRapidaRef = useRef(false)
   useCocinaSocket(tenantId ?? '')
 
   const { data: ordenes } = useQuery({
@@ -124,6 +129,7 @@ export default function POSPage() {
 
   const limpiarOrden = (id: string | null) => {
     setOrdenConReset(null)
+    idRapidaRef.current = null
     setMostrarPayment(false)
     setSeparadores(new Set())
     setNumPersonas(1)
@@ -415,12 +421,43 @@ export default function POSPage() {
   }
 
   const iniciarRapido = () => {
+    // La orden se crea recién al elegir el primer producto (creación diferida).
     setModo('rapido')
-    crearMutation.mutate({ tipo: 'rapido' })
   }
 
-  const handleSelectProducto = (p: Producto) => {
-    if (!ordenActiva) return
+  /** Devuelve la orden activa; en venta rápida la crea al primer ítem. */
+  const asegurarOrdenRapida = async (): Promise<string | null> => {
+    if (ordenActiva?.id) return ordenActiva.id
+    if (idRapidaRef.current) return idRapidaRef.current
+    if (creandoRapidaRef.current) return null
+
+    creandoRapidaRef.current = true
+    try {
+      const orden = await crearMutation.mutateAsync({ tipo: 'rapido' })
+      idRapidaRef.current = orden.id
+      return orden.id
+    } catch {
+      showToast({ type: 'error', message: 'No se pudo iniciar la venta rápida', description: 'Reintentá eligiendo el producto de nuevo.' })
+      return null
+    } finally {
+      creandoRapidaRef.current = false
+    }
+  }
+
+  const handleSelectProducto = async (p: Producto) => {
+    if (!ordenActiva) {
+      if (modo !== 'rapido') return
+      const ordenId = await asegurarOrdenRapida()
+      if (!ordenId) return
+      agregarItemMutation.mutate({
+        ordenId,
+        productoId: p.id,
+        cantidad: 1,
+        _nombre: p.nombre,
+        _precio: p.precio,
+      })
+      return
+    }
     const items = ordenActiva.items
     let startIdx = items.length
     for (let i = items.length - 1; i >= 0; i--) {
@@ -446,8 +483,21 @@ export default function POSPage() {
     }
   }
 
-  const handleSelectCombo = (c: ComboPos) => {
-    if (!ordenActiva) return
+  const handleSelectCombo = async (c: ComboPos) => {
+    if (!ordenActiva) {
+      if (modo !== 'rapido') return
+      const ordenId = await asegurarOrdenRapida()
+      if (!ordenId) return
+      agregarItemMutation.mutate({
+        ordenId,
+        productoId: c.id,
+        cantidad: 1,
+        _nombre: c.nombre,
+        _precio: c.precio,
+        _esCombo: true,
+      })
+      return
+    }
     agregarItemMutation.mutate({
       ordenId: ordenActiva.id,
       productoId: c.id,
@@ -608,21 +658,25 @@ export default function POSPage() {
                     </div>
                   </div>
 
-                  {/* TableMap */}
-                  <div className="flex-1 overflow-y-auto min-h-0">
+                  {/* TableMap / catálogo de la venta rápida */}
+                  <div className="flex-1 overflow-hidden min-h-0">
                     {modo === 'mesa' ? (
-                      <TableMap onSelectMesa={handleSelectMesa} />
+                      <div className="h-full overflow-y-auto">
+                        <TableMap onSelectMesa={handleSelectMesa} />
+                      </div>
                     ) : (
-                      <div className="flex flex-col items-center justify-center h-full gap-4">
-                        <p className="text-base text-pos-text-secondary">
-                          Inicia una venta rápida sin mesa asignada
+                      <div className="flex flex-col h-full min-h-0">
+                        <p className="text-[13px] text-pos-text-secondary mb-2 shrink-0">
+                          Elegí un producto para iniciar la venta rápida (sin mesa).
                         </p>
-                        <button
-                          onClick={iniciarRapido}
-                          className="h-11 px-6 rounded-xl bg-pos-accent text-white text-base font-semibold cursor-pointer hover:bg-pos-accent-hover transition-colors"
-                        >
-                          Iniciar venta rápida
-                        </button>
+                        <div className="flex-1 min-h-0">
+                          <ProductGrid
+                            onSelectProducto={handleSelectProducto}
+                            onSelectCombo={handleSelectCombo}
+                            onLongPressProducto={handleLongPressProducto}
+                            promosPorProducto={promosPorProducto}
+                          />
+                        </div>
                       </div>
                     )}
                   </div>

@@ -26,11 +26,26 @@ interface FormPreferencias {
   papelMm: 58 | 80
   corte: boolean
   autoImpresion: boolean
-  autoImpresionPreCuenta: boolean
 }
 
 const mensajeDe = (err: unknown) =>
   esErrorImpresion(err) ? err.message : 'Ocurrió un error inesperado al hablar con el agente.'
+
+/**
+ * Normaliza un origen a `scheme://host[:puerto]` (lo que el agente compara).
+ * Devuelve `null` si no es una URL http(s) válida.
+ */
+const normalizarOrigen = (valor: string): string | null => {
+  const limpio = valor.trim()
+  if (!limpio) return null
+  try {
+    const url = new URL(limpio)
+    if (url.protocol !== 'http:' && url.protocol !== 'https:') return null
+    return url.origin
+  } catch {
+    return null
+  }
+}
 
 const SECCION = 'dashboard-card p-5'
 const CAMPO = 'text-xs font-semibold text-text-secondary uppercase tracking-wider'
@@ -48,6 +63,9 @@ export function AgenteImpresionPanel() {
   const [guardando, setGuardando] = useState(false)
   const [probando, setProbando] = useState<'ticket' | 'qr' | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [origenes, setOrigenes] = useState<string[]>([])
+  const [nuevoOrigen, setNuevoOrigen] = useState('')
+  const [guardandoOrigenes, setGuardandoOrigenes] = useState(false)
 
   const conectar = useCallback(async () => {
     setDetectando(true)
@@ -68,18 +86,20 @@ export function AgenteImpresionPanel() {
           papelMm: cfg.impresion.papelMm === 58 ? 58 : 80,
           corte: cfg.impresion.corte,
           autoImpresion: cfg.impresion.autoImpresion,
-          autoImpresionPreCuenta: cfg.impresion.autoImpresionPreCuenta,
         })
+        setOrigenes(cfg.origenesPermitidos ?? [])
       } catch (err) {
         setConfig(null)
         setListado(null)
         setForm(null)
+        setOrigenes([])
         setError(mensajeDe(err))
       }
     } else {
       setConfig(null)
       setListado(null)
       setForm(null)
+      setOrigenes([])
     }
     setDetectando(false)
   }, [])
@@ -111,7 +131,6 @@ export function AgenteImpresionPanel() {
         papelMm: form.papelMm,
         corte: form.corte,
         autoImpresion: form.autoImpresion,
-        autoImpresionPreCuenta: form.autoImpresionPreCuenta,
       }
       if (form.tipoPorDefecto === 'usb') {
         // Cadena vacía = limpiar en el agente (null significa "no tocar").
@@ -128,6 +147,35 @@ export function AgenteImpresionPanel() {
       setError(mensajeDe(err))
     } finally {
       setGuardando(false)
+    }
+  }
+
+  const agregarOrigen = () => {
+    const limpio = normalizarOrigen(nuevoOrigen)
+    if (!limpio) {
+      setError('Ingresá un origen válido, por ejemplo https://pos.sandalfol.com (con http o https).')
+      return
+    }
+    setError(null)
+    setOrigenes((prev) => (prev.some((o) => normalizarOrigen(o) === limpio) ? prev : [...prev, limpio]))
+    setNuevoOrigen('')
+  }
+
+  const quitarOrigen = (origen: string) =>
+    setOrigenes((prev) => prev.filter((o) => o !== origen))
+
+  const guardarOrigenes = async () => {
+    setGuardandoOrigenes(true)
+    setError(null)
+    try {
+      const actualizada = await guardarConfigAgente({ origenesPermitidos: origenes })
+      setConfig(actualizada)
+      setOrigenes(actualizada.origenesPermitidos ?? [])
+      showToast({ type: 'success', message: 'Orígenes autorizados guardados' })
+    } catch (err) {
+      setError(mensajeDe(err))
+    } finally {
+      setGuardandoOrigenes(false)
     }
   }
 
@@ -304,10 +352,6 @@ export function AgenteImpresionPanel() {
                     <span className="text-[13px] text-text-primary">Auto-imprimir tras el cobro</span>
                     <Toggle checked={form.autoImpresion} onChange={(v) => set('autoImpresion', v)} />
                   </div>
-                  <div className="flex items-center justify-between gap-3">
-                    <span className="text-[13px] text-text-primary">Auto-imprimir precuenta</span>
-                    <Toggle checked={form.autoImpresionPreCuenta} onChange={(v) => set('autoImpresionPreCuenta', v)} />
-                  </div>
                 </div>
               </div>
 
@@ -339,6 +383,66 @@ export function AgenteImpresionPanel() {
               <p className="text-[11px] text-text-secondary">
                 El agente confirma «enviado», no «impreso»: si el papel no sale, revisá la cola de impresión de Windows.
               </p>
+            </div>
+
+            {/* Orígenes autorizados (allowlist del agente) */}
+            <div className="border-t border-border/50 pt-4 flex flex-col gap-3">
+              <div>
+                <p className="text-[13px] font-semibold text-text-primary">Orígenes autorizados a imprimir</p>
+                <p className="text-[11px] text-text-secondary mt-1">
+                  Solo estas páginas pueden enviar trabajos al agente. La comparación es <b>exacta</b>
+                  {' '}(<span className="font-mono">https://pos.sandalfol.com</span> y
+                  {' '}<span className="font-mono">https://staging-pos.sandalfol.com</span> son distintos).
+                  Si quitás el origen desde el que estás usando el POS, esa página deja de poder imprimir.
+                </p>
+              </div>
+
+              {origenes.length === 0 ? (
+                <p className="text-[11px] text-danger" role="alert">
+                  La lista está vacía: ninguna página podrá imprimir hasta que agregues al menos este origen.
+                </p>
+              ) : (
+                <ul className="flex flex-col gap-1">
+                  {origenes.map((origen) => (
+                    <li
+                      key={origen}
+                      className="flex items-center gap-2 font-mono text-[11px] text-text-secondary bg-bg-primary border border-border/50 rounded-lg px-2.5 py-1.5"
+                    >
+                      <span className="truncate flex-1">{origen}</span>
+                      {normalizarOrigen(window.location.origin) === origen && (
+                        <span className="text-[10px] font-sans font-semibold text-success shrink-0">actual</span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => quitarOrigen(origen)}
+                        className="text-text-secondary/50 hover:text-danger transition-colors cursor-pointer shrink-0"
+                        title="Quitar origen"
+                        aria-label={`Quitar el origen ${origen}`}
+                      >
+                        ×
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <div className="flex items-end gap-2 flex-wrap">
+                <div className="flex-1 min-w-[220px]">
+                  <Input
+                    label="Agregar origen"
+                    value={nuevoOrigen}
+                    onChange={(e) => setNuevoOrigen(e.target.value)}
+                    placeholder="https://pos.sandalfol.com"
+                    autoComplete="off"
+                  />
+                </div>
+                <Button onClick={agregarOrigen} variant="outline" size="sm" disabled={!nuevoOrigen.trim()}>
+                  Agregar
+                </Button>
+                <Button onClick={() => void guardarOrigenes()} loading={guardandoOrigenes} size="sm">
+                  Guardar orígenes
+                </Button>
+              </div>
             </div>
           </>
         )}

@@ -1,9 +1,10 @@
 import { useState, useMemo } from 'react'
 import { ArrowLeft, ChevronRight, Banknote, CreditCard, ArrowLeftRight, Smartphone, ScrollText, Briefcase, TicketPercent } from 'lucide-react'
-import { useCatalogo } from '../../../../hooks/useCatalogo'
+import { useCatalogo, type CatalogoItem } from '../../../../hooks/useCatalogo'
 import type { Orden } from '../../../../types'
 import { PaymentMethodTabs } from './PaymentMethodTabs'
 import { BillButtons } from './BillButtons'
+import { METODOS_CONFIG } from './metodos'
 import { NumericKeypad } from '../../../../components/shared/NumericKeypad'
 import { Button } from '@/components/ui/Button'
 import { fromCents, sumCents, toCents } from '../../../../lib/money'
@@ -49,11 +50,25 @@ function MetodoIcon({ metodo }: { metodo: string }) {
   return <span className="text-text-secondary shrink-0">{icons[metodo] || '?'}</span>
 }
 
+/**
+ * Métodos de respaldo si el catálogo del tenant no llega o viene vacío.
+ * Es exactamente la lista que valida el backend (`pagar/request.ts`), así que el
+ * cobro funciona igual: sin esto, un catálogo vacío dejaba **solo Efectivo**.
+ */
+const METODOS_POR_DEFECTO: CatalogoItem[] = Object.values(METODOS_CONFIG)
+  .filter((m) => m.valor !== 'mixto')
+  .map((m) => ({ valor: m.valor, label: m.label }))
+
 export function PaymentPanel({ onClose, orden, onConfirmar, loading, numPersonas = 1, clienteNombre, clienteEsJuridico }: PaymentPanelProps) {
   const [metodoActivo, setMetodoActivo] = useState('efectivo')
   const [pagosAcumulados, setPagosAcumulados] = useState<PagoAcumulado[]>([])
   const [montoActual, setMontoActual] = useState('')
   const { data: metodosData } = useCatalogo('metodos_pago')
+
+  const metodosDisponibles = useMemo<CatalogoItem[]>(() => {
+    const delCatalogo = (metodosData ?? []).filter((metodo) => metodo.valor !== 'mixto')
+    return delCatalogo.length > 0 ? delCatalogo : METODOS_POR_DEFECTO
+  }, [metodosData])
 
   const totalFiscalCents = toCents(orden.total)
   const propinaCents = toCents(orden.propina_monto)
@@ -169,13 +184,11 @@ export function PaymentPanel({ onClose, orden, onConfirmar, loading, numPersonas
           </div>
 
           {/* Method tabs */}
-          {metodosData && (
-            <PaymentMethodTabs
-              metodos={metodosData.filter((metodo) => metodo.valor !== 'mixto')}
-              selected={metodoActivo}
-              onSelect={handleMetodoChange}
-            />
-          )}
+          <PaymentMethodTabs
+            metodos={metodosDisponibles}
+            selected={metodoActivo}
+            onSelect={handleMetodoChange}
+          />
         </div>
 
         {/* Right: Summary column */}

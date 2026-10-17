@@ -152,7 +152,8 @@ export interface CambiosConfigAgente {
   papelMm?: 58 | 80
   corte?: boolean
   autoImpresion?: boolean
-  autoImpresionPreCuenta?: boolean
+  origenesPermitidos?: string[]
+  destinosPermitidos?: string[]
 }
 
 // ── Peticiones al agente ────────────────────────────────────────────────────
