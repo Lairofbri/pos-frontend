@@ -24,15 +24,28 @@ const CAMPO = 'text-xs font-semibold text-text-secondary uppercase tracking-wide
 const DTE_FRONTEND_URL = import.meta.env.VITE_DTE_FRONTEND_URL as string | undefined
 
 const AMBIENTE_HACIENDA: Record<string, string> = {
+  '00': 'No definido',
   '01': 'Pruebas',
   '02': 'Producción',
 }
 
-function Dato({ label, value }: { label: string; value?: string | null }) {
+// El interceptor de axios convierte "01"/"02" en números (1, 2): se normaliza
+// a 2 dígitos antes de mapear.
+const etiquetaAmbiente = (ambiente: string | number | null | undefined) => {
+  if (ambiente === null || ambiente === undefined || `${ambiente}`.trim() === '') return null
+  const codigo = String(ambiente).padStart(2, '0')
+  return AMBIENTE_HACIENDA[codigo] ?? codigo
+}
+
+function Dato({ label, value }: { label: string; value?: string | number | null }) {
+  // El interceptor de axios convierte strings numéricos a number (p. ej. NRC
+  // "3765751" o teléfono "22262386"), así que se normaliza a texto antes de
+  // comparar: nunca llamar .trim() sobre el valor crudo.
+  const texto = value === null || value === undefined ? '' : String(value)
   return (
     <div className="flex flex-col gap-0.5 min-w-0">
       <span className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider">{label}</span>
-      <span className="text-sm text-text-primary font-body break-words">{value?.trim() ? value : '—'}</span>
+      <span className="text-sm text-text-primary font-body break-words">{texto.trim() ? texto : '—'}</span>
     </div>
   )
 }
@@ -170,10 +183,7 @@ export default function RestaurantePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Dato label="Código de actividad" value={form.codigo_actividad} />
               <Dato label="Actividad económica" value={form.desc_actividad} />
-              <Dato
-                label="Ambiente Hacienda"
-                value={form.ambiente ? (AMBIENTE_HACIENDA[form.ambiente] ?? form.ambiente) : null}
-              />
+              <Dato label="Ambiente Hacienda" value={etiquetaAmbiente(form.ambiente)} />
               <div className="flex flex-col gap-0.5">
                 <span className="text-[11px] font-semibold text-text-secondary uppercase tracking-wider">
                   Credenciales y firma
