@@ -17,6 +17,12 @@ api.interceptors.request.use((config) => {
 
 let toastTimer: ReturnType<typeof setTimeout> | null = null
 
+// Un 401 en estas rutas es «credenciales inválidas», NO «sesión expirada»: no
+// se intenta refrescar el token ni se recarga la página (la pantalla de login
+// muestra su propio mensaje de error). Sin esto, un password incorrecto
+// redirigía a /login y el usuario nunca veía el error.
+const RUTAS_AUTH = ['/auth/login', '/auth/login-pin', '/auth/refresh']
+
 function mostrarToast(error: AxiosError<{ mensaje?: string }>) {
   const mensajeBackend = error.response?.data?.mensaje
   const message = mensajeBackend || 'Error inesperado'
@@ -60,7 +66,10 @@ api.interceptors.response.use(
     if (apiMessage) error.message = apiMessage
 
     const original = error.config
-    if (error.response?.status === 401 && !original._retry) {
+    const urlPeticion = typeof original?.url === 'string' ? original.url : ''
+    const esRutaAuth = RUTAS_AUTH.some((ruta) => urlPeticion.includes(ruta))
+
+    if (error.response?.status === 401 && !esRutaAuth && !original._retry) {
       original._retry = true
       try {
         const { data } = await axios.post(
