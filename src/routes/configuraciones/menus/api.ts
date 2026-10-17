@@ -36,8 +36,8 @@ export function flattenTree(items: MenuItem[], level = 0): Array<{ item: MenuIte
   return result
 }
 
-export const listarMenus = () =>
-  api.get<{ ok: boolean; data: { menus: MenuItem[] } }>('/menus')
+export const listarMenus = (completo = false) =>
+  api.get<{ ok: boolean; data: { menus: MenuItem[] } }>(`/menus${completo ? '?completo=1' : ''}`)
     .then(r => r.data.data.menus)
 
 export const obtenerMenu = (id: string) =>

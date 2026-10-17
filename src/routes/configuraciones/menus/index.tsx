@@ -28,7 +28,9 @@ export default function MenusPage() {
 
   const { data: arbol, isLoading } = useQuery({
     queryKey: ['configuraciones', 'menus'],
-    queryFn: listarMenus,
+    // Catálogo GLOBAL: la vista de mantenimiento pide TODO (activos e inactivos)
+    // y sin filtrar por permisos (solo el rol plataforma llega a esta pantalla).
+    queryFn: () => listarMenus(true),
     ...queryDefaults('configuraciones'),
   })
 
@@ -144,7 +146,16 @@ export default function MenusPage() {
   return (
     <>
       <div className="px-4 pb-4">
-        <div className="flex justify-end mb-4">
+        <div className="flex items-center justify-between gap-3 mb-4">
+          <p className="text-xs text-text-secondary font-body flex items-start gap-2">
+            <span aria-hidden="true">🌐</span>
+            <span>
+              Catálogo <strong className="text-text-primary">global</strong>: estos ítems del sidebar
+              son los mismos para todas las empresas. Lo que varía por empresa son los{' '}
+              <strong className="text-text-primary">permisos</strong> de cada rol
+              (Configuraciones → Roles y Permisos).
+            </span>
+          </p>
           <Button size="sm" onClick={abrirNuevo}>Nuevo Item</Button>
         </div>
 
