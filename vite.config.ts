@@ -26,6 +26,13 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // Nunca servir el `index.html` precacheado para las navegaciones: si el
+        // service worker conserva un shell viejo, su entry apunta a chunks que
+        // el deploy nuevo ya borró y el navegador falla con «Failed to fetch
+        // dynamically imported module» (el fallback SPA de Cloudflare devuelve
+        // HTML a la ruta del .js). Sin `NavigationRoute` el shell siempre sale
+        // de la red; los assets con hash siguen precacheados/cache-first.
+        navigateFallback: null,
         runtimeCaching: [
           {
             urlPattern: /^https?:\/\/.*\/api\/.*/i,

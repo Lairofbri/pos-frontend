@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
+import { createBrowserRouter, RouterProvider, Navigate, Outlet } from 'react-router-dom'
 import { LoaderCircle } from 'lucide-react'
 import { ErrorBoundary } from './components/shared/ErrorBoundary'
 
@@ -44,46 +44,55 @@ const PromocionesPage = lazy(() => import('./routes/admin/promociones/index'))
 import { AuthGuard } from './components/shared/AuthGuard'
 import { RouteGuard } from './components/shared/RouteGuard'
 import { CajaGuard } from './components/shared/CajaGuard'
+import { RouteError } from './components/shared/RouteError'
 
+// Ruta raíz SIN path ni element: existe solo para dar `errorElement` a todas las
+// rutas hijas (antes se veía la pantalla por defecto de React Router).
 const router = createBrowserRouter([
-  { path: '/', element: <Navigate to="/pos" replace /> },
-  { path: '/login', element: <AuthLayout><LoginPage /></AuthLayout> },
-  { path: '/dashboard', element: <AuthGuard><ProtectedLayout><DashboardPage /></ProtectedLayout></AuthGuard> },
-  { path: '/pos', element: <AuthGuard><ProtectedLayout><CajaGuard><POSPage /></CajaGuard></ProtectedLayout></AuthGuard> },
-  { path: '/cocina', element: <AuthGuard><ProtectedLayout><CocinaPage /></ProtectedLayout></AuthGuard> },
-  { path: '/admin/productos', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><ProductosPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/admin/categorias', element: <Navigate to="/admin/productos" replace /> },
-  { path: '/admin/combos', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><CombosPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/admin/combos/crear', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><CrearComboPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/admin/combos/editar/:id', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><EditarComboPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/admin/mesas', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><MesasPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/admin/usuarios', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><UsuariosPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/configuraciones/usuarios', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><UsuariosPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/configuraciones/roles', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><RolesPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/admin/clientes', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><ClientesPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/admin/caja', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><CajaPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/configuraciones/menus', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><MenusPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/admin/impresoras', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><ImpresorasPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/admin/inventario', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><InventarioPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/admin/recetas', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><RecetasPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/admin/sucursales', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><SucursalesPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/admin/reportes', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><ReportesPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/admin/rentabilidad', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><RentabilidadDashboardPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/admin/reportes/ventas', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><VentasReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/admin/reportes/productos', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><ProductosReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/admin/reportes/ordenes', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><OrdenesReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/admin/reportes/caja', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><CajaReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/admin/reportes/cocina', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><CocinaReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/admin/reportes/propinas', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><PropinasReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/admin/reportes/sucursales', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><SucursalesReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/admin/reportes/staff', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><StaffReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/admin/reportes/dte', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><DteReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/admin/reportes/consolidados', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><ConsolidadosReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/admin/reportes/costos', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><CostosReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/admin/cuentas', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><CuentasPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/admin/restaurante', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><RestaurantePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '/admin/promociones', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><PromocionesPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
-  { path: '*', element: <Navigate to="/pos" replace /> },
+  {
+    element: <Outlet />,
+    errorElement: <RouteError />,
+    children: [
+      { path: '/', element: <Navigate to="/pos" replace /> },
+      { path: '/login', element: <AuthLayout><LoginPage /></AuthLayout> },
+      { path: '/dashboard', element: <AuthGuard><ProtectedLayout><DashboardPage /></ProtectedLayout></AuthGuard> },
+      { path: '/pos', element: <AuthGuard><ProtectedLayout><CajaGuard><POSPage /></CajaGuard></ProtectedLayout></AuthGuard> },
+      { path: '/cocina', element: <AuthGuard><ProtectedLayout><CocinaPage /></ProtectedLayout></AuthGuard> },
+      { path: '/admin/productos', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><ProductosPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/admin/categorias', element: <Navigate to="/admin/productos" replace /> },
+      { path: '/admin/combos', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><CombosPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/admin/combos/crear', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><CrearComboPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/admin/combos/editar/:id', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><EditarComboPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/admin/mesas', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><MesasPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/admin/usuarios', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><UsuariosPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/configuraciones/usuarios', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><UsuariosPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/configuraciones/roles', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><RolesPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/admin/clientes', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><ClientesPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/admin/caja', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><CajaPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/configuraciones/menus', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><MenusPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/admin/impresoras', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><ImpresorasPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/admin/inventario', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><InventarioPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/admin/recetas', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><RecetasPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/admin/sucursales', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><SucursalesPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/admin/reportes', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><ReportesPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/admin/rentabilidad', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><RentabilidadDashboardPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/admin/reportes/ventas', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><VentasReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/admin/reportes/productos', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><ProductosReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/admin/reportes/ordenes', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><OrdenesReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/admin/reportes/caja', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><CajaReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/admin/reportes/cocina', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><CocinaReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/admin/reportes/propinas', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><PropinasReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/admin/reportes/sucursales', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><SucursalesReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/admin/reportes/staff', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><StaffReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/admin/reportes/dte', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><DteReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/admin/reportes/consolidados', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><ConsolidadosReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/admin/reportes/costos', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><CostosReportePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/admin/cuentas', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><CuentasPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/admin/restaurante', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><RestaurantePage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '/admin/promociones', element: <AuthGuard><RouteGuard><ProtectedLayout><AdminLayout><PromocionesPage /></AdminLayout></ProtectedLayout></RouteGuard></AuthGuard> },
+      { path: '*', element: <Navigate to="/pos" replace /> },
+    ],
+  },
 ])
 
 function PageLoader() {
