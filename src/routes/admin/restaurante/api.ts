@@ -1,46 +1,64 @@
 import api from '../../../api/client'
 
+// F4 (spec «DTE única fuente de verdad»): la identidad y la configuración
+// fiscal de la empresa las expone el DTE Service a través del pos-backend.
+// Desde el POS son SOLO LECTURA; lo único propio del POS es `pos_default_mode`.
 export interface Restaurante {
   id: string
   nombre: string
+  nombre_comercial: string | null
   nit: string | null
   nrc: string | null
   direccion: string | null
   telefono: string | null
   email: string | null
   logo_url: string | null
-  plan: string
+  plan: string | null
   pos_default_mode: 'mesas' | 'rapido'
+  // Señales fiscales (sin secretos) que expone el DTE.
+  codigo_actividad: string | null
+  desc_actividad: string | null
+  ambiente: string | null
+  tiene_credenciales_hacienda: boolean
+  password_firma_configurada: boolean
+  provisioning_status: string | null
+  activo: boolean | null
 }
 
+// F2: el backend rechaza (409) cualquier campo de empresa. Desde F4 el POS solo
+// puede guardar la preferencia operativa.
 export interface ActualizarRestauranteData {
-  nombre?: string
-  nit?: string
-  nrc?: string
-  direccion?: string
-  telefono?: string
-  email?: string
-  logo_url?: string
   pos_default_mode?: 'mesas' | 'rapido'
 }
 
 interface RestauranteRaw {
   id: string
-  nombre: string
+  nombre: string | null
+  nombre_comercial: string | null
   nit: string | null
   nrc: string | null
   direccion: string | null
   telefono: string | null
   email: string | null
   logo_url: string | null
-  plan: string
-  pos_default_mode: string
+  plan: string | null
+  pos_default_mode: string | null
+  codigo_actividad: string | null
+  desc_actividad: string | null
+  ambiente: string | null
+  tiene_credenciales_hacienda: boolean | null
+  password_firma_configurada: boolean | null
+  provisioning_status: string | null
+  activo: boolean | null
 }
 
 function parseRestaurante(raw: RestauranteRaw): Restaurante {
   return {
     ...raw,
+    nombre: raw.nombre ?? '',
     pos_default_mode: raw.pos_default_mode === 'rapido' ? 'rapido' : 'mesas',
+    tiene_credenciales_hacienda: raw.tiene_credenciales_hacienda ?? false,
+    password_firma_configurada: raw.password_firma_configurada ?? false,
   }
 }
 
