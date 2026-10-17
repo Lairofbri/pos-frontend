@@ -1,14 +1,15 @@
 import { useState, useCallback, useMemo } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import {
   Receipt, Printer, Download, FileSpreadsheet, FileJson,
   Calendar, Search, ChevronLeft, ChevronRight,
-  AlertCircle,
+  AlertCircle, FilePlus,
 } from 'lucide-react'
 import * as XLSX from 'xlsx'
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns'
 import { listarCuentas, exportarCuentas, type CuentaItem, type CuentaExportItem } from './api'
 import type { CuentasParams } from './api'
+import { emitirDTE } from '../../pos/api'
 import { PageHeader } from '@/components/shared/PageHeader'
 import { DashboardCard } from '@/components/shared/DashboardCard'
 import { Spinner } from '@/components/ui/Spinner'
@@ -129,6 +130,31 @@ export default function CuentasPage() {
     setPagina(1)
     queryClient.invalidateQueries({ queryKey: ['cuentas'] })
   }, [queryClient])
+
+  const emitirMutation = useMutation({
+    mutationFn: ({ ordenId, tipoDte }: { ordenId: string; tipoDte: string }) =>
+      emitirDTE(ordenId, tipoDte),
+    onSuccess: (dte) => {
+      queryClient.invalidateQueries({ queryKey: ['cuentas'] })
+      // `emitirDTE` devuelve null cuando la petición falla: el interceptor
+      // global ya mostró el motivo (p. ej. la sucursal sin vínculo fiscal).
+      if (!dte) return
+      showToast({
+        type: dte.estado === 'aceptado' ? 'success' : 'error',
+        message:
+          dte.estado === 'aceptado'
+            ? `DTE aceptado por Hacienda (${dte.numero_control ?? 'sin número'})`
+            : `DTE en estado "${dte.estado}"`,
+      })
+    },
+  })
+
+  const handleEmitir = useCallback(
+    (cuenta: CuentaItem) => {
+      emitirMutation.mutate({ ordenId: cuenta.id, tipoDte: cuenta.dte_tipo ?? '01' })
+    },
+    [emitirMutation],
+  )
 
   const handleReprint = useCallback(async (cuenta: CuentaItem) => {
     // Reimprime la operación original por el agente local: no crea ventas ni DTE
@@ -448,6 +474,20 @@ export default function CuentasPage() {
                           </td>
                           <td className="py-2.5 text-right">
                             <div className="flex items-center justify-end gap-0.5">
+                              {/* F5 — recuperación: una cuenta PAGADA que se quedó
+                                  sin DTE (p. ej. la emisión falló con 409 por
+                                  sucursal) se puede facturar desde acá. */}
+                              {cuenta.estado === 'pagada' && !cuenta.dte_tipo && (
+                                <button
+                                  onClick={() => handleEmitir(cuenta)}
+                                  disabled={emitirMutation.isPending}
+                                  className="p-1.5 rounded-md text-text-secondary hover:text-pos-accent hover:bg-pos-accent/10 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                                  title="Emitir DTE"
+                                  aria-label={`Emitir DTE de la orden #${cuenta.numero_orden}`}
+                                >
+                                  <FilePlus className="size-3.5" />
+                                </button>
+                              )}
                               <button
                                 onClick={() => handleReprint(cuenta)}
                                 className="p-1.5 rounded-md text-text-secondary hover:text-pos-accent hover:bg-pos-accent/10 transition-colors duration-200"

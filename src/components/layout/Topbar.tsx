@@ -103,6 +103,18 @@ export function Topbar() {
     ...queryDefaults('sucursales'),
   })
 
+  // F5 (spec «DTE única fuente de verdad», 2026-10-16) — la sucursal activa es
+  // el `establecimiento_id` canónico del DTE y viaja en `X-Sucursal-Id`. Si no
+  // hay ninguna seleccionada (p. ej. tras recargar la página el store se
+  // restaura desde `/auth/me`, y el administrador del onboarding nace sin
+  // sucursal asignada) se adopta la matriz/es la única de la empresa: sin esto
+  // las órdenes nacían sin sucursal y la emisión del DTE fallaba con 409.
+  useEffect(() => {
+    if (sucursalId || !sucursales || sucursales.length === 0) return
+    const predeterminada = sucursales.find((s) => s.es_principal) ?? sucursales[0]
+    if (predeterminada) setSucursalId(predeterminada.id)
+  }, [sucursalId, sucursales, setSucursalId])
+
   const sucursalActual = sucursales?.find((s) => s.id === sucursalId)
   const tieneMultiplesSucursales = (sucursales?.length ?? 0) > 1
   const estadoFiscal = sucursalActual?.fiscal_status
